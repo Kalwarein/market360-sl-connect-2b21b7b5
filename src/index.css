@@ -8,9 +8,9 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Market360 Theme - Enhanced Green, White, Blue */
-    --background: 220 14% 98%;  /* #F7F9FB */
-    --foreground: 156 35% 10%;  /* #0B2B22 text-dark */
+    /* Market360 Premium Theme */
+    --background: 220 14% 98%;
+    --foreground: 156 35% 10%;
 
     --card: 0 0% 100%;
     --card-foreground: 156 35% 10%;
@@ -19,21 +19,24 @@ All colors MUST be HSL.
     --popover-foreground: 156 35% 10%;
 
     /* Primary - Market360 Green */
-    --primary: 151 91% 34%;  /* #0FA86C */
+    --primary: 151 91% 34%;
     --primary-foreground: 0 0% 100%;
     --primary-hover: 151 91% 28%;
+    --primary-light: 151 91% 44%;
     
     /* Secondary - Market360 Blue */
-    --secondary: 203 100% 40%;  /* #0077CC */
+    --secondary: 203 100% 40%;
     --secondary-foreground: 0 0% 100%;
     --secondary-hover: 203 100% 34%;
+    --secondary-light: 203 100% 50%;
 
     /* Accent - Market360 Emerald */
-    --accent: 168 88% 29%;  /* #0B8A6D */
+    --accent: 168 88% 29%;
     --accent-foreground: 0 0% 100%;
+    --accent-light: 168 88% 39%;
 
-    --muted: 220 14% 96%;  /* #F7F9FB */
-    --muted-foreground: 220 9% 46%;  /* #6B7280 */
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 46%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
@@ -42,28 +45,39 @@ All colors MUST be HSL.
     --input: 220 13% 91%;
     --ring: 151 91% 34%;
 
-    --radius: 0.75rem;
+    --radius: 1rem;
     
-    /* Custom tokens */
+    /* Extended palette */
     --success: 151 91% 34%;
     --warning: 38 92% 50%;
     --info: 203 100% 40%;
+    --surface: 220 14% 98%;
+    --text-dark: 156 35% 10%;
+    --neutral-gray: 220 9% 46%;
     
-    /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(151 91% 34%), hsl(151 91% 44%));
-    --gradient-secondary: linear-gradient(135deg, hsl(203 100% 40%), hsl(203 100% 50%));
+    /* Premium Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(151 91% 34%) 0%, hsl(151 91% 44%) 100%);
+    --gradient-secondary: linear-gradient(135deg, hsl(203 100% 40%) 0%, hsl(203 100% 50%) 100%);
     --gradient-hero: linear-gradient(135deg, hsl(151 91% 34%) 0%, hsl(203 100% 40%) 100%);
+    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(220 14% 98%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(168 88% 29%) 0%, hsl(151 91% 34%) 100%);
     
-    /* Shadows */
-    --shadow-soft: 0 2px 8px hsl(156 35% 10% / 0.08);
-    --shadow-medium: 0 4px 16px hsl(156 35% 10% / 0.12);
-    --shadow-strong: 0 8px 24px hsl(156 35% 10% / 0.16);
+    /* Elevation Shadows */
+    --shadow-xs: 0 1px 2px hsl(156 35% 10% / 0.05);
+    --shadow-sm: 0 2px 4px hsl(156 35% 10% / 0.06);
+    --shadow-md: 0 4px 8px hsl(156 35% 10% / 0.08);
+    --shadow-lg: 0 8px 16px hsl(156 35% 10% / 0.10);
+    --shadow-xl: 0 12px 24px hsl(156 35% 10% / 0.12);
+    --shadow-2xl: 0 16px 32px hsl(156 35% 10% / 0.15);
+    --shadow-glow: 0 0 20px hsl(151 91% 34% / 0.3);
     
-    /* Transitions */
+    /* Smooth Transitions */
+    --transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-base: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-slow: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 
-    --radius: 0.75rem;
+    --radius: 1rem;
 
     --sidebar-background: 0 0% 98%;
 
@@ -129,6 +143,95 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+}
+
+@layer utilities {
+  /* Gradient utilities */
+  .gradient-primary {
+    background: var(--gradient-primary);
+  }
+  
+  .gradient-secondary {
+    background: var(--gradient-secondary);
+  }
+  
+  .gradient-hero {
+    background: var(--gradient-hero);
+  }
+  
+  .gradient-accent {
+    background: var(--gradient-accent);
+  }
+  
+  /* Shadow utilities */
+  .shadow-soft {
+    box-shadow: var(--shadow-sm);
+  }
+  
+  .shadow-card {
+    box-shadow: var(--shadow-md);
+  }
+  
+  .shadow-elevated {
+    box-shadow: var(--shadow-lg);
+  }
+  
+  .shadow-floating {
+    box-shadow: var(--shadow-xl);
+  }
+  
+  /* Animation utilities */
+  .transition-fast {
+    transition: var(--transition-fast);
+  }
+  
+  .transition-base {
+    transition: var(--transition-base);
+  }
+  
+  .transition-smooth {
+    transition: var(--transition-smooth);
+  }
+  
+  /* Interactive states */
+  .hover-lift {
+    @apply transition-smooth;
+  }
+  
+  .hover-lift:hover {
+    @apply -translate-y-1 shadow-elevated;
+  }
+  
+  .hover-scale {
+    @apply transition-fast;
+  }
+  
+  .hover-scale:hover {
+    @apply scale-105;
+  }
+  
+  /* Card effects */
+  .card-premium {
+    @apply bg-card rounded-2xl shadow-card border border-border/50 transition-smooth;
+  }
+  
+  .card-premium:hover {
+    @apply shadow-elevated border-primary/20;
+  }
+  
+  /* Ripple effect */
+  .ripple {
+    @apply relative overflow-hidden;
+  }
+  
+  .ripple::after {
+    content: '';
+    @apply absolute inset-0 bg-white/20 scale-0 rounded-full transition-transform duration-500;
+  }
+  
+  .ripple:active::after {
+    @apply scale-100 transition-none;
   }
 }

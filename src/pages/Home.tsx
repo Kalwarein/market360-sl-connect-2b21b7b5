@@ -1,13 +1,19 @@
 import { useEffect, useState } from 'react';
-import { Search, Store, TrendingUp } from 'lucide-react';
-import { Input } from '@/components/ui/input';
+import { TrendingUp } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
+import { useNavigate } from 'react-router-dom';
+import { useCart } from '@/contexts/CartContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 import BottomNav from '@/components/BottomNav';
 import Sidebar from '@/components/Sidebar';
 import NotificationBell from '@/components/NotificationBell';
-import { useNavigate } from 'react-router-dom';
+import { ProductCard } from '@/components/ProductCard';
+import { PremiumSearchBar } from '@/components/PremiumSearchBar';
+import { ProductGridSkeleton } from '@/components/LoadingSkeleton';
+import { QuickAccessGrid } from '@/components/QuickAccessGrid';
+import { PromoBanner } from '@/components/PromoBanner';
 
 interface Product {
   id: string;
@@ -17,6 +23,10 @@ interface Product {
   images: string[];
   category: string;
   product_code: string;
+  stores?: {
+    store_name: string;
+    owner_id: string;
+  };
 }
 
 const Home = () => {
@@ -24,6 +34,9 @@ const Home = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
+  const { addToCart } = useCart();
+  const { user } = useAuth();
+  const { toast } = useToast();
 
   useEffect(() => {
     loadProducts();
@@ -33,7 +46,7 @@ const Home = () => {
     try {
       const { data, error } = await supabase
         .from('products')
-        .select('*')
+        .select('*, stores(store_name, owner_id)')
         .eq('published', true)
         .order('created_at', { ascending: false })
         .limit(20);
@@ -56,7 +69,7 @@ const Home = () => {
     try {
       const { data, error } = await supabase
         .from('products')
-        .select('*')
+        .select('*, stores(store_name, owner_id)')
         .eq('published', true)
         .or(`title.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%,category.ilike.%${searchQuery}%`)
         .limit(20);
@@ -68,108 +81,172 @@ const Home = () => {
     }
   };
 
+  const handleAddToCart = (product: Product) => {
+    addToCart({
+      id: product.id,
+      title: product.title,
+      price: product.price,
+      image: product.images[0] || '',
+      store_name: product.stores?.store_name || 'Unknown Store',
+      product_code: product.product_code,
+    });
+
+    toast({
+      title: 'Added to cart',
+      description: `${product.title} has been added to your cart`,
+    });
+  };
+
+  const handleChat = async (product: Product) => {
+    if (!user) {
+      toast({
+        title: 'Login Required',
+        description: 'Please login to chat with seller',
+        variant: 'destructive',
+      });
+      navigate('/auth');
+      return;
+    }
+
+    if (!product.stores?.owner_id) return;
+
+    try {
+      const { data: existing } = await supabase
+        .from('conversations')
+        .select('id')
+        .eq('buyer_id', user.id)
+        .eq('seller_id', product.stores.owner_id)
+        .eq('product_id', product.id)
+        .single();
+
+      if (existing) {
+        navigate(`/chat/${existing.id}`);
+        return;
+      }
+
+      const { data: newConvo, error } = await supabase
+        .from('conversations')
+        .insert({
+          buyer_id: user.id,
+          seller_id: product.stores.owner_id,
+          product_id: product.id,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      navigate(`/chat/${newConvo.id}`);
+    } catch (error) {
+      console.error('Error starting chat:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to start chat',
+        variant: 'destructive',
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background pb-20">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-primary to-secondary text-white p-4 pb-6">
-        <div className="flex items-center justify-between mb-4">
+      {/* Premium Header */}
+      <div className="gradient-hero text-white p-6 pb-8 rounded-b-[2rem] shadow-xl">
+        <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <Sidebar />
             <div>
-              <h1 className="text-2xl font-bold">Market360</h1>
-              <p className="text-sm opacity-90">Discover Sierra Leone's marketplace</p>
+              <h1 className="text-3xl font-bold tracking-tight">Market360</h1>
+              <p className="text-sm opacity-90 font-medium">Sierra Leone's Premier Marketplace</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <NotificationBell />
-          </div>
+          <NotificationBell />
         </div>
 
-        {/* Search Bar */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search products..."
-            className="pl-10 bg-white text-foreground"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-          />
-        </div>
+        {/* Premium Search Bar */}
+        <PremiumSearchBar
+          value={searchQuery}
+          onChange={setSearchQuery}
+          onSearch={handleSearch}
+          placeholder="Search for products, categories..."
+        />
       </div>
 
-      {/* Quick Stats */}
-      <div className="px-4 -mt-4">
-        <Card className="shadow-md">
+      {/* Quick Stats Card */}
+      <div className="px-4 -mt-6">
+        <Card className="card-premium shadow-floating">
           <CardContent className="p-4">
-            <div className="flex items-center gap-2 text-sm">
-              <TrendingUp className="h-4 w-4 text-primary" />
-              <span className="font-medium">
-                {products.length} products available
-              </span>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <TrendingUp className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Available Products</p>
+                  <p className="text-2xl font-bold text-foreground">{products.length}</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-xs text-muted-foreground">Updated</p>
+                <p className="text-sm font-semibold text-primary">Just now</p>
+              </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Products Grid */}
-      <div className="p-4 space-y-4">
-        <div>
-          <h2 className="text-lg font-semibold mb-3">Featured Products</h2>
-          {loading ? (
-            <div className="grid grid-cols-2 gap-3">
-              {[...Array(6)].map((_, i) => (
-                <div key={i} className="bg-muted animate-pulse rounded-lg h-64" />
-              ))}
-            </div>
-          ) : products.length === 0 ? (
-            <Card>
-              <CardContent className="p-8 text-center text-muted-foreground">
-                <Store className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                <p>No products found</p>
-                <p className="text-sm mt-1">Check back later for new listings</p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid grid-cols-2 gap-3">
-              {products.map((product) => (
-                <Card
-                  key={product.id}
-                  className="overflow-hidden cursor-pointer hover:shadow-lg transition-shadow"
-                  onClick={() => navigate(`/product/${product.id}`)}
-                >
-                  <div className="aspect-square bg-muted relative">
-                    {product.images && product.images.length > 0 ? (
-                      <img
-                        src={product.images[0]}
-                        alt={product.title}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <Store className="h-12 w-12 text-muted-foreground" />
-                      </div>
-                    )}
-                    <Badge className="absolute top-2 right-2 bg-primary text-xs">
-                      {product.category}
-                    </Badge>
-                  </div>
-                  <CardContent className="p-3">
-                    <h3 className="font-medium text-sm line-clamp-2 mb-1">
-                      {product.title}
-                    </h3>
-                    <p className="text-xs text-muted-foreground mb-2">
-                      {product.product_code}
-                    </p>
-                    <p className="text-primary font-bold">
-                      Le {product.price.toLocaleString()}
-                    </p>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+      {/* Promo Banners */}
+      <div className="px-4 mt-6">
+        <PromoBanner />
+      </div>
+
+      {/* Quick Access Grid */}
+      <div className="px-4 mt-6">
+        <h2 className="text-xl font-bold mb-4">Quick Access</h2>
+        <QuickAccessGrid />
+      </div>
+
+      {/* Products Section */}
+      <div className="px-4 mt-8 space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-bold">Featured Products</h2>
+          {!loading && products.length > 0 && (
+            <button 
+              className="text-sm font-semibold text-primary hover:underline"
+              onClick={() => navigate('/stores')}
+            >
+              View All
+            </button>
           )}
         </div>
+
+        {loading ? (
+          <ProductGridSkeleton count={6} />
+        ) : products.length === 0 ? (
+          <Card className="card-premium">
+            <CardContent className="p-12 text-center">
+              <div className="h-20 w-20 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
+                <TrendingUp className="h-10 w-10 text-muted-foreground" />
+              </div>
+              <h3 className="text-lg font-semibold mb-2">No products found</h3>
+              <p className="text-muted-foreground">Check back later for new listings</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {products.map((product) => (
+              <ProductCard
+                key={product.id}
+                id={product.id}
+                title={product.title}
+                price={product.price}
+                image={product.images[0]}
+                category={product.category}
+                store_name={product.stores?.store_name}
+                onAddToCart={() => handleAddToCart(product)}
+                onChat={() => handleChat(product)}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       <BottomNav />
