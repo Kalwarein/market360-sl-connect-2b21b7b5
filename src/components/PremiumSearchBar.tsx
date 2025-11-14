@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Search, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -16,7 +17,16 @@ export const PremiumSearchBar = ({
   onSearch,
   placeholder = "Search products...",
 }: PremiumSearchBarProps) => {
+  const navigate = useNavigate();
   const [isFocused, setIsFocused] = useState(false);
+
+  const handleFocus = () => {
+    setIsFocused(true);
+    // Navigate to search page when clicking the search bar
+    if (window.location.pathname !== '/search') {
+      navigate('/search');
+    }
+  };
 
   const handleClear = () => {
     onChange('');
@@ -38,7 +48,7 @@ export const PremiumSearchBar = ({
       <Input
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        onFocus={() => setIsFocused(true)}
+        onFocus={handleFocus}
         onBlur={() => setIsFocused(false)}
         onKeyDown={(e) => e.key === 'Enter' && onSearch()}
         placeholder={placeholder}

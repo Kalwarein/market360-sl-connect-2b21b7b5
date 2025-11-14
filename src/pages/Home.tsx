@@ -38,6 +38,14 @@ const Home = () => {
   const { user } = useAuth();
   const { toast } = useToast();
 
+  const handleSearch = () => {
+    if (searchQuery.trim()) {
+      navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
+    } else {
+      navigate('/search');
+    }
+  };
+
   useEffect(() => {
     loadProducts();
   }, []);
@@ -57,27 +65,6 @@ const Home = () => {
       console.error('Error loading products:', error);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleSearch = async () => {
-    if (!searchQuery.trim()) {
-      loadProducts();
-      return;
-    }
-
-    try {
-      const { data, error } = await supabase
-        .from('products')
-        .select('*, stores(store_name, owner_id)')
-        .eq('published', true)
-        .or(`title.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%,category.ilike.%${searchQuery}%`)
-        .limit(20);
-
-      if (error) throw error;
-      setProducts(data || []);
-    } catch (error) {
-      console.error('Error searching products:', error);
     }
   };
 
