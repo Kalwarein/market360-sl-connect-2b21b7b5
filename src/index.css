@@ -1,0 +1,134 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* Market360 Theme - Enhanced Green, White, Blue */
+    --background: 220 14% 98%;  /* #F7F9FB */
+    --foreground: 156 35% 10%;  /* #0B2B22 text-dark */
+
+    --card: 0 0% 100%;
+    --card-foreground: 156 35% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 156 35% 10%;
+
+    /* Primary - Market360 Green */
+    --primary: 151 91% 34%;  /* #0FA86C */
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 151 91% 28%;
+    
+    /* Secondary - Market360 Blue */
+    --secondary: 203 100% 40%;  /* #0077CC */
+    --secondary-foreground: 0 0% 100%;
+    --secondary-hover: 203 100% 34%;
+
+    /* Accent - Market360 Emerald */
+    --accent: 168 88% 29%;  /* #0B8A6D */
+    --accent-foreground: 0 0% 100%;
+
+    --muted: 220 14% 96%;  /* #F7F9FB */
+    --muted-foreground: 220 9% 46%;  /* #6B7280 */
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 151 91% 34%;
+
+    --radius: 0.75rem;
+    
+    /* Custom tokens */
+    --success: 151 91% 34%;
+    --warning: 38 92% 50%;
+    --info: 203 100% 40%;
+    
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(151 91% 34%), hsl(151 91% 44%));
+    --gradient-secondary: linear-gradient(135deg, hsl(203 100% 40%), hsl(203 100% 50%));
+    --gradient-hero: linear-gradient(135deg, hsl(151 91% 34%) 0%, hsl(203 100% 40%) 100%);
+    
+    /* Shadows */
+    --shadow-soft: 0 2px 8px hsl(156 35% 10% / 0.08);
+    --shadow-medium: 0 4px 16px hsl(156 35% 10% / 0.12);
+    --shadow-strong: 0 8px 24px hsl(156 35% 10% / 0.16);
+    
+    /* Transitions */
+    --transition-base: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+    --radius: 0.75rem;
+
+    --sidebar-background: 0 0% 98%;
+
+    --sidebar-foreground: 240 5.3% 26.1%;
+
+    --sidebar-primary: 240 5.9% 10%;
+
+    --sidebar-primary-foreground: 0 0% 98%;
+
+    --sidebar-accent: 240 4.8% 95.9%;
+
+    --sidebar-accent-foreground: 240 5.9% 10%;
+
+    --sidebar-border: 220 13% 91%;
+
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 156 35% 10%;  /* #0B2B22 */
+    --foreground: 0 0% 98%;
+
+    --card: 156 30% 12%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 156 30% 12%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 151 91% 34%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 151 91% 28%;
+
+    --secondary: 203 100% 40%;
+    --secondary-foreground: 0 0% 100%;
+    --secondary-hover: 203 100% 34%;
+
+    --accent: 168 88% 29%;
+    --accent-foreground: 0 0% 100%;
+
+    --muted: 156 25% 18%;
+    --muted-foreground: 220 9% 65%;
+
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 156 25% 18%;
+    --input: 156 25% 18%;
+    --ring: 151 91% 44%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
