@@ -28,6 +28,18 @@ import AdminAuth from "./pages/AdminAuth";
 import AdminDashboard from "./pages/AdminDashboard";
 import Notifications from "./pages/Notifications";
 import Search from "./pages/Search";
+import Settings from "./pages/Settings";
+import Orders from "./pages/Orders";
+import AdminUsers from "./pages/AdminUsers";
+import AdminStores from "./pages/AdminStores";
+import AdminProducts from "./pages/AdminProducts";
+import AdminOrders from "./pages/AdminOrders";
+import AdminWalletRequests from "./pages/AdminWalletRequests";
+import AdminAuditLogs from "./pages/AdminAuditLogs";
+import About from "./pages/About";
+import Terms from "./pages/Terms";
+import Privacy from "./pages/Privacy";
+import StoreSettings from "./pages/StoreSettings";
 
 const queryClient = new QueryClient();
 
@@ -57,8 +69,20 @@ const App = () => (
             <Route path="/support" element={<ProtectedRoute><Support /></ProtectedRoute>} />
             <Route path="/contact" element={<ProtectedRoute><Contact /></ProtectedRoute>} />
             <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+            <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+            <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
+            <Route path="/store-settings" element={<ProtectedRoute><StoreSettings /></ProtectedRoute>} />
             <Route path="/admin-auth" element={<AdminAuth />} />
             <Route path="/admin-dashboard" element={<AdminDashboard />} />
+            <Route path="/admin/users" element={<AdminUsers />} />
+            <Route path="/admin/stores" element={<AdminStores />} />
+            <Route path="/admin/products" element={<AdminProducts />} />
+            <Route path="/admin/orders" element={<AdminOrders />} />
+            <Route path="/admin/wallet-requests" element={<AdminWalletRequests />} />
+            <Route path="/admin/audit-logs" element={<AdminAuditLogs />} />
+            <Route path="/about" element={<ProtectedRoute><About /></ProtectedRoute>} />
+            <Route path="/terms" element={<ProtectedRoute><Terms /></ProtectedRoute>} />
+            <Route path="/privacy" element={<ProtectedRoute><Privacy /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </CartProvider>
