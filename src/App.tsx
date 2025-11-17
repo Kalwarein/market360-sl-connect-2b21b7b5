@@ -39,6 +39,7 @@ import AdminProducts from "./pages/AdminProducts";
 import AdminOrders from "./pages/AdminOrders";
 import AdminWalletRequests from "./pages/AdminWalletRequests";
 import AdminAuditLogs from "./pages/AdminAuditLogs";
+import Checkout from "./pages/Checkout";
 import About from "./pages/About";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
@@ -88,7 +89,9 @@ const App = () => (
               <Route path="/admin/products" element={<AdminProducts />} />
               <Route path="/admin/orders" element={<AdminOrders />} />
               <Route path="/admin/wallet-requests" element={<AdminWalletRequests />} />
-              <Route path="/admin/audit-logs" element={<AdminAuditLogs />} />
+          <Route path="/admin/audit-logs" element={<AdminAuditLogs />} />
+          <Route path="/checkout" element={<Checkout />} />
+          <Route path="/orders" element={<Orders />} />
               <Route path="/admin-broadcast" element={<AdminBroadcast />} />
               <Route path="/about" element={<ProtectedRoute><About /></ProtectedRoute>} />
               <Route path="/terms" element={<ProtectedRoute><Terms /></ProtectedRoute>} />

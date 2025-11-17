@@ -196,6 +196,13 @@ export type Database = {
         Row: {
           buyer_id: string
           created_at: string
+          delivery_name: string | null
+          delivery_notes: string | null
+          delivery_phone: string | null
+          dispute_opened_at: string | null
+          dispute_reason: string | null
+          escrow_amount: number | null
+          escrow_status: string | null
           id: string
           product_id: string
           quantity: number
@@ -211,6 +218,13 @@ export type Database = {
         Insert: {
           buyer_id: string
           created_at?: string
+          delivery_name?: string | null
+          delivery_notes?: string | null
+          delivery_phone?: string | null
+          dispute_opened_at?: string | null
+          dispute_reason?: string | null
+          escrow_amount?: number | null
+          escrow_status?: string | null
           id?: string
           product_id: string
           quantity?: number
@@ -226,6 +240,13 @@ export type Database = {
         Update: {
           buyer_id?: string
           created_at?: string
+          delivery_name?: string | null
+          delivery_notes?: string | null
+          delivery_phone?: string | null
+          dispute_opened_at?: string | null
+          dispute_reason?: string | null
+          escrow_amount?: number | null
+          escrow_status?: string | null
           id?: string
           product_id?: string
           quantity?: number
