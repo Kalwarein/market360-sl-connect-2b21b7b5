@@ -241,13 +241,12 @@ const Profile = () => {
       `}</style>
 
       <div className="min-h-screen bg-white pb-20 flex flex-col">
-        {/* Header Section with Profile Info */}
+        {/* Header Section */}
         <div className="p-6 bg-white border-b border-gray-100">
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center gap-4 flex-1">
-              {/* Circular Avatar */}
               <Avatar className="h-20 w-20 rounded-full border-2 border-gray-200">
-                <AvatarImage src={profile?.avatar_url || "/placeholder.svg"} />
+                <AvatarImage src={profile?.avatar_url || "https://i.imghippo.com/files/mJWJ8998ds.jpg"} />
                 <AvatarFallback className="text-xl font-semibold">
                   {profile?.name?.charAt(0) || 'U'}
                 </AvatarFallback>
@@ -269,7 +268,7 @@ const Profile = () => {
             </div>
           </div>
 
-          {/* Stats Bar */}
+          {/* Stats */}
           <div className="grid grid-cols-2 gap-3">
             <Card 
               className="cursor-pointer hover:shadow-md transition-all bg-blue-50 border-blue-100"
@@ -292,7 +291,6 @@ const Profile = () => {
             </Card>
           </div>
 
-          {/* Seller Stats if applicable */}
           {isSeller && (
             <div className="grid grid-cols-2 gap-3 mt-3">
               <Card className="bg-amber-50 border-amber-100">
@@ -312,23 +310,25 @@ const Profile = () => {
           )}
         </div>
 
-        {/* Menu Items */}
+        {/* Menu */}
         <div className="p-6 space-y-3 flex-1">
+          
+          {/* 🔥 PERKS CARD WITH NEW IMAGE */}
           <div 
             className="perks-card group p-4 flex items-center justify-between gap-4 rounded-2xl transition-all duration-300"
             onClick={() => navigate('/perks')}
           >
             <div className="flex items-center gap-4 flex-1">
-              {/* Image with shimmer effect */}
+              
               <div className="perks-image-container w-16 h-16 flex-shrink-0">
                 <img 
-                  src="/premium-crown-sparkle-gems.jpg" 
+                  src="https://i.imghippo.com/files/lEJ5601RT.jpg"
                   alt="Premium Perks"
                   className="perks-image"
                 />
                 <div className="perks-image-shimmer"></div>
               </div>
-              
+
               <div className="text-green-900 flex-1">
                 <h3 className="text-lg font-bold mb-1">Unlock Premium</h3>
                 <p className="text-sm text-green-700">Get exclusive perks & benefits</p>
@@ -337,11 +337,8 @@ const Profile = () => {
             <ChevronRight className="perks-arrow text-green-600 flex-shrink-0" size={24} />
           </div>
 
-          {/* My Wallet */}
-          <Card 
-            className="cursor-pointer hover:shadow-md transition-shadow"
-            onClick={() => navigate('/wallet')}
-          >
+          {/* Wallet */}
+          <Card onClick={() => navigate('/wallet')} className="cursor-pointer hover:shadow-md transition-shadow">
             <CardContent className="p-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
@@ -352,11 +349,8 @@ const Profile = () => {
             </CardContent>
           </Card>
 
-          {/* My Orders */}
-          <Card 
-            className="cursor-pointer hover:shadow-md transition-shadow"
-            onClick={() => navigate('/orders')}
-          >
+          {/* Orders */}
+          <Card onClick={() => navigate('/orders')} className="cursor-pointer hover:shadow-md transition-shadow">
             <CardContent className="p-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
@@ -368,13 +362,7 @@ const Profile = () => {
           </Card>
 
           {/* Notifications */}
-          <Card 
-            className="cursor-pointer hover:shadow-md transition-shadow"
-            onClick={() => {
-              setHasUnreadNotif(false);
-              navigate('/notifications');
-            }}
-          >
+          <Card onClick={() => { setHasUnreadNotif(false); navigate('/notifications'); }} className="cursor-pointer hover:shadow-md transition-shadow">
             <CardContent className="p-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-full bg-cyan-100 flex items-center justify-center relative">
@@ -390,10 +378,7 @@ const Profile = () => {
           </Card>
 
           {/* Promotions */}
-          <Card 
-            className="cursor-pointer hover:shadow-md transition-shadow"
-            onClick={() => navigate('/promotions')}
-          >
+          <Card onClick={() => navigate('/promotions')} className="cursor-pointer hover:shadow-md transition-shadow">
             <CardContent className="p-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-full bg-yellow-100 flex items-center justify-center">
@@ -405,10 +390,7 @@ const Profile = () => {
           </Card>
 
           {/* Settings */}
-          <Card 
-            className="cursor-pointer hover:shadow-md transition-shadow"
-            onClick={() => navigate('/settings')}
-          >
+          <Card onClick={() => navigate('/settings')} className="cursor-pointer hover:shadow-md transition-shadow">
             <CardContent className="p-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
@@ -421,10 +403,7 @@ const Profile = () => {
 
           {/* Seller Options */}
           {isSeller ? (
-            <Card 
-              className="cursor-pointer hover:shadow-md transition-shadow bg-amber-50 border-amber-100"
-              onClick={() => navigate('/seller-dashboard')}
-            >
+            <Card onClick={() => navigate('/seller-dashboard')} className="cursor-pointer hover:shadow-md transition-shadow bg-amber-50 border-amber-100">
               <CardContent className="p-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="h-10 w-10 rounded-full bg-amber-600 flex items-center justify-center">
@@ -435,10 +414,7 @@ const Profile = () => {
               </CardContent>
             </Card>
           ) : sellerApplicationStatus === 'approved' ? (
-            <Card 
-              className="cursor-pointer hover:shadow-md transition-shadow bg-green-50 border-green-100"
-              onClick={() => navigate('/seller-dashboard')}
-            >
+            <Card onClick={() => navigate('/seller-dashboard')} className="cursor-pointer hover:shadow-md transition-shadow bg-green-50 border-green-100">
               <CardContent className="p-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="h-10 w-10 rounded-full bg-green-600 flex items-center justify-center">
@@ -462,10 +438,7 @@ const Profile = () => {
               </CardContent>
             </Card>
           ) : (
-            <Card 
-              className="cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => navigate('/become-seller')}
-            >
+            <Card onClick={() => navigate('/become-seller')} className="cursor-pointer hover:shadow-md transition-shadow">
               <CardContent className="p-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center">
@@ -488,6 +461,7 @@ const Profile = () => {
           </Button>
         </div>
 
+        {/* Footer */}
         <div className="border-t border-gray-200 bg-gray-50 p-6">
           <div className="flex items-center justify-center gap-6">
             <button
@@ -523,4 +497,3 @@ const Profile = () => {
 };
 
 export default Profile;
-  
