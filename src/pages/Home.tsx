@@ -12,7 +12,6 @@ import NotificationBell from '@/components/NotificationBell';
 import { ProductCard } from '@/components/ProductCard';
 import { PremiumSearchBar } from '@/components/PremiumSearchBar';
 import { ProductGridSkeleton } from '@/components/LoadingSkeleton';
-import { QuickAccessGrid } from '@/components/QuickAccessGrid';
 import { PromoBanner } from '@/components/PromoBanner';
 import { CategoryFilter } from '@/components/CategoryFilter';
 
@@ -149,7 +148,6 @@ const Home = () => {
           <NotificationBell />
         </div>
 
-        {/* Premium Search Bar */}
         <PremiumSearchBar
           value={searchQuery}
           onChange={setSearchQuery}
@@ -191,11 +189,7 @@ const Home = () => {
         <CategoryFilter />
       </div>
 
-      {/* Quick Access Grid */}
-      <div className="px-4 mt-6">
-        <h2 className="text-xl font-bold mb-4">Quick Access</h2>
-        <QuickAccessGrid />
-      </div>
+      {/* ❌ Quick Access removed here */}
 
       {/* Products Section */}
       <div className="px-4 mt-8 space-y-4">
