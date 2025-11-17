@@ -6,7 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Store, MapPin, Package, Search } from 'lucide-react';
+import { Store, MapPin, Package, Search, Filter, ArrowUpDown, Info } from 'lucide-react';
 import BottomNav from '@/components/BottomNav';
 import { Input } from '@/components/ui/input';
 
@@ -50,14 +50,6 @@ const animationStyles = `
     100% { transform: translateY(-100px) translateX(20px); opacity: 0; }
   }
   
-  @keyframes typewriter {
-    0% { content: 'Search stores...'; }
-    25% { content: 'Find sellers...'; }
-    50% { content: 'Discover markets...'; }
-    75% { content: 'Search products...'; }
-    100% { content: 'Search stores...'; }
-  }
-  
   @keyframes headerShimmer {
     0% { background-position: -1000px center; }
     100% { background-position: 1000px center; }
@@ -66,6 +58,25 @@ const animationStyles = `
   @keyframes bannerPan {
     0%, 100% { transform: translateX(0); }
     50% { transform: translateX(3px); }
+  }
+  
+  @keyframes iconGlow {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4); }
+    50% { box-shadow: 0 0 0 8px rgba(255, 255, 255, 0); }
+  }
+  
+  @keyframes ripple {
+    0% { transform: scale(1); opacity: 1; }
+    100% { transform: scale(4); opacity: 0; }
+  }
+  
+  @keyframes parallaxHeader {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(20px); }
+  }
+  
+  @keyframes curvePath {
+    0% { clip-path: polygon(0 0, 100% 0, 100% 70%, 0 100%); }
   }
   
   .animated-header {
@@ -97,6 +108,26 @@ const animationStyles = `
   
   .particle {
     animation: particleFloat 3s ease-in infinite;
+  }
+  
+  .header-icon-btn {
+    transition: all 0.3s ease;
+  }
+  
+  .header-icon-btn:hover {
+    transform: scale(1.1);
+    background-color: rgba(255, 255, 255, 0.2);
+  }
+  
+  .header-icon-btn:active {
+    transform: scale(0.95);
+  }
+  
+  .curved-divider {
+    position: relative;
+    height: 20px;
+    background: linear-gradient(to bottom, rgba(16, 185, 129, 0.05), transparent);
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 0 60%);
   }
 `;
 
@@ -204,14 +235,39 @@ const Stores = () => {
 
           {/* Header content */}
           <div className="relative z-10 text-white p-6">
-            <div className="animated-header flex items-center gap-3 mb-6">
-              <Store className="h-8 w-8 drop-shadow-lg" />
-              <div>
-                <h1 className="text-3xl font-bold drop-shadow-md">Stores</h1>
-                <p className="text-sm opacity-95 drop-shadow">Explore verified sellers</p>
+            <div className="animated-header flex items-start justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <Store className="h-8 w-8 drop-shadow-lg" />
+                <div>
+                  <h1 className="text-3xl font-bold drop-shadow-md">Stores</h1>
+                  <p className="text-sm opacity-95 drop-shadow">Explore verified sellers</p>
+                </div>
+              </div>
+              
+              {/* Right side action buttons */}
+              <div className="flex items-center gap-2">
+                <button
+                  className="header-icon-btn p-2 rounded-full border border-white/30 backdrop-blur-sm hover:bg-white/20 transition-all duration-300 flex items-center justify-center"
+                  title="Filter stores"
+                >
+                  <Filter className="h-5 w-5 text-white drop-shadow" />
+                </button>
+                <button
+                  className="header-icon-btn p-2 rounded-full border border-white/30 backdrop-blur-sm hover:bg-white/20 transition-all duration-300 flex items-center justify-center"
+                  title="Sort stores"
+                >
+                  <ArrowUpDown className="h-5 w-5 text-white drop-shadow" />
+                </button>
+                <button
+                  className="header-icon-btn p-2 rounded-full border border-white/30 backdrop-blur-sm hover:bg-white/20 transition-all duration-300 flex items-center justify-center"
+                  title="Help & info"
+                >
+                  <Info className="h-5 w-5 text-white drop-shadow" />
+                </button>
               </div>
             </div>
 
+            {/* Search bar */}
             <div className="relative group">
               <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none">
                 <Search className="h-5 w-5 text-white/70" />
@@ -229,6 +285,8 @@ const Stores = () => {
               />
             </div>
           </div>
+
+          <div className="curved-divider" />
         </div>
 
         {/* Store cards section */}
@@ -333,4 +391,4 @@ const Stores = () => {
 };
 
 export default Stores;
-    
+        
