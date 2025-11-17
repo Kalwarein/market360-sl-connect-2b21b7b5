@@ -109,10 +109,10 @@ const Profile = () => {
 
         @keyframes pulse-glow {
           0%, 100% {
-            box-shadow: 0 10px 30px -5px rgba(124, 58, 237, 0.4), 0 0 30px rgba(124, 58, 237, 0.3);
+            box-shadow: 0 10px 30px -5px rgba(16, 185, 129, 0.4), 0 0 30px rgba(16, 185, 129, 0.3);
           }
           50% {
-            box-shadow: 0 15px 40px -5px rgba(124, 58, 237, 0.6), 0 0 40px rgba(124, 58, 237, 0.5);
+            box-shadow: 0 15px 40px -5px rgba(16, 185, 129, 0.6), 0 0 40px rgba(16, 185, 129, 0.5);
           }
         }
 
@@ -120,7 +120,7 @@ const Profile = () => {
           position: relative;
           cursor: pointer;
           overflow: hidden;
-          background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
+          background: linear-gradient(135deg, #ffffff 0%, #d1fae5 50%, #10b981 100%);
           animation: pulse-glow 3s ease-in-out infinite;
         }
 
@@ -136,13 +136,13 @@ const Profile = () => {
               45deg,
               transparent,
               transparent 2px,
-              rgba(255, 255, 255, 0.03) 2px,
-              rgba(255, 255, 255, 0.03) 4px
+              rgba(16, 185, 129, 0.03) 2px,
+              rgba(16, 185, 129, 0.03) 4px
             ),
             linear-gradient(
               90deg,
               transparent 0%,
-              rgba(255, 255, 255, 0.15) 50%,
+              rgba(16, 185, 129, 0.15) 50%,
               transparent 100%
             );
           background-size: 100% 100%, 200% 100%;
@@ -161,7 +161,7 @@ const Profile = () => {
         }
 
         .perks-icon {
-          filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.5));
+          filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.5));
         }
 
         .perks-card:hover .perks-icon-wrapper {
@@ -169,7 +169,7 @@ const Profile = () => {
         }
 
         .perks-card:hover .perks-icon {
-          filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.8));
+          filter: drop-shadow(0 0 12px rgba(16, 185, 129, 0.8));
         }
 
         .perks-arrow {
@@ -261,14 +261,14 @@ const Profile = () => {
           >
             <div className="flex items-center gap-4 flex-1">
               <div className="perks-icon-wrapper">
-                <Crown className="perks-icon text-white" size={32} />
+                <Crown className="perks-icon text-green-600" size={32} />
               </div>
-              <div className="text-white">
+              <div className="text-green-900">
                 <h3 className="text-lg font-bold mb-1">Unlock Premium</h3>
-                <p className="text-sm text-white/90">Get exclusive perks & benefits</p>
+                <p className="text-sm text-green-700">Get exclusive perks & benefits</p>
               </div>
             </div>
-            <ChevronRight className="perks-arrow text-white" size={24} />
+            <ChevronRight className="perks-arrow text-green-600" size={24} />
           </div>
 
           {/* My Wallet */}
@@ -457,4 +457,4 @@ const Profile = () => {
 };
 
 export default Profile;
-            
+                    
