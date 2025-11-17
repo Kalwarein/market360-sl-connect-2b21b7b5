@@ -98,6 +98,15 @@ const Profile = () => {
           }
         }
 
+        @keyframes shimmer-overlay {
+          0% {
+            transform: translateX(-100%) skewX(-15deg);
+          }
+          100% {
+            transform: translateX(200%) skewX(-15deg);
+          }
+        }
+
         @keyframes float {
           0%, 100% {
             transform: translateY(0px);
@@ -109,10 +118,10 @@ const Profile = () => {
 
         @keyframes pulse-glow {
           0%, 100% {
-            box-shadow: 0 10px 30px -5px rgba(124, 58, 237, 0.4), 0 0 30px rgba(124, 58, 237, 0.3);
+            box-shadow: 0 4px 15px -3px rgba(16, 185, 129, 0.2), 0 0 8px rgba(16, 185, 129, 0.1);
           }
           50% {
-            box-shadow: 0 15px 40px -5px rgba(124, 58, 237, 0.6), 0 0 40px rgba(124, 58, 237, 0.5);
+            box-shadow: 0 6px 20px -3px rgba(16, 185, 129, 0.3), 0 0 12px rgba(16, 185, 129, 0.15);
           }
         }
 
@@ -120,7 +129,7 @@ const Profile = () => {
           position: relative;
           cursor: pointer;
           overflow: hidden;
-          background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
+          background: linear-gradient(135deg, #ffffff 0%, #d1fae5 50%, #10b981 100%);
           animation: pulse-glow 3s ease-in-out infinite;
         }
 
@@ -136,23 +145,73 @@ const Profile = () => {
               45deg,
               transparent,
               transparent 2px,
-              rgba(255, 255, 255, 0.03) 2px,
-              rgba(255, 255, 255, 0.03) 4px
+              rgba(16, 185, 129, 0.03) 2px,
+              rgba(16, 185, 129, 0.03) 4px
             ),
             linear-gradient(
               90deg,
               transparent 0%,
-              rgba(255, 255, 255, 0.15) 50%,
+              rgba(255, 255, 255, 0.4) 50%,
               transparent 100%
             );
           background-size: 100% 100%, 200% 100%;
-          animation: shimmer 3s linear infinite;
+          animation: shimmer 2.5s linear infinite;
+          pointer-events: none;
+        }
+
+        .perks-card::after {
+          content: '';
+          position: absolute;
+          top: -50%;
+          left: -50%;
+          width: 30%;
+          height: 200%;
+          background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(255, 255, 255, 0.8),
+            transparent
+          );
+          animation: shimmer-overlay 3s ease-in-out infinite;
           pointer-events: none;
         }
 
         .perks-card:hover {
           transform: translateY(-2px);
-          animation: pulse-glow 1.5s ease-in-out infinite;
+        }
+
+        .perks-card:hover::after {
+          animation: shimmer-overlay 1.5s ease-in-out infinite;
+        }
+
+        .perks-image-container {
+          position: relative;
+          overflow: hidden;
+          border-radius: 12px;
+        }
+
+        .perks-image {
+          display: block;
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          filter: brightness(1.1) saturate(1.2);
+        }
+
+        .perks-image-shimmer {
+          position: absolute;
+          top: -50%;
+          left: -50%;
+          width: 50%;
+          height: 200%;
+          background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(255, 255, 255, 0.6),
+            transparent
+          );
+          animation: shimmer-overlay 2s ease-in-out infinite;
+          pointer-events: none;
         }
 
         .perks-icon-wrapper {
@@ -161,7 +220,7 @@ const Profile = () => {
         }
 
         .perks-icon {
-          filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.5));
+          filter: drop-shadow(0 0 4px rgba(16, 185, 129, 0.3));
         }
 
         .perks-card:hover .perks-icon-wrapper {
@@ -169,7 +228,7 @@ const Profile = () => {
         }
 
         .perks-card:hover .perks-icon {
-          filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.8));
+          filter: drop-shadow(0 0 6px rgba(16, 185, 129, 0.5));
         }
 
         .perks-arrow {
@@ -256,19 +315,26 @@ const Profile = () => {
         {/* Menu Items */}
         <div className="p-6 space-y-3 flex-1">
           <div 
-            className="perks-card group p-6 flex items-center justify-between gap-4 rounded-2xl transition-all duration-300"
+            className="perks-card group p-4 flex items-center justify-between gap-4 rounded-2xl transition-all duration-300"
             onClick={() => navigate('/perks')}
           >
             <div className="flex items-center gap-4 flex-1">
-              <div className="perks-icon-wrapper">
-                <Crown className="perks-icon text-white" size={32} />
+              {/* Image with shimmer effect */}
+              <div className="perks-image-container w-16 h-16 flex-shrink-0">
+                <img 
+                  src="/premium-crown-sparkle-gems.jpg" 
+                  alt="Premium Perks"
+                  className="perks-image"
+                />
+                <div className="perks-image-shimmer"></div>
               </div>
-              <div className="text-white">
+              
+              <div className="text-green-900 flex-1">
                 <h3 className="text-lg font-bold mb-1">Unlock Premium</h3>
-                <p className="text-sm text-white/90">Get exclusive perks & benefits</p>
+                <p className="text-sm text-green-700">Get exclusive perks & benefits</p>
               </div>
             </div>
-            <ChevronRight className="perks-arrow text-white" size={24} />
+            <ChevronRight className="perks-arrow text-green-600 flex-shrink-0" size={24} />
           </div>
 
           {/* My Wallet */}
@@ -457,4 +523,4 @@ const Profile = () => {
 };
 
 export default Profile;
-            
+  
