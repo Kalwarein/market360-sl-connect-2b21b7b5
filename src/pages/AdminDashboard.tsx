@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
   Shield, Users, Store, Package, ShoppingBag, 
-  FileText, MessageSquare, CheckCircle, XCircle, Clock 
+  FileText, MessageSquare, CheckCircle, XCircle, Clock,
+  Wallet, Radio
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -181,42 +182,86 @@ const AdminDashboard = () => {
             </Button>
           </div>
           
-          <div className="flex gap-2 overflow-x-auto pb-2">
+          {/* Navigation Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
             <Button
               variant={window.location.pathname === '/admin-dashboard' ? 'default' : 'outline'}
-              size="sm"
+              size="lg"
               onClick={() => navigate('/admin-dashboard')}
-              className="whitespace-nowrap"
+              className="h-auto flex-col gap-2 py-4"
             >
-              <Users className="h-4 w-4 mr-2" />
-              Applications
+              <CheckCircle className="h-6 w-6" />
+              <span className="text-xs font-semibold">Applications</span>
             </Button>
+            
             <Button
-              variant={window.location.pathname === '/admin-wallet-requests' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => navigate('/admin-wallet-requests')}
-              className="whitespace-nowrap"
+              variant={window.location.pathname === '/admin/users' ? 'default' : 'outline'}
+              size="lg"
+              onClick={() => navigate('/admin/users')}
+              className="h-auto flex-col gap-2 py-4"
             >
-              <Package className="h-4 w-4 mr-2" />
-              Wallet Requests
+              <Users className="h-6 w-6" />
+              <span className="text-xs font-semibold">Users</span>
             </Button>
+            
+            <Button
+              variant={window.location.pathname === '/admin/stores' ? 'default' : 'outline'}
+              size="lg"
+              onClick={() => navigate('/admin/stores')}
+              className="h-auto flex-col gap-2 py-4"
+            >
+              <Store className="h-6 w-6" />
+              <span className="text-xs font-semibold">Stores</span>
+            </Button>
+            
+            <Button
+              variant={window.location.pathname === '/admin/products' ? 'default' : 'outline'}
+              size="lg"
+              onClick={() => navigate('/admin/products')}
+              className="h-auto flex-col gap-2 py-4"
+            >
+              <Package className="h-6 w-6" />
+              <span className="text-xs font-semibold">Products</span>
+            </Button>
+            
+            <Button
+              variant={window.location.pathname === '/admin/orders' ? 'default' : 'outline'}
+              size="lg"
+              onClick={() => navigate('/admin/orders')}
+              className="h-auto flex-col gap-2 py-4"
+            >
+              <ShoppingBag className="h-6 w-6" />
+              <span className="text-xs font-semibold">Orders</span>
+            </Button>
+            
+            <Button
+              variant={window.location.pathname === '/admin/wallet-requests' ? 'default' : 'outline'}
+              size="lg"
+              onClick={() => navigate('/admin/wallet-requests')}
+              className="h-auto flex-col gap-2 py-4"
+            >
+              <Wallet className="h-6 w-6" />
+              <span className="text-xs font-semibold">Wallet</span>
+            </Button>
+            
             <Button
               variant={window.location.pathname === '/admin-broadcast' ? 'default' : 'outline'}
-              size="sm"
+              size="lg"
               onClick={() => navigate('/admin-broadcast')}
-              className="whitespace-nowrap"
+              className="h-auto flex-col gap-2 py-4"
             >
-              <MessageSquare className="h-4 w-4 mr-2" />
-              Broadcast
+              <Radio className="h-6 w-6" />
+              <span className="text-xs font-semibold">Broadcast</span>
             </Button>
+            
             <Button
-              variant={window.location.pathname === '/admin-audit-logs' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => navigate('/admin-audit-logs')}
-              className="whitespace-nowrap"
+              variant={window.location.pathname === '/admin/audit-logs' ? 'default' : 'outline'}
+              size="lg"
+              onClick={() => navigate('/admin/audit-logs')}
+              className="h-auto flex-col gap-2 py-4"
             >
-              <FileText className="h-4 w-4 mr-2" />
-              Audit Logs
+              <FileText className="h-6 w-6" />
+              <span className="text-xs font-semibold">Audit Logs</span>
             </Button>
           </div>
         </div>
