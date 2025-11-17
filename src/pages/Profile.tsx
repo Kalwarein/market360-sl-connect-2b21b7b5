@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { LogOut, Edit2, Wallet, ShoppingBag, Bell, Heart, CreditCard, Users, Store, Gift } from 'lucide-react';
+import { LogOut, Edit2, Wallet, ShoppingBag, Bell, Store, Gift, Settings, Lock, FileText, Mail } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import BottomNav from '@/components/BottomNav';
@@ -87,7 +87,7 @@ const Profile = () => {
   }
 
   return (
-    <div className="min-h-screen bg-white pb-20">
+    <div className="min-h-screen bg-white pb-20 flex flex-col">
       {/* Header Section with Profile Info */}
       <div className="p-6 bg-white border-b border-gray-100">
         <div className="flex items-start justify-between mb-4">
@@ -160,23 +160,8 @@ const Profile = () => {
       </div>
 
       {/* Menu Items */}
-      <div className="p-6 space-y-3">
-        {/* Favorites */}
-        <Card 
-          className="cursor-pointer hover:shadow-md transition-shadow"
-          onClick={() => navigate('/favorites')}
-        >
-          <CardContent className="p-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center">
-                <Heart className="h-5 w-5 text-red-600" />
-              </div>
-              <span className="font-medium text-gray-900">Your Favorites</span>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Payment */}
+      <div className="p-6 space-y-3 flex-1">
+        {/* My Wallet */}
         <Card 
           className="cursor-pointer hover:shadow-md transition-shadow"
           onClick={() => navigate('/wallet')}
@@ -184,39 +169,24 @@ const Profile = () => {
           <CardContent className="p-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
-                <CreditCard className="h-5 w-5 text-blue-600" />
+                <Wallet className="h-5 w-5 text-blue-600" />
               </div>
-              <span className="font-medium text-gray-900">Payment</span>
+              <span className="font-medium text-gray-900">My Wallet</span>
             </div>
           </CardContent>
         </Card>
 
-        {/* Tell Your Friend */}
+        {/* My Orders */}
         <Card 
           className="cursor-pointer hover:shadow-md transition-shadow"
-          onClick={() => navigate('/refer')}
+          onClick={() => navigate('/orders')}
         >
           <CardContent className="p-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-purple-100 flex items-center justify-center">
-                <Users className="h-5 w-5 text-purple-600" />
+              <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
+                <ShoppingBag className="h-5 w-5 text-green-600" />
               </div>
-              <span className="font-medium text-gray-900">Tell Your Friend</span>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Promotions */}
-        <Card 
-          className="cursor-pointer hover:shadow-md transition-shadow"
-          onClick={() => navigate('/promotions')}
-        >
-          <CardContent className="p-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-yellow-100 flex items-center justify-center">
-                <Gift className="h-5 w-5 text-yellow-600" />
-              </div>
-              <span className="font-medium text-gray-900">Promotions</span>
+              <span className="font-medium text-gray-900">My Orders</span>
             </div>
           </CardContent>
         </Card>
@@ -243,6 +213,21 @@ const Profile = () => {
           </CardContent>
         </Card>
 
+        {/* Promotions */}
+        <Card 
+          className="cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => navigate('/promotions')}
+        >
+          <CardContent className="p-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-yellow-100 flex items-center justify-center">
+                <Gift className="h-5 w-5 text-yellow-600" />
+              </div>
+              <span className="font-medium text-gray-900">Promotions</span>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Settings */}
         <Card 
           className="cursor-pointer hover:shadow-md transition-shadow"
@@ -251,7 +236,7 @@ const Profile = () => {
           <CardContent className="p-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
-                <CreditCard className="h-5 w-5 text-gray-600" />
+                <Settings className="h-5 w-5 text-gray-600" />
               </div>
               <span className="font-medium text-gray-900">Settings</span>
             </div>
@@ -327,10 +312,38 @@ const Profile = () => {
         </Button>
       </div>
 
+      <div className="border-t border-gray-200 bg-gray-50 p-6">
+        <div className="flex items-center justify-center gap-6">
+          <button
+            onClick={() => navigate('/privacy')}
+            className="flex flex-col items-center gap-1 hover:opacity-70 transition-opacity"
+          >
+            <Lock className="h-6 w-6 text-gray-600" />
+            <span className="text-xs text-gray-600 font-medium">Privacy</span>
+          </button>
+          
+          <button
+            onClick={() => navigate('/terms')}
+            className="flex flex-col items-center gap-1 hover:opacity-70 transition-opacity"
+          >
+            <FileText className="h-6 w-6 text-gray-600" />
+            <span className="text-xs text-gray-600 font-medium">Terms</span>
+          </button>
+          
+          <button
+            onClick={() => navigate('/contact')}
+            className="flex flex-col items-center gap-1 hover:opacity-70 transition-opacity"
+          >
+            <Mail className="h-6 w-6 text-gray-600" />
+            <span className="text-xs text-gray-600 font-medium">Contact</span>
+          </button>
+        </div>
+      </div>
+
       <BottomNav />
     </div>
   );
 };
 
 export default Profile;
-        
+                                    
