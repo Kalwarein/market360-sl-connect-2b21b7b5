@@ -6,7 +6,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Store, MapPin, Package, Search, Filter, ArrowUpDown, Info } from 'lucide-react';
 import BottomNav from '@/components/BottomNav';
 import { Input } from '@/components/ui/input';
 
@@ -60,21 +59,6 @@ const animationStyles = `
     50% { transform: translateX(3px); }
   }
   
-  @keyframes iconGlow {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4); }
-    50% { box-shadow: 0 0 0 8px rgba(255, 255, 255, 0); }
-  }
-  
-  @keyframes ripple {
-    0% { transform: scale(1); opacity: 1; }
-    100% { transform: scale(4); opacity: 0; }
-  }
-  
-  @keyframes parallaxHeader {
-    0% { transform: translateY(0); }
-    100% { transform: translateY(20px); }
-  }
-  
   @keyframes curvePath {
     0% { clip-path: polygon(0 0, 100% 0, 100% 70%, 0 100%); }
   }
@@ -96,7 +80,7 @@ const animationStyles = `
     background: linear-gradient(
       to right,
       transparent 0%,
-      rgba(255, 255, 255, 0.2) 50%,
+      rgba(255, 255, 255, 0.15) 50%,
       transparent 100%
     );
     background-size: 1000px 100%;
@@ -207,21 +191,15 @@ const Stores = () => {
   return (
     <>
       <style>{animationStyles}</style>
-      <div className="min-h-screen bg-background pb-20">
-        <div className="relative overflow-hidden">
-          {/* Animated gradient background */}
-          <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 via-teal-500 to-blue-600 shimmer-overlay" 
-            style={{
-              backgroundSize: '200% 100%',
-              animation: 'headerShimmer 8s ease-in-out infinite',
-            }}>
-          </div>
-
+      <div className="min-h-screen bg-white pb-20">
+        <div className="relative overflow-hidden" style={{
+          background: 'linear-gradient(135deg, #065f46 0%, #0d9488 50%, #0369a1 100%)',
+        }}>
           {/* Floating particles */}
           {particles.map((particle) => (
             <div
               key={particle.id}
-              className="particle absolute rounded-full bg-white/10 pointer-events-none"
+              className="particle absolute rounded-full bg-white/20 pointer-events-none"
               style={{
                 width: Math.random() * 40 + 20 + 'px',
                 height: Math.random() * 40 + 20 + 'px',
@@ -233,11 +211,17 @@ const Stores = () => {
             />
           ))}
 
+          {/* Shimmer overlay */}
+          <div className="absolute inset-0 shimmer-overlay" />
+
           {/* Header content */}
           <div className="relative z-10 text-white p-6">
             <div className="animated-header flex items-start justify-between mb-6">
               <div className="flex items-center gap-3">
-                <Store className="h-8 w-8 drop-shadow-lg" />
+                {/* Store icon SVG */}
+                <svg className="h-8 w-8 drop-shadow-lg" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z"/>
+                </svg>
                 <div>
                   <h1 className="text-3xl font-bold drop-shadow-md">Stores</h1>
                   <p className="text-sm opacity-95 drop-shadow">Explore verified sellers</p>
@@ -246,42 +230,48 @@ const Stores = () => {
               
               {/* Right side action buttons */}
               <div className="flex items-center gap-2">
+                {/* Filter button */}
                 <button
-                  className="header-icon-btn p-2 rounded-full border border-white/30 backdrop-blur-sm hover:bg-white/20 transition-all duration-300 flex items-center justify-center"
+                  className="header-icon-btn p-2.5 rounded-full border border-white/40 backdrop-blur-sm hover:bg-white/20 transition-all duration-300 flex items-center justify-center"
                   title="Filter stores"
                 >
-                  <Filter className="h-5 w-5 text-white drop-shadow" />
+                  <svg className="h-5 w-5 text-white drop-shadow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                  </svg>
                 </button>
+                {/* Sort button */}
                 <button
-                  className="header-icon-btn p-2 rounded-full border border-white/30 backdrop-blur-sm hover:bg-white/20 transition-all duration-300 flex items-center justify-center"
+                  className="header-icon-btn p-2.5 rounded-full border border-white/40 backdrop-blur-sm hover:bg-white/20 transition-all duration-300 flex items-center justify-center"
                   title="Sort stores"
                 >
-                  <ArrowUpDown className="h-5 w-5 text-white drop-shadow" />
+                  <svg className="h-5 w-5 text-white drop-shadow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+                  </svg>
                 </button>
+                {/* Info button */}
                 <button
-                  className="header-icon-btn p-2 rounded-full border border-white/30 backdrop-blur-sm hover:bg-white/20 transition-all duration-300 flex items-center justify-center"
+                  className="header-icon-btn p-2.5 rounded-full border border-white/40 backdrop-blur-sm hover:bg-white/20 transition-all duration-300 flex items-center justify-center"
                   title="Help & info"
                 >
-                  <Info className="h-5 w-5 text-white drop-shadow" />
+                  <svg className="h-5 w-5 text-white drop-shadow" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                  </svg>
                 </button>
               </div>
             </div>
 
-            {/* Search bar */}
             <div className="relative group">
               <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none">
-                <Search className="h-5 w-5 text-white/70" />
+                <svg className="h-5 w-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
               </div>
               <input
                 type="text"
                 placeholder="Search stores..."
-                className="w-full pl-12 pr-4 py-3 rounded-2xl bg-white/20 backdrop-blur-md text-white placeholder-white/60 border border-white/30 focus:border-white/60 focus:outline-none focus:ring-2 focus:ring-white/30 transition-all duration-300 focus:scale-105 origin-center"
+                className="w-full pl-12 pr-4 py-3 rounded-2xl bg-white text-gray-900 placeholder-gray-500 border-2 border-white focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-200 transition-all duration-300 shadow-md hover:shadow-lg"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                style={{
-                  background: 'rgba(255, 255, 255, 0.15)',
-                  backdropFilter: 'blur(10px)',
-                }}
               />
             </div>
           </div>
@@ -300,7 +290,9 @@ const Stores = () => {
           ) : filteredStores.length === 0 ? (
             <Card className="rounded-2xl">
               <CardContent className="p-12 text-center text-muted-foreground">
-                <Store className="h-16 w-16 mx-auto mb-4 opacity-50" />
+                <svg className="h-16 w-16 mx-auto mb-4 opacity-50" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z"/>
+                </svg>
                 <p>No stores found</p>
               </CardContent>
             </Card>
@@ -344,7 +336,9 @@ const Stores = () => {
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-emerald-50 to-teal-50">
-                            <Package className="h-8 w-8 text-emerald-400" />
+                            <svg className="h-8 w-8 text-emerald-400" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-0.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l0.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-0.9-2-2-2z"/>
+                            </svg>
                           </div>
                         )}
                       </div>
@@ -355,7 +349,10 @@ const Stores = () => {
                         </h3>
                         {(store.city || store.region) && (
                           <div className="flex items-center gap-1 text-sm text-muted-foreground mb-3">
-                            <MapPin className="h-4 w-4 flex-shrink-0" />
+                            <svg className="h-4 w-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
                             <span className="line-clamp-1">
                               {[store.city, store.region].filter(Boolean).join(', ')}
                             </span>
@@ -366,7 +363,9 @@ const Stores = () => {
                             variant="outline"
                             className="bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 transition-colors"
                           >
-                            <Package className="h-3 w-3 mr-1" />
+                            <svg className="h-3 w-3 mr-1" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-0.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l0.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-0.9-2-2-2z"/>
+                            </svg>
                             {store.productCount} Products
                           </Badge>
                         </div>
@@ -391,4 +390,4 @@ const Stores = () => {
 };
 
 export default Stores;
-        
+                  
