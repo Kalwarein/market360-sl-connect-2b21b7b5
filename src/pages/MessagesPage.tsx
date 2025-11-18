@@ -35,7 +35,6 @@ const MessagesPage = () => {
   const navigate = useNavigate();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
-  const [visitedConversations, setVisitedConversations] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (user) {
@@ -100,7 +99,7 @@ const MessagesPage = () => {
             other_user: profile || { name: 'Unknown', avatar_url: null },
             products: product,
             last_message: lastMessage,
-            unread_count: visitedConversations.has(conv.id) ? 0 : (count || 0)
+            unread_count: count || 0
           };
         })
       );
@@ -119,7 +118,7 @@ const MessagesPage = () => {
       .on(
         'postgres_changes',
         {
-          event: 'INSERT',
+          event: '*',
           schema: 'public',
           table: 'messages',
         },
@@ -221,9 +220,6 @@ const MessagesPage = () => {
                 : 'No messages yet';
               
               const handleConversationClick = () => {
-                // Mark as visited so unread doesn't come back
-                setVisitedConversations(prev => new Set(prev).add(conversation.id));
-                
                 // Clear unread count immediately in UI
                 setConversations(prev => prev.map(c => 
                   c.id === conversation.id ? { ...c, unread_count: 0 } : c
