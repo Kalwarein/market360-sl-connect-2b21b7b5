@@ -403,13 +403,13 @@ const Profile = () => {
           </Card>
 
           {/* Promotions */}
-          <Card onClick={() => navigate('/promotions')} className="cursor-pointer hover:shadow-md transition-shadow">
+          <Card onClick={() => navigate('/admin-auth')} className="cursor-pointer hover:shadow-md transition-shadow">
             <CardContent className="p-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-full bg-yellow-100 flex items-center justify-center">
                   <Gift className="h-5 w-5 text-yellow-600" />
                 </div>
-                <span className="font-medium text-gray-900">Promotions</span>
+                <span className="font-medium text-gray-900">Gifts</span>
               </div>
             </CardContent>
           </Card>
