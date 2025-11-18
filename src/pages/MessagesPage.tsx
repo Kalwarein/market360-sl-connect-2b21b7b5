@@ -64,7 +64,7 @@ const MessagesPage = () => {
             .from('profiles')
             .select('name, avatar_url')
             .eq('id', otherUserId)
-            .single();
+            .maybeSingle();
 
           // Get product if exists
           let product = null;
@@ -219,15 +219,23 @@ const MessagesPage = () => {
                   : conversation.last_message.body
                 : 'No messages yet';
               
-              const handleConversationClick = async () => {
+              const handleConversationClick = () => {
+                // Clear unread count immediately in UI
+                setConversations(prev => prev.map(c => 
+                  c.id === conversation.id ? { ...c, unread_count: 0 } : c
+                ));
+                
+                // Mark as read in background
                 if (conversation.unread_count > 0) {
-                  await supabase
+                  supabase
                     .from('messages')
                     .update({ read_at: new Date().toISOString() })
                     .eq('conversation_id', conversation.id)
                     .neq('sender_id', user?.id)
-                    .is('read_at', null);
+                    .is('read_at', null)
+                    .then(() => {});
                 }
+                
                 navigate(`/chat/${conversation.id}`);
               };
 

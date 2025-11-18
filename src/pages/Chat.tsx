@@ -78,7 +78,7 @@ const Chat = () => {
         .from('profiles')
         .select('avatar_url')
         .eq('id', user?.id)
-        .single();
+        .maybeSingle();
       
       setCurrentUserAvatar(data?.avatar_url || null);
     } catch (error) {
@@ -104,7 +104,7 @@ const Chat = () => {
         .from('profiles')
         .select('name, avatar_url')
         .eq('id', otherUserId)
-        .single();
+        .maybeSingle();
 
       // Get product if exists
       let product = null;
