@@ -160,7 +160,11 @@ const Orders = () => {
           </Card>
         ) : (
           orders.map((order) => (
-            <Card key={order.id} className="shadow-md hover:shadow-lg transition-all">
+            <Card 
+              key={order.id} 
+              className="shadow-md hover:shadow-lg transition-all cursor-pointer"
+              onClick={() => navigate(`/order-detail/${order.id}`)}
+            >
               <CardContent className="p-4">
                 <div className="flex gap-4">
                   <img

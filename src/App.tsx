@@ -33,6 +33,8 @@ import Notifications from "./pages/Notifications";
 import Search from "./pages/Search";
 import Settings from "./pages/Settings";
 import Orders from "./pages/Orders";
+import OrderDetail from "./pages/OrderDetail";
+import SellerOrderDetail from "./pages/SellerOrderDetail";
 import AdminUsers from "./pages/AdminUsers";
 import AdminStores from "./pages/AdminStores";
 import AdminProducts from "./pages/AdminProducts";
@@ -92,6 +94,8 @@ const App = () => (
           <Route path="/admin/audit-logs" element={<AdminAuditLogs />} />
           <Route path="/checkout" element={<Checkout />} />
           <Route path="/orders" element={<Orders />} />
+          <Route path="/order-detail/:orderId" element={<OrderDetail />} />
+          <Route path="/seller-order-detail/:orderId" element={<SellerOrderDetail />} />
               <Route path="/admin-broadcast" element={<AdminBroadcast />} />
               <Route path="/about" element={<ProtectedRoute><About /></ProtectedRoute>} />
               <Route path="/terms" element={<ProtectedRoute><Terms /></ProtectedRoute>} />
