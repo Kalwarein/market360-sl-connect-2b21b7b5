@@ -1,16 +1,17 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { LogOut, Edit2, Wallet, ShoppingBag, Bell, Store, Gift, Settings, Lock, FileText, Mail, Crown, ChevronRight } from 'lucide-react';
+import { LogOut, Edit2, Wallet, ShoppingBag, Bell, Store, Gift, Settings, Lock, FileText, Mail, Crown, ChevronRight, Camera } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import BottomNav from '@/components/BottomNav';
 import { useUserRoles } from '@/hooks/useUserRoles';
 import { useSellerNotifications } from '@/hooks/useSellerNotifications';
+import { toast } from 'sonner';
 
 const Profile = () => {
   const { user, signOut } = useAuth();
@@ -23,6 +24,8 @@ const Profile = () => {
   const [walletLoading, setWalletLoading] = useState(true);
   const [hasUnreadNotif, setHasUnreadNotif] = useState(false);
   const [sellerApplicationStatus, setSellerApplicationStatus] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (user) {
@@ -94,6 +97,67 @@ const Profile = () => {
       setSellerApplicationStatus(data?.status || null);
     } catch (error) {
       setSellerApplicationStatus(null);
+    }
+  };
+
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    try {
+      const file = event.target.files?.[0];
+      if (!file) return;
+
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        toast.error('Please upload an image file');
+        return;
+      }
+
+      // Validate file size (5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('Image size must be less than 5MB');
+        return;
+      }
+
+      setUploading(true);
+      
+      // Delete old avatar if exists
+      if (profile?.avatar_url) {
+        const oldPath = profile.avatar_url.split('/').pop();
+        await supabase.storage
+          .from('profile-pictures')
+          .remove([`${user?.id}/${oldPath}`]);
+      }
+
+      // Upload new avatar
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}.${fileExt}`;
+      const filePath = `${user?.id}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('profile-pictures')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('profile-pictures')
+        .getPublicUrl(filePath);
+
+      // Update profile
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: publicUrl })
+        .eq('id', user?.id);
+
+      if (updateError) throw updateError;
+
+      setProfile({ ...profile, avatar_url: publicUrl });
+      toast.success('Profile picture updated successfully');
+    } catch (error) {
+      console.error('Error uploading avatar:', error);
+      toast.error('Failed to upload profile picture');
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -268,12 +332,32 @@ const Profile = () => {
         <div className="p-6 bg-white border-b border-gray-100">
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center gap-4 flex-1">
-              <Avatar className="h-20 w-20 rounded-full border-2 border-gray-200">
-                <AvatarImage src={profile?.avatar_url || "https://i.imghippo.com/files/mJWJ8998ds.jpg"} />
-                <AvatarFallback className="text-xl font-semibold">
-                  {profile?.name?.charAt(0) || (user?.user_metadata?.name?.charAt(0)) || (user?.email?.charAt(0)?.toUpperCase()) || 'U'}
-                </AvatarFallback>
-              </Avatar>
+              <div className="relative">
+                <Avatar className="h-20 w-20 rounded-full border-2 border-gray-200">
+                  <AvatarImage src={profile?.avatar_url || "https://i.imghippo.com/files/mJWJ8998ds.jpg"} />
+                  <AvatarFallback className="text-xl font-semibold">
+                    {profile?.name?.charAt(0) || (user?.user_metadata?.name?.charAt(0)) || (user?.email?.charAt(0)?.toUpperCase()) || 'U'}
+                  </AvatarFallback>
+                </Avatar>
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  className="absolute bottom-0 right-0 h-8 w-8 rounded-full bg-primary text-white shadow-lg flex items-center justify-center hover:bg-primary/90 transition-colors disabled:opacity-50"
+                >
+                  {uploading ? (
+                    <div className="h-3 w-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <Camera className="h-4 w-4" />
+                  )}
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarUpload}
+                  className="hidden"
+                />
+              </div>
               
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
