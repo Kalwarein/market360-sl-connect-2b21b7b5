@@ -26,6 +26,9 @@ const Profile = () => {
   const [sellerApplicationStatus, setSellerApplicationStatus] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [buyerOrdersCount, setBuyerOrdersCount] = useState(0);
+  const [productsCount, setProductsCount] = useState(0);
+  const [storeOrdersCount, setStoreOrdersCount] = useState(0);
 
   useEffect(() => {
     if (user) {
@@ -33,8 +36,13 @@ const Profile = () => {
       loadWalletBalance();
       loadUnreadNotifications();
       checkSellerApplication();
+      loadBuyerOrdersCount();
+      if (isSeller) {
+        loadProductsCount();
+        loadStoreOrdersCount();
+      }
     }
-  }, [user]);
+  }, [user, isSeller]);
 
   const loadProfile = async () => {
     try {
@@ -97,6 +105,56 @@ const Profile = () => {
       setSellerApplicationStatus(data?.status || null);
     } catch (error) {
       setSellerApplicationStatus(null);
+    }
+  };
+
+  const loadBuyerOrdersCount = async () => {
+    try {
+      const { count } = await supabase
+        .from('orders')
+        .select('*', { count: 'exact', head: true })
+        .eq('buyer_id', user?.id);
+
+      setBuyerOrdersCount(count || 0);
+    } catch (error) {
+      console.error('Error loading buyer orders count:', error);
+      setBuyerOrdersCount(0);
+    }
+  };
+
+  const loadProductsCount = async () => {
+    try {
+      const { data: storeData } = await supabase
+        .from('stores')
+        .select('id')
+        .eq('owner_id', user?.id)
+        .single();
+
+      if (storeData) {
+        const { count } = await supabase
+          .from('products')
+          .select('*', { count: 'exact', head: true })
+          .eq('store_id', storeData.id);
+
+        setProductsCount(count || 0);
+      }
+    } catch (error) {
+      console.error('Error loading products count:', error);
+      setProductsCount(0);
+    }
+  };
+
+  const loadStoreOrdersCount = async () => {
+    try {
+      const { count } = await supabase
+        .from('orders')
+        .select('*', { count: 'exact', head: true })
+        .eq('seller_id', user?.id);
+
+      setStoreOrdersCount(count || 0);
+    } catch (error) {
+      console.error('Error loading store orders count:', error);
+      setStoreOrdersCount(0);
     }
   };
 
@@ -397,24 +455,30 @@ const Profile = () => {
             >
               <CardContent className="p-4 text-center">
                 <p className="text-xs text-gray-600 mb-1">Orders</p>
-                <p className="text-2xl font-bold text-blue-600">{profile?.total_orders || 0}</p>
+                <p className="text-2xl font-bold text-blue-600">{buyerOrdersCount}</p>
               </CardContent>
             </Card>
           </div>
 
           {isSeller && (
             <div className="grid grid-cols-2 gap-3 mt-3">
-              <Card className="bg-amber-50 border-amber-100">
+              <Card 
+                className="bg-amber-50 border-amber-100 cursor-pointer hover:shadow-md transition-all"
+                onClick={() => navigate('/seller-dashboard')}
+              >
                 <CardContent className="p-4 text-center">
                   <p className="text-xs text-gray-600 mb-1">Products</p>
-                  <p className="text-2xl font-bold text-amber-600">{profile?.total_products || 0}</p>
+                  <p className="text-2xl font-bold text-amber-600">{productsCount}</p>
                 </CardContent>
               </Card>
               
-              <Card className="bg-amber-50 border-amber-100">
+              <Card 
+                className="bg-amber-50 border-amber-100 cursor-pointer hover:shadow-md transition-all"
+                onClick={() => navigate('/seller-dashboard')}
+              >
                 <CardContent className="p-4 text-center">
                   <p className="text-xs text-gray-600 mb-1">Store Orders</p>
-                  <p className="text-2xl font-bold text-amber-600">{profile?.store_orders || 0}</p>
+                  <p className="text-2xl font-bold text-amber-600">{storeOrdersCount}</p>
                 </CardContent>
               </Card>
             </div>
