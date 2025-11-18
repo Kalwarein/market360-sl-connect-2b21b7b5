@@ -3,11 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { MessageCircle, ArrowRight } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { MessageCircle, ArrowLeft } from 'lucide-react';
 import BottomNav from '@/components/BottomNav';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface Conversation {
   id: string;
@@ -18,9 +19,15 @@ interface Conversation {
     title: string;
     images: string[];
   };
-  profiles?: {
+  other_user?: {
     name: string;
+    avatar_url: string | null;
   };
+  last_message?: {
+    body: string;
+    sender_id: string;
+  };
+  unread_count: number;
 }
 
 const MessagesPage = () => {
@@ -40,35 +47,64 @@ const MessagesPage = () => {
     try {
       const { data, error } = await supabase
         .from('conversations')
-        .select(`
-          *,
-          products(title, images)
-        `)
+        .select('*')
         .or(`buyer_id.eq.${user?.id},seller_id.eq.${user?.id}`)
         .order('last_message_at', { ascending: false });
 
       if (error) throw error;
       
-      // Fetch profile names separately for each conversation
-      const conversationsWithProfiles = await Promise.all(
+      // Fetch additional data for each conversation
+      const conversationsWithData = await Promise.all(
         (data || []).map(async (conv) => {
           const isBuyer = conv.buyer_id === user?.id;
           const otherUserId = isBuyer ? conv.seller_id : conv.buyer_id;
           
+          // Get other user's profile
           const { data: profile } = await supabase
             .from('profiles')
-            .select('name')
+            .select('name, avatar_url')
             .eq('id', otherUserId)
             .single();
+
+          // Get product if exists
+          let product = null;
+          if (conv.product_id) {
+            const { data: productData } = await supabase
+              .from('products')
+              .select('title, images')
+              .eq('id', conv.product_id)
+              .single();
+            product = productData;
+          }
+
+          // Get last message
+          const { data: lastMessage } = await supabase
+            .from('messages')
+            .select('body, sender_id')
+            .eq('conversation_id', conv.id)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single();
+
+          // Get unread count
+          const { count } = await supabase
+            .from('messages')
+            .select('*', { count: 'exact', head: true })
+            .eq('conversation_id', conv.id)
+            .neq('sender_id', user?.id)
+            .is('read_at', null);
           
           return {
             ...conv,
-            profiles: profile || { name: 'Unknown' }
+            other_user: profile || { name: 'Unknown', avatar_url: null },
+            products: product,
+            last_message: lastMessage,
+            unread_count: count || 0
           };
         })
       );
       
-      setConversations(conversationsWithProfiles);
+      setConversations(conversationsWithData);
     } catch (error) {
       console.error('Error loading conversations:', error);
     } finally {
@@ -77,8 +113,23 @@ const MessagesPage = () => {
   };
 
   const subscribeToConversations = () => {
-    const channel = supabase
-      .channel('conversations-list')
+    const messagesChannel = supabase
+      .channel('messages-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'messages',
+        },
+        () => {
+          loadConversations();
+        }
+      )
+      .subscribe();
+
+    const conversationsChannel = supabase
+      .channel('conversations-updates')
       .on(
         'postgres_changes',
         {
@@ -93,22 +144,59 @@ const MessagesPage = () => {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(messagesChannel);
+      supabase.removeChannel(conversationsChannel);
     };
+  };
+
+  const formatTime = (timestamp: string) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
+
+    if (diffInHours < 24) {
+      return format(date, 'h:mm a');
+    } else if (diffInHours < 48) {
+      return 'Yesterday';
+    } else {
+      return format(date, 'MMM d');
+    }
   };
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      <div className="bg-gradient-to-r from-primary to-secondary text-white p-6">
-        <h1 className="text-2xl font-bold">Messages</h1>
-        <p className="text-sm opacity-90">Your conversations</p>
+      <div className="bg-white border-b sticky top-0 z-10">
+        <div className="p-4 flex items-center gap-3">
+          <button
+            onClick={() => navigate(-1)}
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+          <div>
+            <h1 className="text-xl font-bold">Messages</h1>
+            <p className="text-sm text-muted-foreground">
+              {conversations.length} conversation{conversations.length !== 1 ? 's' : ''}
+            </p>
+          </div>
+        </div>
       </div>
 
       <div className="p-4">
         {loading ? (
           <div className="space-y-3">
             {[...Array(5)].map((_, i) => (
-              <div key={i} className="bg-muted animate-pulse rounded-lg h-20" />
+              <Card key={i}>
+                <CardContent className="p-4">
+                  <div className="flex gap-3">
+                    <Skeleton className="h-12 w-12 rounded-full" />
+                    <div className="flex-1 space-y-2">
+                      <Skeleton className="h-4 w-32" />
+                      <Skeleton className="h-3 w-48" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             ))}
           </div>
         ) : conversations.length === 0 ? (
@@ -122,36 +210,56 @@ const MessagesPage = () => {
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-2">
             {conversations.map((conversation) => {
               const isBuyer = conversation.buyer_id === user?.id;
-              const otherParty = isBuyer ? 'Seller' : conversation.profiles?.name || 'Buyer';
+              const lastMessagePreview = conversation.last_message
+                ? conversation.last_message.body.length > 50
+                  ? `${conversation.last_message.body.substring(0, 50)}...`
+                  : conversation.last_message.body
+                : 'No messages yet';
               
               return (
                 <Card
                   key={conversation.id}
-                  className="cursor-pointer hover:shadow-md transition-shadow"
                   onClick={() => navigate(`/chat/${conversation.id}`)}
+                  className="cursor-pointer hover:shadow-md transition-shadow"
                 >
                   <CardContent className="p-4">
-                    <div className="flex items-center gap-3">
+                    <div className="flex gap-3">
                       <Avatar className="h-12 w-12">
-                        <AvatarFallback>
-                          {otherParty[0].toUpperCase()}
+                        <AvatarImage src={conversation.other_user?.avatar_url || undefined} />
+                        <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                          {conversation.other_user?.name?.[0]?.toUpperCase() || 'U'}
                         </AvatarFallback>
                       </Avatar>
+                      
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between mb-1">
-                          <h3 className="font-medium">{otherParty}</h3>
-                          <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-sm truncate">
+                              {conversation.other_user?.name || 'Unknown User'}
+                            </h3>
+                            <p className="text-xs text-muted-foreground">
+                              {isBuyer ? 'Seller' : 'Buyer'}
+                              {conversation.products?.title && ` • ${conversation.products.title}`}
+                            </p>
+                          </div>
+                          <div className="flex flex-col items-end gap-1">
+                            <span className="text-xs text-muted-foreground whitespace-nowrap">
+                              {formatTime(conversation.last_message_at)}
+                            </span>
+                            {conversation.unread_count > 0 && (
+                              <Badge className="h-5 min-w-[20px] flex items-center justify-center px-1.5 bg-primary">
+                                {conversation.unread_count}
+                              </Badge>
+                            )}
+                          </div>
                         </div>
-                        {conversation.products && (
-                          <p className="text-sm text-muted-foreground line-clamp-1">
-                            {conversation.products.title}
-                          </p>
-                        )}
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {format(new Date(conversation.last_message_at), 'MMM dd, HH:mm')}
+                        
+                        <p className="text-sm text-muted-foreground truncate">
+                          {conversation.last_message?.sender_id === user?.id && 'You: '}
+                          {lastMessagePreview}
                         </p>
                       </div>
                     </div>
