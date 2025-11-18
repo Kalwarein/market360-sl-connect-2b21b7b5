@@ -173,11 +173,7 @@ const Auth = () => {
             </div>
 
             {!isSignUp && (
-              <div className="flex items-center justify-between text-sm">
-                <label className="flex items-center gap-2 text-muted-foreground">
-                  <input type="checkbox" className="rounded border-muted" />
-                  Remember Me
-                </label>
+              <div className="flex items-center justify-end text-sm">
                 <button type="button" className="text-primary hover:text-primary-hover font-medium">
                   Forgot Password?
                 </button>
