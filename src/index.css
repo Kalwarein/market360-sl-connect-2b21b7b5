@@ -8,44 +8,44 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Market360 Premium Theme */
-    --background: 220 14% 98%;
-    --foreground: 156 35% 10%;
+    /* Market360 Premium Theme - Plant Inspired */
+    --background: 150 20% 97%;
+    --foreground: 156 40% 15%;
 
     --card: 0 0% 100%;
-    --card-foreground: 156 35% 10%;
+    --card-foreground: 156 40% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 156 35% 10%;
+    --popover-foreground: 156 40% 15%;
 
-    /* Primary - Market360 Green */
-    --primary: 151 91% 34%;
+    /* Primary - Soft Forest Green */
+    --primary: 151 50% 45%;
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 151 91% 28%;
-    --primary-light: 151 91% 44%;
+    --primary-hover: 151 50% 38%;
+    --primary-light: 151 50% 55%;
     
-    /* Secondary - Market360 Blue */
-    --secondary: 203 100% 40%;
-    --secondary-foreground: 0 0% 100%;
-    --secondary-hover: 203 100% 34%;
-    --secondary-light: 203 100% 50%;
+    /* Secondary - Calm Sage */
+    --secondary: 150 20% 85%;
+    --secondary-foreground: 156 40% 20%;
+    --secondary-hover: 150 20% 75%;
+    --secondary-light: 150 20% 90%;
 
-    /* Accent - Market360 Emerald */
-    --accent: 168 88% 29%;
-    --accent-foreground: 0 0% 100%;
-    --accent-light: 168 88% 39%;
+    /* Accent - Fresh Mint */
+    --accent: 160 30% 70%;
+    --accent-foreground: 156 40% 20%;
+    --accent-light: 160 30% 80%;
 
-    --muted: 220 14% 96%;
-    --muted-foreground: 220 9% 46%;
+    --muted: 150 15% 94%;
+    --muted-foreground: 156 10% 50%;
 
-    --destructive: 0 84% 60%;
+    --destructive: 0 70% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 151 91% 34%;
+    --border: 150 15% 88%;
+    --input: 150 15% 90%;
+    --ring: 151 50% 45%;
 
-    --radius: 1rem;
+    --radius: 1.5rem;
     
     /* Extended palette */
     --success: 151 91% 34%;
@@ -55,21 +55,21 @@ All colors MUST be HSL.
     --text-dark: 156 35% 10%;
     --neutral-gray: 220 9% 46%;
     
-    /* Premium Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(151 91% 34%) 0%, hsl(151 91% 44%) 100%);
-    --gradient-secondary: linear-gradient(135deg, hsl(203 100% 40%) 0%, hsl(203 100% 50%) 100%);
-    --gradient-hero: linear-gradient(135deg, hsl(151 91% 34%) 0%, hsl(203 100% 40%) 100%);
-    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(220 14% 98%) 100%);
-    --gradient-accent: linear-gradient(135deg, hsl(168 88% 29%) 0%, hsl(151 91% 34%) 100%);
+    /* Premium Gradients - Subtle & Elegant */
+    --gradient-primary: linear-gradient(135deg, hsl(151 50% 45%) 0%, hsl(151 50% 55%) 100%);
+    --gradient-secondary: linear-gradient(135deg, hsl(150 20% 85%) 0%, hsl(150 20% 90%) 100%);
+    --gradient-hero: linear-gradient(135deg, hsl(151 50% 45%) 0%, hsl(160 30% 70%) 100%);
+    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(150 20% 98%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(160 30% 70%) 0%, hsl(151 50% 55%) 100%);
     
-    /* Elevation Shadows */
-    --shadow-xs: 0 1px 2px hsl(156 35% 10% / 0.05);
-    --shadow-sm: 0 2px 4px hsl(156 35% 10% / 0.06);
-    --shadow-md: 0 4px 8px hsl(156 35% 10% / 0.08);
-    --shadow-lg: 0 8px 16px hsl(156 35% 10% / 0.10);
-    --shadow-xl: 0 12px 24px hsl(156 35% 10% / 0.12);
-    --shadow-2xl: 0 16px 32px hsl(156 35% 10% / 0.15);
-    --shadow-glow: 0 0 20px hsl(151 91% 34% / 0.3);
+    /* Soft Elevation Shadows */
+    --shadow-xs: 0 1px 2px hsl(156 40% 15% / 0.03);
+    --shadow-sm: 0 2px 6px hsl(156 40% 15% / 0.05);
+    --shadow-md: 0 4px 12px hsl(156 40% 15% / 0.06);
+    --shadow-lg: 0 8px 20px hsl(156 40% 15% / 0.08);
+    --shadow-xl: 0 12px 28px hsl(156 40% 15% / 0.10);
+    --shadow-2xl: 0 20px 40px hsl(156 40% 15% / 0.12);
+    --shadow-glow: 0 0 24px hsl(151 50% 45% / 0.2);
     
     /* Smooth Transitions */
     --transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);

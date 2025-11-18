@@ -29,24 +29,24 @@ const Settings = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-20">
-      <div className="bg-gradient-to-r from-primary to-secondary text-white p-6">
+    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-accent/5 pb-20">
+      <div className="bg-card border-b border-border/50 backdrop-blur-lg p-6">
         <Button
           variant="ghost"
           size="sm"
-          className="text-white hover:bg-white/20 mb-4"
+          className="rounded-xl hover:bg-muted/50 mb-4"
           onClick={() => navigate(-1)}
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back
         </Button>
-        <h1 className="text-2xl font-bold">Settings</h1>
-        <p className="text-sm opacity-90">Manage your preferences</p>
+        <h1 className="text-2xl font-bold text-foreground">Settings</h1>
+        <p className="text-sm text-muted-foreground">Manage your preferences</p>
       </div>
 
-      <div className="p-4 space-y-4">
+      <div className="p-6 space-y-4">
         {/* Account Settings */}
-        <Card className="shadow-md hover:shadow-lg transition-all">
+        <Card className="rounded-2xl shadow-sm border-border/50 hover:shadow-md transition-all">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <User className="h-5 w-5 text-primary" />
@@ -70,7 +70,7 @@ const Settings = () => {
         </Card>
 
         {/* Notification Settings */}
-        <Card className="shadow-md hover:shadow-lg transition-all">
+        <Card className="rounded-2xl shadow-sm border-border/50 hover:shadow-md transition-all">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Bell className="h-5 w-5 text-primary" />
@@ -192,7 +192,7 @@ const Settings = () => {
           </CardContent>
         </Card>
 
-        <Button onClick={handleSave} className="w-full">
+        <Button onClick={handleSave} className="w-full rounded-xl shadow-sm">
           Save Changes
         </Button>
       </div>

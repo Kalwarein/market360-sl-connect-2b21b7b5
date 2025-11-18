@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import BottomNav from '@/components/BottomNav';
-import { Plus, Package, ShoppingBag, MessageSquare, Settings, DollarSign, FileText, CheckCircle2 } from 'lucide-react';
+import { Plus, Package, ShoppingBag, MessageSquare, Settings, DollarSign, TrendingUp, CheckCircle2, Store } from 'lucide-react';
 import { useUserRoles } from '@/hooks/useUserRoles';
 import { useSellerNotifications } from '@/hooks/useSellerNotifications';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -63,7 +63,6 @@ const SellerDashboard = () => {
 
   const loadDashboardData = async () => {
     try {
-      // Load store
       const { data: storeData } = await supabase
         .from('stores')
         .select('*')
@@ -73,7 +72,6 @@ const SellerDashboard = () => {
       setStore(storeData);
 
       if (storeData) {
-        // Load products
         const { data: productsData } = await supabase
           .from('products')
           .select('*')
@@ -82,7 +80,6 @@ const SellerDashboard = () => {
 
         setProducts(productsData || []);
 
-        // Load orders
         const { data: ordersData } = await supabase
           .from('orders')
           .select('*, products(title)')
@@ -101,9 +98,9 @@ const SellerDashboard = () => {
   if (rolesLoading || loading) {
     return (
       <div className="min-h-screen bg-background pb-20">
-        <div className="p-4 space-y-4">
-          <Skeleton className="h-32 w-full" />
-          <Skeleton className="h-64 w-full" />
+        <div className="p-6 space-y-4">
+          <Skeleton className="h-40 w-full rounded-3xl" />
+          <Skeleton className="h-64 w-full rounded-3xl" />
         </div>
         <BottomNav />
       </div>
@@ -115,195 +112,248 @@ const SellerDashboard = () => {
     .reduce((sum, o) => sum + Number(o.total_amount), 0);
 
   return (
-    <div className="min-h-screen bg-background pb-20">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-primary to-secondary text-white p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">{store?.store_name || 'My Store'}</h1>
-            <p className="text-sm opacity-90">Seller Dashboard</p>
+    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-accent/5 pb-20">
+      <div className="bg-card border-b border-border/50 backdrop-blur-lg">
+        <div className="p-6">
+          <div className="flex items-center gap-4 mb-6">
+            {store?.logo_url ? (
+              <div className="w-16 h-16 rounded-2xl overflow-hidden shadow-lg ring-2 ring-primary/20">
+                <img src={store.logo_url} alt="Store" className="w-full h-full object-cover" />
+              </div>
+            ) : (
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg">
+                <Store className="h-8 w-8 text-white" />
+              </div>
+            )}
+            <div className="flex-1">
+              <h1 className="text-2xl font-bold text-foreground">{store?.store_name || 'My Store'}</h1>
+              <p className="text-sm text-muted-foreground">Seller Dashboard</p>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate('/store-settings')}
+              className="rounded-xl hover:bg-muted/50"
+            >
+              <Settings className="h-5 w-5" />
+            </Button>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-white hover:bg-white/20"
-            onClick={() => navigate('/store-settings')}
-          >
-            <Settings className="h-4 w-4 mr-2" />
-            Store Settings
-          </Button>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <Card className="rounded-2xl shadow-sm border-border/50 hover:shadow-md transition-all">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <Package className="h-5 w-5 text-primary" />
+                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                </div>
+                <p className="text-2xl font-bold text-foreground">{products.length}</p>
+                <p className="text-xs text-muted-foreground">Products</p>
+              </CardContent>
+            </Card>
+
+            <Card className="rounded-2xl shadow-sm border-border/50 hover:shadow-md transition-all">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <ShoppingBag className="h-5 w-5 text-primary" />
+                  {pendingCount > 0 && (
+                    <Badge className="h-5 px-2 rounded-full bg-destructive text-white text-xs">
+                      {pendingCount}
+                    </Badge>
+                  )}
+                </div>
+                <p className="text-2xl font-bold text-foreground">{orders.length}</p>
+                <p className="text-xs text-muted-foreground">Orders</p>
+              </CardContent>
+            </Card>
+
+            <Card className="rounded-2xl shadow-sm border-border/50 hover:shadow-md transition-all">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <DollarSign className="h-5 w-5 text-primary" />
+                </div>
+                <p className="text-2xl font-bold text-foreground">SLL {totalRevenue.toLocaleString()}</p>
+                <p className="text-xs text-muted-foreground">Revenue</p>
+              </CardContent>
+            </Card>
+
+            <Card className="rounded-2xl shadow-sm border-border/50 hover:shadow-md transition-all">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <CheckCircle2 className="h-5 w-5 text-primary" />
+                </div>
+                <p className="text-2xl font-bold text-foreground">
+                  {orders.filter(o => o.status === 'completed').length}
+                </p>
+                <p className="text-xs text-muted-foreground">Completed</p>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
 
-      <div className="p-4">
-        {/* Quick Stats */}
-        <div className="grid grid-cols-2 gap-4 mb-6">
-          <Card>
-            <CardContent className="p-4">
-              <Package className="h-5 w-5 text-primary mb-2" />
-              <p className="text-2xl font-bold">{products.length}</p>
-              <p className="text-sm text-muted-foreground">Products</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <ShoppingBag className="h-5 w-5 text-primary mb-2" />
-              <p className="text-2xl font-bold">{orders.length}</p>
-              <p className="text-sm text-muted-foreground">Orders</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <DollarSign className="h-5 w-5 text-primary mb-2" />
-              <p className="text-2xl font-bold">Le {totalRevenue.toLocaleString()}</p>
-              <p className="text-sm text-muted-foreground">Revenue</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <CheckCircle2 className="h-5 w-5 text-primary mb-2" />
-              <p className="text-2xl font-bold">
-                {orders.filter(o => o.status === 'completed').length}
-              </p>
-              <p className="text-sm text-muted-foreground">Completed</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        <Tabs defaultValue="products" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="products">Products</TabsTrigger>
-            <TabsTrigger value="orders" className="relative">
+      <div className="p-6">
+        <Tabs defaultValue="products" className="w-full">
+          <TabsList className="w-full grid grid-cols-4 bg-muted/30 rounded-2xl p-1 h-auto">
+            <TabsTrigger value="products" className="rounded-xl data-[state=active]:bg-card data-[state=active]:shadow-sm">
+              Products
+            </TabsTrigger>
+            <TabsTrigger value="orders" className="rounded-xl data-[state=active]:bg-card data-[state=active]:shadow-sm relative">
               Orders
-              {hasPendingOrders && (
-                <span className="absolute -top-1 -right-1 flex h-4 w-4">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-4 w-4 bg-red-500 items-center justify-center">
-                    <span className="text-[8px] font-bold text-white">{pendingCount}</span>
-                  </span>
-                </span>
+              {pendingCount > 0 && (
+                <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center rounded-full bg-destructive text-white text-xs">
+                  {pendingCount}
+                </Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="messages">Messages</TabsTrigger>
-            <TabsTrigger value="settings">Settings</TabsTrigger>
+            <TabsTrigger value="messages" className="rounded-xl data-[state=active]:bg-card data-[state=active]:shadow-sm">
+              Messages
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="rounded-xl data-[state=active]:bg-card data-[state=active]:shadow-sm">
+              Settings
+            </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="products" className="space-y-4">
-            <Button 
-              onClick={() => navigate('/add-product')} 
-              className="w-full"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Add New Product
-            </Button>
+          <TabsContent value="products" className="mt-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-foreground">Your Products</h2>
+              <Button
+                onClick={() => navigate('/add-product')}
+                className="rounded-xl bg-primary hover:bg-primary-hover shadow-sm"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Product
+              </Button>
+            </div>
 
-            {products.length === 0 ? (
-              <Card>
-                <CardContent className="p-8 text-center">
-                  <Package className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                  <p className="text-muted-foreground">No products yet</p>
-                  <p className="text-sm text-muted-foreground mt-2">
-                    Start adding products to your store
-                  </p>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="space-y-3">
-                {products.map((product) => (
-                  <Card 
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {products.length === 0 ? (
+                <Card className="col-span-full rounded-2xl shadow-sm border-border/50">
+                  <CardContent className="p-8 text-center">
+                    <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground">No products yet</p>
+                    <Button
+                      onClick={() => navigate('/add-product')}
+                      className="mt-4 rounded-xl"
+                    >
+                      Add Your First Product
+                    </Button>
+                  </CardContent>
+                </Card>
+              ) : (
+                products.map((product) => (
+                  <Card
                     key={product.id}
-                    className="cursor-pointer hover:shadow-md transition-shadow"
+                    className="rounded-2xl shadow-sm border-border/50 hover:shadow-md transition-all cursor-pointer"
                     onClick={() => navigate(`/product/${product.id}`)}
                   >
-                    <CardContent className="p-4 flex gap-4">
-                      <img
-                        src={product.images[0] || '/placeholder.svg'}
-                        alt={product.title}
-                        className="h-20 w-20 rounded object-cover"
-                      />
-                      <div className="flex-1">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <h3 className="font-medium line-clamp-1">{product.title}</h3>
-                            <p className="text-sm text-muted-foreground">{product.product_code}</p>
-                          </div>
-                          <Badge variant={product.published ? "default" : "secondary"}>
+                    <CardContent className="p-4">
+                      <div className="flex gap-4">
+                        <div className="w-20 h-20 rounded-xl overflow-hidden bg-muted flex-shrink-0">
+                          {product.images[0] && (
+                            <img
+                              src={product.images[0]}
+                              alt={product.title}
+                              className="w-full h-full object-cover"
+                            />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-foreground truncate">{product.title}</h3>
+                          <p className="text-sm text-muted-foreground">SKU: {product.product_code}</p>
+                          <p className="text-lg font-bold text-primary mt-1">SLL {product.price.toLocaleString()}</p>
+                          <Badge
+                            variant={product.published ? 'default' : 'secondary'}
+                            className="mt-2 rounded-full"
+                          >
                             {product.published ? 'Published' : 'Draft'}
                           </Badge>
                         </div>
-                        <p className="text-lg font-bold text-primary mt-1">
-                          Le {Number(product.price).toLocaleString()}
-                        </p>
                       </div>
                     </CardContent>
                   </Card>
-                ))}
-              </div>
-            )}
+                ))
+              )}
+            </div>
           </TabsContent>
 
-          <TabsContent value="orders" className="space-y-3">
-            {orders.length === 0 ? (
-              <Card>
-                <CardContent className="p-8 text-center">
-                  <ShoppingBag className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                  <p className="text-muted-foreground">No orders yet</p>
-                </CardContent>
-              </Card>
-            ) : (
-              orders.map((order) => (
-                <Card 
-                  key={order.id}
-                  className="cursor-pointer hover:shadow-lg transition-shadow"
-                  onClick={() => navigate(`/seller-order-detail/${order.id}`)}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex justify-between items-start mb-2">
-                      <div>
-                        <h3 className="font-medium">{order.products?.title}</h3>
-                        <p className="text-sm text-muted-foreground">
-                          Qty: {order.quantity}
-                        </p>
-                      </div>
-                      <Badge>{order.status}</Badge>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <p className="text-lg font-bold text-primary">
-                        Le {Number(order.total_amount).toLocaleString()}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {new Date(order.created_at).toLocaleDateString()}
-                      </p>
-                    </div>
+          <TabsContent value="orders" className="mt-6 space-y-4">
+            <h2 className="text-lg font-semibold text-foreground">Incoming Orders</h2>
+
+            <div className="space-y-3">
+              {orders.length === 0 ? (
+                <Card className="rounded-2xl shadow-sm border-border/50">
+                  <CardContent className="p-8 text-center">
+                    <ShoppingBag className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground">No orders yet</p>
                   </CardContent>
                 </Card>
-              ))
-            )}
+              ) : (
+                orders.map((order) => (
+                  <Card
+                    key={order.id}
+                    className="rounded-2xl shadow-sm border-border/50 hover:shadow-md transition-all cursor-pointer"
+                    onClick={() => navigate(`/seller/order/${order.id}`)}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="font-semibold text-foreground">{order.products?.title}</h3>
+                          <p className="text-sm text-muted-foreground">
+                            Quantity: {order.quantity}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(order.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-lg font-bold text-primary">
+                            SLL {order.total_amount.toLocaleString()}
+                          </p>
+                          <Badge
+                            variant={order.status === 'pending' ? 'destructive' : 'default'}
+                            className="mt-2 rounded-full"
+                          >
+                            {order.status}
+                          </Badge>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </div>
           </TabsContent>
 
-          <TabsContent value="messages">
-            <Card>
+          <TabsContent value="messages" className="mt-6">
+            <Card className="rounded-2xl shadow-sm border-border/50">
               <CardContent className="p-8 text-center">
-                <MessageSquare className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                <p className="text-muted-foreground">Messages coming soon</p>
+                <MessageSquare className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground mb-4">Message buyers directly</p>
+                <Button
+                  onClick={() => navigate('/messages')}
+                  className="rounded-xl"
+                >
+                  Open Messages
+                </Button>
               </CardContent>
             </Card>
           </TabsContent>
 
-          <TabsContent value="settings">
-            <Card>
+          <TabsContent value="settings" className="mt-6">
+            <Card className="rounded-2xl shadow-sm border-border/50">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Settings className="h-5 w-5" />
-                  Store Settings
-                </CardTitle>
+                <CardTitle className="text-foreground">Store Settings</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <label className="text-sm font-medium">Store Name</label>
+                  <p className="text-sm font-medium text-foreground">Store Name</p>
                   <p className="text-muted-foreground">{store?.store_name}</p>
                 </div>
-                <Button variant="outline" className="w-full">
+                <Button
+                  onClick={() => navigate('/store-settings')}
+                  variant="outline"
+                  className="w-full rounded-xl border-border/50"
+                >
                   Edit Store Details
                 </Button>
               </CardContent>
