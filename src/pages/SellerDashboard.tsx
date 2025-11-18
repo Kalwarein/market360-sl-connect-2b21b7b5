@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import BottomNav from '@/components/BottomNav';
 import { Plus, Package, ShoppingBag, MessageSquare, Settings, DollarSign, FileText, CheckCircle2 } from 'lucide-react';
 import { useUserRoles } from '@/hooks/useUserRoles';
+import { useSellerNotifications } from '@/hooks/useSellerNotifications';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 
@@ -43,6 +44,7 @@ const SellerDashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { isSeller, loading: rolesLoading } = useUserRoles();
+  const { hasPendingOrders, pendingCount } = useSellerNotifications();
   const [store, setStore] = useState<Store | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -171,7 +173,17 @@ const SellerDashboard = () => {
         <Tabs defaultValue="products" className="space-y-4">
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="products">Products</TabsTrigger>
-            <TabsTrigger value="orders">Orders</TabsTrigger>
+            <TabsTrigger value="orders" className="relative">
+              Orders
+              {hasPendingOrders && (
+                <span className="absolute -top-1 -right-1 flex h-4 w-4">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-4 w-4 bg-red-500 items-center justify-center">
+                    <span className="text-[8px] font-bold text-white">{pendingCount}</span>
+                  </span>
+                </span>
+              )}
+            </TabsTrigger>
             <TabsTrigger value="messages">Messages</TabsTrigger>
             <TabsTrigger value="settings">Settings</TabsTrigger>
           </TabsList>

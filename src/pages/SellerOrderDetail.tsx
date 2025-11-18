@@ -8,6 +8,12 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
   ArrowLeft,
   Package,
   MapPin,
@@ -17,7 +23,10 @@ import {
   CheckCircle2,
   XCircle,
   Clock,
-  Truck
+  Truck,
+  MoreVertical,
+  FileText,
+  Eye
 } from 'lucide-react';
 import BottomNav from '@/components/BottomNav';
 
@@ -258,20 +267,35 @@ const SellerOrderDetail = () => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending':
-        return 'bg-yellow-500';
+        return 'bg-yellow-500 text-white';
       case 'processing':
       case 'packed':
-        return 'bg-blue-500';
+        return 'bg-blue-500 text-white';
       case 'shipped':
-        return 'bg-purple-500';
+        return 'bg-purple-500 text-white';
       case 'delivered':
       case 'completed':
-        return 'bg-green-500';
+        return 'bg-green-500 text-white';
       case 'disputed':
-        return 'bg-red-500';
+      case 'cancelled':
+        return 'bg-red-500 text-white';
       default:
-        return 'bg-gray-500';
+        return 'bg-gray-500 text-white';
     }
+  };
+
+  const getStatusLabel = (status: string) => {
+    const labels: Record<string, string> = {
+      pending: 'Awaiting Acceptance',
+      processing: 'Processing',
+      packed: 'Packed & Ready',
+      shipped: 'Shipped',
+      delivered: 'Delivered',
+      completed: 'Completed',
+      disputed: 'Disputed',
+      cancelled: 'Cancelled'
+    };
+    return labels[status] || status;
   };
 
   if (loading) {
@@ -321,8 +345,8 @@ const SellerOrderDetail = () => {
             <h1 className="text-lg font-semibold">Order Details</h1>
             <p className="text-xs text-muted-foreground">#{order.id.slice(0, 8)}</p>
           </div>
-          <Badge className={`${getStatusColor(order.status)} text-white`}>
-            {order.status}
+          <Badge className={getStatusColor(order.status)}>
+            {getStatusLabel(order.status)}
           </Badge>
         </div>
       </div>
@@ -395,9 +419,9 @@ const SellerOrderDetail = () => {
                 </div>
               </div>
               {order.delivery_notes && (
-                <div className="mt-2 p-2 bg-muted rounded">
-                  <p className="text-xs font-medium">Delivery Notes:</p>
-                  <p className="text-xs">{order.delivery_notes}</p>
+                <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                  <p className="text-xs font-medium text-amber-800 mb-1">Buyer Notes:</p>
+                  <p className="text-sm text-amber-900">{order.delivery_notes}</p>
                 </div>
               )}
             </div>
@@ -489,6 +513,29 @@ const SellerOrderDetail = () => {
               <MessageSquare className="h-4 w-4 mr-2" />
               Contact Buyer
             </Button>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="w-full">
+                  <MoreVertical className="h-4 w-4 mr-2" />
+                  More Options
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuItem onClick={() => navigate(`/chat/${order.buyer_id}`)}>
+                  <Eye className="h-4 w-4 mr-2" />
+                  View Chat History
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate(`/product/${order.products.id}`)}>
+                  <Package className="h-4 w-4 mr-2" />
+                  View Product
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => window.print()}>
+                  <FileText className="h-4 w-4 mr-2" />
+                  Print Receipt
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         )}
 

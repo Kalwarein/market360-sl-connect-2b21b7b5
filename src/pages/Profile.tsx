@@ -10,10 +10,12 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import BottomNav from '@/components/BottomNav';
 import { useUserRoles } from '@/hooks/useUserRoles';
+import { useSellerNotifications } from '@/hooks/useSellerNotifications';
 
 const Profile = () => {
   const { user, signOut } = useAuth();
   const { isSeller, loading: rolesLoading } = useUserRoles();
+  const { hasPendingOrders, pendingCount } = useSellerNotifications();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -431,11 +433,24 @@ const Profile = () => {
             <Card onClick={() => navigate('/seller-dashboard')} className="cursor-pointer hover:shadow-md transition-shadow bg-amber-50 border-amber-100">
               <CardContent className="p-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-amber-600 flex items-center justify-center">
+                  <div className="h-10 w-10 rounded-full bg-amber-600 flex items-center justify-center relative">
                     <Store className="h-5 w-5 text-white" />
+                    {hasPendingOrders && (
+                      <span className="absolute -top-1 -right-1 flex h-4 w-4">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-4 w-4 bg-red-500 items-center justify-center">
+                          <span className="text-[8px] font-bold text-white">{pendingCount}</span>
+                        </span>
+                      </span>
+                    )}
                   </div>
                   <span className="font-medium text-gray-900">Manage Your Store</span>
                 </div>
+                {hasPendingOrders && (
+                  <Badge className="bg-red-500 text-white">
+                    {pendingCount} New
+                  </Badge>
+                )}
               </CardContent>
             </Card>
           ) : sellerApplicationStatus === 'approved' ? (
