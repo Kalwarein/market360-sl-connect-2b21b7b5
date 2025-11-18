@@ -12,9 +12,11 @@ const Cart = () => {
   if (items.length === 0) {
     return (
       <div className="min-h-screen bg-background pb-20">
-        <div className="bg-gradient-to-r from-primary to-secondary text-white p-6">
-          <h1 className="text-2xl font-bold">Shopping Cart</h1>
-          <p className="text-sm opacity-90">Review your items</p>
+        <div className="sticky top-0 z-10 bg-background/80 backdrop-blur border-b">
+          <div className="p-4">
+            <h1 className="text-xl font-semibold text-foreground">Shopping Cart</h1>
+            <p className="text-sm text-muted-foreground">Review your items</p>
+          </div>
         </div>
 
         <div className="p-4">
@@ -37,9 +39,11 @@ const Cart = () => {
 
   return (
     <div className="min-h-screen bg-background pb-32">
-      <div className="bg-gradient-to-r from-primary to-secondary text-white p-6">
-        <h1 className="text-2xl font-bold">Shopping Cart</h1>
-        <p className="text-sm opacity-90">{totalItems} items</p>
+      <div className="sticky top-0 z-10 bg-background/80 backdrop-blur border-b">
+        <div className="p-4">
+          <h1 className="text-xl font-semibold text-foreground">Shopping Cart</h1>
+          <p className="text-sm text-muted-foreground">{totalItems} items</p>
+        </div>
       </div>
 
       <div className="p-4 space-y-3">
