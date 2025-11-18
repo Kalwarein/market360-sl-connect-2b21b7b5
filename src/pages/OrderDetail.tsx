@@ -64,6 +64,7 @@ const OrderDetail = () => {
   const [loading, setLoading] = useState(true);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [showDisputeDialog, setShowDisputeDialog] = useState(false);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [disputeReason, setDisputeReason] = useState('');
 
   useEffect(() => {
@@ -547,37 +548,50 @@ const OrderDetail = () => {
         </Card>
 
         {/* Action Buttons */}
-        {order.status !== 'completed' && order.status !== 'disputed' && (
-          <div className="grid grid-cols-2 gap-3">
-            <Button
-              variant="outline"
-              onClick={() => navigate(`/chat/${order.seller_id}`)}
-              className="w-full"
-            >
-              <MessageSquare className="h-4 w-4 mr-2" />
-              Chat Seller
-            </Button>
-            {order.status === 'delivered' && (
+        {order.status !== 'completed' && order.status !== 'disputed' && order.status !== 'cancelled' && (
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
               <Button
-                onClick={() => setShowConfirmDialog(true)}
+                variant="outline"
+                onClick={() => navigate(`/chat/${order.seller_id}`)}
                 className="w-full"
               >
-                <CheckCircle2 className="h-4 w-4 mr-2" />
-                Confirm Received
+                <MessageSquare className="h-4 w-4 mr-2" />
+                Chat Seller
+              </Button>
+              {order.status === 'delivered' && (
+                <Button
+                  onClick={() => setShowConfirmDialog(true)}
+                  className="w-full"
+                >
+                  <CheckCircle2 className="h-4 w-4 mr-2" />
+                  Confirm Received
+                </Button>
+              )}
+            </div>
+
+            {/* Cancel Order Button - Only for pending/processing orders */}
+            {(order.status === 'pending' || order.status === 'processing') && (
+              <Button
+                variant="outline"
+                onClick={() => setShowCancelDialog(true)}
+                className="w-full border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+              >
+                <XCircle className="h-4 w-4 mr-2" />
+                Cancel Order
               </Button>
             )}
-          </div>
-        )}
 
-        {order.status !== 'completed' && order.status !== 'disputed' && (
-          <Button
-            variant="destructive"
-            onClick={() => setShowDisputeDialog(true)}
-            className="w-full"
-          >
-            <AlertCircle className="h-4 w-4 mr-2" />
-            Report Problem
-          </Button>
+            {/* Report Problem Button */}
+            <Button
+              variant="destructive"
+              onClick={() => setShowDisputeDialog(true)}
+              className="w-full"
+            >
+              <AlertCircle className="h-4 w-4 mr-2" />
+              Report Problem
+            </Button>
+          </div>
         )}
       </div>
 
@@ -625,6 +639,40 @@ const OrderDetail = () => {
             </Button>
             <Button variant="destructive" onClick={handleReportProblem}>
               Submit Report
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Cancel Order Dialog */}
+      <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Cancel Order?</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Are you sure you want to cancel this order? Your payment of Le {order?.total_amount.toLocaleString()} will be refunded to your wallet immediately.
+            </p>
+            <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+              <p className="text-xs font-medium text-amber-800 mb-1">⚠️ Important:</p>
+              <p className="text-xs text-amber-900">
+                Once cancelled, this action cannot be undone. The seller will be notified immediately.
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCancelDialog(false)}>
+              Keep Order
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={() => {
+                handleCancelOrder();
+                setShowCancelDialog(false);
+              }}
+            >
+              Yes, Cancel Order
             </Button>
           </DialogFooter>
         </DialogContent>
