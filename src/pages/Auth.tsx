@@ -2,19 +2,15 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { Mail, Lock, User, MapPin } from 'lucide-react';
+import { Mail, Lock, User, Eye, EyeOff, ArrowLeft, Leaf } from 'lucide-react';
 import { z } from 'zod';
 
 const signUpSchema = z.object({
   email: z.string().email('Invalid email address').max(255),
   name: z.string().min(1, 'Name is required').max(100),
   password: z.string().min(6, 'Password must be at least 6 characters'),
-  country: z.string().optional(),
-  region: z.string().optional(),
-  city: z.string().optional()
 });
 
 const signInSchema = z.object({
@@ -24,14 +20,11 @@ const signInSchema = z.object({
 
 const Auth = () => {
   const [isSignUp, setIsSignUp] = useState(false);
-  const [step, setStep] = useState(1);
+  const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
     name: '',
-    country: 'Sierra Leone',
-    region: '',
-    city: ''
   });
   const { signUp, signIn } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -88,213 +81,134 @@ const Auth = () => {
     }
   };
 
-  const nextStep = () => {
-    if (step === 1 && !formData.email) {
-      toast.error('Please enter your email');
-      return;
-    }
-    if (step === 2 && (!formData.name || !formData.password)) {
-      toast.error('Please complete all fields');
-      return;
-    }
-    setStep(step + 1);
-  };
-
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 via-background to-secondary/10 p-4">
-      <Card className="w-full max-w-md shadow-lg">
-        <CardHeader className="space-y-1 text-center">
-          <div className="flex justify-center mb-4">
-            <div className="h-16 w-16 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white font-bold text-2xl">
-              M360
+    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-primary/5 via-background to-accent/5">
+      <div className="w-full max-w-md">
+        {isSignUp && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsSignUp(false)}
+            className="mb-4 text-foreground/70 hover:text-foreground hover:bg-muted/50"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Sign In
+          </Button>
+        )}
+
+        <div className="bg-card rounded-[2rem] shadow-2xl p-8 backdrop-blur-sm border border-border/50">
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
+              <Leaf className="h-8 w-8 text-primary" />
             </div>
+            <h1 className="text-3xl font-bold text-foreground mb-2">
+              {isSignUp ? 'Register' : 'Welcome Back'}
+            </h1>
+            <p className="text-muted-foreground text-sm">
+              {isSignUp ? 'Create your new account' : 'Login to your account'}
+            </p>
           </div>
-          <CardTitle className="text-2xl font-bold">
-            {isSignUp ? 'Create Account' : 'Welcome Back'}
-          </CardTitle>
-          <CardDescription>
-            {isSignUp ? 'Join Market360 today' : 'Sign in to continue'}
-          </CardDescription>
-        </CardHeader>
-        
-        <CardContent>
-          {!isSignUp ? (
-            <form onSubmit={handleSignIn} className="space-y-4">
+
+          <form onSubmit={isSignUp ? handleSignUp : handleSignIn} className="space-y-5">
+            {isSignUp && (
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="name" className="text-sm font-medium text-foreground/80">
+                  Full Name
+                </Label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                   <Input
-                    id="email"
-                    type="email"
-                    placeholder="you@example.com"
-                    className="pl-10"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    required
+                    id="name"
+                    placeholder="Full Name"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    className="pl-12 h-12 rounded-2xl bg-muted/30 border-muted focus:bg-background transition-all"
+                    required={isSignUp}
                   />
                 </div>
               </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="••••••••"
-                    className="pl-10"
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    required
-                  />
-                </div>
+            )}
+
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-sm font-medium text-foreground/80">
+                Email
+              </Label>
+              <div className="relative">
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="user@email.com"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  className="pl-12 h-12 rounded-2xl bg-muted/30 border-muted focus:bg-background transition-all"
+                  required
+                />
               </div>
+            </div>
 
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? 'Signing in...' : 'Sign In'}
-              </Button>
+            <div className="space-y-2">
+              <Label htmlFor="password" className="text-sm font-medium text-foreground/80">
+                Password
+              </Label>
+              <div className="relative">
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <Input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="••••••••"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  className="pl-12 pr-12 h-12 rounded-2xl bg-muted/30 border-muted focus:bg-background transition-all"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                </button>
+              </div>
+            </div>
 
-              <p className="text-center text-sm text-muted-foreground">
-                New here?{' '}
+            {!isSignUp && (
+              <div className="flex items-center justify-between text-sm">
+                <label className="flex items-center gap-2 text-muted-foreground">
+                  <input type="checkbox" className="rounded border-muted" />
+                  Remember Me
+                </label>
+                <button type="button" className="text-primary hover:text-primary-hover font-medium">
+                  Forgot Password?
+                </button>
+              </div>
+            )}
+
+            <Button
+              type="submit"
+              className="w-full h-12 rounded-2xl bg-primary hover:bg-primary-hover text-white font-semibold shadow-lg hover:shadow-xl transition-all"
+              disabled={loading}
+            >
+              {loading ? 'Please wait...' : isSignUp ? 'Register' : 'Login'}
+            </Button>
+          </form>
+
+          {!isSignUp && (
+            <div className="mt-6 text-center">
+              <p className="text-sm text-muted-foreground">
+                Don't have an account?{' '}
                 <button
                   type="button"
                   onClick={() => setIsSignUp(true)}
-                  className="text-primary hover:underline font-medium"
+                  className="text-primary hover:text-primary-hover font-semibold"
                 >
-                  Create account
+                  Sign up
                 </button>
               </p>
-            </form>
-          ) : (
-            <form onSubmit={handleSignUp} className="space-y-4">
-              {step === 1 && (
-                <div className="space-y-2">
-                  <Label htmlFor="signup-email">Email</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="signup-email"
-                      type="email"
-                      placeholder="you@example.com"
-                      className="pl-10"
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <Button type="button" onClick={nextStep} className="w-full mt-4">
-                    Continue
-                  </Button>
-                </div>
-              )}
-
-              {step === 2 && (
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Full Name</Label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="name"
-                        type="text"
-                        placeholder="John Doe"
-                        className="pl-10"
-                        value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-password">Password</Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="signup-password"
-                        type="password"
-                        placeholder="••••••••"
-                        className="pl-10"
-                        value={formData.password}
-                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex gap-2">
-                    <Button type="button" variant="outline" onClick={() => setStep(1)} className="flex-1">
-                      Back
-                    </Button>
-                    <Button type="button" onClick={nextStep} className="flex-1">
-                      Continue
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-              {step === 3 && (
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="region">Region</Label>
-                    <div className="relative">
-                      <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="region"
-                        type="text"
-                        placeholder="Western Area"
-                        className="pl-10"
-                        value={formData.region}
-                        onChange={(e) => setFormData({ ...formData, region: e.target.value })}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="city">City</Label>
-                    <div className="relative">
-                      <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="city"
-                        type="text"
-                        placeholder="Freetown"
-                        className="pl-10"
-                        value={formData.city}
-                        onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex gap-2">
-                    <Button type="button" variant="outline" onClick={() => setStep(2)} className="flex-1">
-                      Back
-                    </Button>
-                    <Button type="submit" disabled={loading} className="flex-1">
-                      {loading ? 'Creating...' : 'Create Account'}
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-              <p className="text-center text-sm text-muted-foreground">
-                Already have an account?{' '}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsSignUp(false);
-                    setStep(1);
-                  }}
-                  className="text-primary hover:underline font-medium"
-                >
-                  Sign in
-                </button>
-              </p>
-            </form>
+            </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 };
