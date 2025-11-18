@@ -119,7 +119,7 @@ const MessagesPage = () => {
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'INSERT',
           schema: 'public',
           table: 'messages',
         },
@@ -273,11 +273,11 @@ const MessagesPage = () => {
                             <span className="text-xs text-muted-foreground whitespace-nowrap">
                               {formatTime(conversation.last_message_at)}
                             </span>
-                            {conversation.unread_count > 0 && (
-                              <Badge className="h-5 min-w-[20px] flex items-center justify-center px-1.5 bg-primary">
-                                {conversation.unread_count}
-                              </Badge>
-                            )}
+                             {conversation.unread_count > 0 && (
+                               <Badge className="h-5 min-w-[20px] flex items-center justify-center px-1.5 bg-destructive text-destructive-foreground">
+                                 {conversation.unread_count}
+                               </Badge>
+                             )}
                           </div>
                         </div>
                         

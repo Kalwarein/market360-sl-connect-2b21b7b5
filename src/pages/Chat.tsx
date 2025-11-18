@@ -296,7 +296,7 @@ const Chat = () => {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-background">
+    <div className="flex flex-col h-screen bg-background select-none">
       {/* Header */}
       <div className="bg-white border-b sticky top-0 z-10">
         <div className="p-4 flex items-center gap-3">
