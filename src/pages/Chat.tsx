@@ -92,7 +92,7 @@ const Chat = () => {
         .from('conversations')
         .select('*')
         .eq('id', conversationId)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
 
@@ -113,7 +113,7 @@ const Chat = () => {
           .from('products')
           .select('title, images, price')
           .eq('id', data.product_id)
-          .single();
+          .maybeSingle();
         product = productData;
       }
 
