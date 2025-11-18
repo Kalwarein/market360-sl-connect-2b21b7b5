@@ -240,7 +240,11 @@ const SellerDashboard = () => {
               </Card>
             ) : (
               orders.map((order) => (
-                <Card key={order.id}>
+                <Card 
+                  key={order.id}
+                  className="cursor-pointer hover:shadow-lg transition-shadow"
+                  onClick={() => navigate(`/seller-order-detail/${order.id}`)}
+                >
                   <CardContent className="p-4">
                     <div className="flex justify-between items-start mb-2">
                       <div>

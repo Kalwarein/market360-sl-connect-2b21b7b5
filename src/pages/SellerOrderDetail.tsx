@@ -116,14 +116,40 @@ const SellerOrderDetail = () => {
         .update({ status: newStatus })
         .eq('id', orderId);
 
+      // Get status message
+      const statusMessages = {
+        processing: 'Your order has been accepted and is being processed',
+        packed: 'Your order has been packed and ready for shipping',
+        shipped: 'Your order is on the way to you',
+        delivered: 'Your order has been delivered'
+      };
+
       // Notify buyer
       await supabase.from('notifications').insert({
         user_id: order?.buyer_id,
         type: 'order',
         title: 'Order Update',
-        body: `Your order status has been updated to: ${newStatus}`,
+        body: statusMessages[newStatus],
         link_url: `/order-detail/${orderId}`
       });
+
+      // Send system message to chat
+      const { data: conversation } = await supabase
+        .from('conversations')
+        .select('id')
+        .eq('buyer_id', order?.buyer_id)
+        .eq('seller_id', user?.id)
+        .eq('product_id', order?.products.id)
+        .single();
+
+      if (conversation) {
+        await supabase.from('messages').insert({
+          conversation_id: conversation.id,
+          sender_id: user?.id,
+          body: `📦 ${statusMessages[newStatus]}`,
+          message_type: 'action'
+        });
+      }
 
       toast({
         title: 'Success',
@@ -136,6 +162,94 @@ const SellerOrderDetail = () => {
       toast({
         title: 'Error',
         description: 'Failed to update order',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleDeclineOrder = async () => {
+    if (!order || order.status !== 'pending') {
+      toast({
+        title: 'Cannot Decline',
+        description: 'Order can only be declined when pending',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    try {
+      // Refund to buyer wallet
+      const { data: buyerWallet } = await supabase
+        .from('wallets')
+        .select('id, balance_leones')
+        .eq('user_id', order.buyer_id)
+        .single();
+
+      if (buyerWallet) {
+        await supabase
+          .from('wallets')
+          .update({
+            balance_leones: Number(buyerWallet.balance_leones) + Number(order.total_amount)
+          })
+          .eq('id', buyerWallet.id);
+
+        await supabase.from('transactions').insert({
+          wallet_id: buyerWallet.id,
+          type: 'refund',
+          amount: order.total_amount,
+          status: 'completed',
+          reference: `Order ${order.id} declined by seller`,
+          metadata: { order_id: order.id }
+        });
+      }
+
+      // Update order status
+      await supabase
+        .from('orders')
+        .update({ 
+          status: 'cancelled',
+          escrow_status: 'refunded'
+        })
+        .eq('id', order.id);
+
+      // Notify buyer
+      await supabase.from('notifications').insert({
+        user_id: order.buyer_id,
+        type: 'order',
+        title: 'Order Declined',
+        body: `Seller declined your order for ${order.products.title}. Refund processed.`,
+        link_url: `/order-detail/${order.id}`
+      });
+
+      // Send system message to chat
+      const { data: conversation } = await supabase
+        .from('conversations')
+        .select('id')
+        .eq('buyer_id', order.buyer_id)
+        .eq('seller_id', user?.id)
+        .eq('product_id', order.products.id)
+        .single();
+
+      if (conversation) {
+        await supabase.from('messages').insert({
+          conversation_id: conversation.id,
+          sender_id: user?.id,
+          body: `🚫 Seller declined order. Refund of Le ${order.total_amount.toLocaleString()} processed.`,
+          message_type: 'action'
+        });
+      }
+
+      toast({
+        title: 'Order Declined',
+        description: 'Buyer has been notified and refunded'
+      });
+
+      loadOrderDetail();
+    } catch (error) {
+      console.error('Error declining order:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to decline order',
         variant: 'destructive'
       });
     }
@@ -318,13 +432,21 @@ const SellerOrderDetail = () => {
             <h2 className="font-semibold">Order Actions</h2>
             
             {order.status === 'pending' && (
-              <div className="grid grid-cols-1 gap-3">
+              <div className="grid grid-cols-2 gap-3">
                 <Button
                   onClick={() => updateOrderStatus('processing')}
                   className="w-full"
                 >
                   <CheckCircle2 className="h-4 w-4 mr-2" />
                   Accept Order
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={handleDeclineOrder}
+                  className="w-full"
+                >
+                  <XCircle className="h-4 w-4 mr-2" />
+                  Decline Order
                 </Button>
               </div>
             )}
@@ -376,7 +498,7 @@ const SellerOrderDetail = () => {
             <h2 className="font-semibold mb-3">Order Timeline</h2>
             <div className="space-y-3">
               <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-full flex items-center justify-center bg-primary">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${order.status === 'pending' ? 'bg-primary' : 'bg-muted'}`}>
                   <Clock className="h-4 w-4 text-white" />
                 </div>
                 <div>
@@ -386,6 +508,61 @@ const SellerOrderDetail = () => {
                   </p>
                 </div>
               </div>
+              {['processing', 'packed', 'shipped', 'delivered', 'completed'].includes(order.status) && (
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center bg-primary">
+                    <CheckCircle2 className="h-4 w-4 text-white" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-sm">Order Accepted</p>
+                    <p className="text-xs text-muted-foreground">Processing order</p>
+                  </div>
+                </div>
+              )}
+              {['packed', 'shipped', 'delivered', 'completed'].includes(order.status) && (
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center bg-primary">
+                    <Package className="h-4 w-4 text-white" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-sm">Order Packed</p>
+                    <p className="text-xs text-muted-foreground">Ready for shipping</p>
+                  </div>
+                </div>
+              )}
+              {['shipped', 'delivered', 'completed'].includes(order.status) && (
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center bg-primary">
+                    <Truck className="h-4 w-4 text-white" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-sm">Order Shipped</p>
+                    <p className="text-xs text-muted-foreground">On the way</p>
+                  </div>
+                </div>
+              )}
+              {['delivered', 'completed'].includes(order.status) && (
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center bg-primary">
+                    <CheckCircle2 className="h-4 w-4 text-white" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-sm">Order Delivered</p>
+                    <p className="text-xs text-muted-foreground">Awaiting buyer confirmation</p>
+                  </div>
+                </div>
+              )}
+              {order.status === 'completed' && (
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center bg-green-500">
+                    <CheckCircle2 className="h-4 w-4 text-white" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-sm">Order Completed</p>
+                    <p className="text-xs text-muted-foreground">Funds released to wallet</p>
+                  </div>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
