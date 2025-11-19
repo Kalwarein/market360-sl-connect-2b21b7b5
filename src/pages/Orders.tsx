@@ -135,70 +135,97 @@ const Orders = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      <div className="bg-gradient-to-r from-primary to-secondary text-white p-6">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="text-white hover:bg-white/20 mb-4"
-          onClick={() => navigate(-1)}
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back
-        </Button>
-        <h1 className="text-2xl font-bold">My Orders</h1>
-        <p className="text-sm opacity-90">{orders.length} total orders</p>
+      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b p-4">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <h1 className="text-xl font-semibold">My Orders</h1>
+          {orders.length > 0 && (
+            <Badge variant="secondary" className="ml-auto">
+              {orders.length}
+            </Badge>
+          )}
+        </div>
       </div>
 
       <div className="p-4 space-y-4">
         {orders.length === 0 ? (
-          <Card>
-            <CardContent className="p-8 text-center">
-              <Package className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-              <p className="text-muted-foreground mb-4">No orders yet</p>
-              <Button onClick={() => navigate('/')}>Start Shopping</Button>
-            </CardContent>
-          </Card>
+          <div className="flex flex-col items-center justify-center p-12">
+            <div className="p-6 rounded-full bg-muted/50 mb-4">
+              <Package className="h-12 w-12 text-muted-foreground" />
+            </div>
+            <h2 className="text-xl font-semibold mb-2">No orders yet</h2>
+            <p className="text-muted-foreground mb-6 text-center">
+              Start shopping to see your orders here
+            </p>
+            <Button onClick={() => navigate('/')} size="lg">
+              Start Shopping
+            </Button>
+          </div>
         ) : (
-          orders.map((order) => (
-            <Card 
-              key={order.id} 
-              className="shadow-md hover:shadow-lg transition-all cursor-pointer"
-              onClick={() => navigate(`/order-detail/${order.id}`)}
-            >
-              <CardContent className="p-4">
-                <div className="flex gap-4">
-                  <img
-                    src={order.products.images[0]}
-                    alt={order.products.title}
-                    className="w-20 h-20 object-cover rounded-lg"
-                  />
-                  <div className="flex-1">
-                    <h3 className="font-semibold">{order.products.title}</h3>
-                    <p className="text-sm text-muted-foreground">
-                      {order.stores?.store_name}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      Qty: {order.quantity}
-                    </p>
-                    <div className="flex items-center gap-2 mt-2">
-                      <Badge className={`${getStatusColor(order.status)} text-white`}>
-                        <span className="mr-1">{getStatusIcon(order.status)}</span>
-                        {order.status}
-                      </Badge>
-                      <span className="text-sm text-muted-foreground">
-                        {format(new Date(order.created_at), 'MMM dd, yyyy')}
-                      </span>
+          <div className="space-y-3">
+            {orders.map((order) => (
+              <Card
+                key={order.id}
+                className="cursor-pointer hover:shadow-lg transition-all border-l-4"
+                style={{
+                  borderLeftColor: order.status === 'delivered' || order.status === 'completed' 
+                    ? 'hsl(var(--primary))' 
+                    : 'hsl(var(--muted))'
+                }}
+                onClick={() => navigate(`/order-detail/${order.id}`)}
+              >
+                <CardContent className="p-4">
+                  <div className="flex gap-4">
+                    <div className="flex-shrink-0">
+                      {order.products.images?.[0] ? (
+                        <img
+                          src={order.products.images[0]}
+                          alt={order.products.title}
+                          className="w-24 h-24 rounded-lg object-cover shadow-sm"
+                        />
+                      ) : (
+                        <div className="w-24 h-24 bg-muted rounded-lg flex items-center justify-center">
+                          <Package className="h-10 w-10 text-muted-foreground" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-bold text-base truncate mb-1">
+                        {order.products.title}
+                      </h3>
+                      <p className="text-sm text-muted-foreground mb-3">
+                        {order.stores.store_name}
+                      </p>
+                      <div className="flex items-center gap-2 mb-3">
+                        <Badge
+                          variant="secondary"
+                          className={`${getStatusColor(order.status)} text-white`}
+                        >
+                          <span className="flex items-center gap-1">
+                            {getStatusIcon(order.status)}
+                            <span className="capitalize">{order.status}</span>
+                          </span>
+                        </Badge>
+                        <span className="text-sm text-muted-foreground">
+                          Qty: {order.quantity}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <p className="text-xl font-bold text-primary">
+                          Le {order.total_amount.toLocaleString()}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {format(new Date(order.created_at), 'MMM dd, yyyy')}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-bold text-lg">
-                      Le {order.total_amount.toLocaleString()}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         )}
       </div>
 

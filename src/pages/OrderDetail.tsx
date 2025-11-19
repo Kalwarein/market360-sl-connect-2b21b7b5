@@ -394,19 +394,17 @@ const OrderDetail = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      {/* Header */}
-      <div className="bg-white border-b border-border sticky top-0 z-10">
-        <div className="p-4 flex items-center gap-3">
+      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b p-4">
+        <div className="flex items-center gap-3">
           <Button
             variant="ghost"
             size="icon"
             onClick={() => navigate('/orders')}
-            className="rounded-full"
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div className="flex-1">
-            <h1 className="text-lg font-semibold">Order Details</h1>
+            <h1 className="text-xl font-semibold">Order Details</h1>
             <p className="text-xs text-muted-foreground">#{order.id.slice(0, 8)}</p>
           </div>
           <Badge className={`${getStatusColor(order.status)} text-white`}>
@@ -472,22 +470,40 @@ const OrderDetail = () => {
           </CardContent>
         </Card>
 
-        {/* Product Info */}
-        <Card>
-          <CardContent className="p-4">
-            <h2 className="font-semibold mb-3">Product Details</h2>
-            <div className="flex gap-4">
-              <img
-                src={order.products.images[0]}
-                alt={order.products.title}
-                className="w-20 h-20 object-cover rounded-lg"
-              />
+        <Card className="shadow-md">
+          <CardContent className="p-6">
+            <h2 className="font-semibold mb-4 text-lg">Product Details</h2>
+            <div className="flex gap-4 mb-4">
+              <div className="flex-shrink-0">
+                {order.products.images?.[0] ? (
+                  <img
+                    src={order.products.images[0]}
+                    alt={order.products.title}
+                    className="w-32 h-32 rounded-lg object-cover shadow-sm"
+                  />
+                ) : (
+                  <div className="w-32 h-32 bg-muted rounded-lg flex items-center justify-center">
+                    <Package className="h-16 w-16 text-muted-foreground" />
+                  </div>
+                )}
+              </div>
               <div className="flex-1">
-                <h3 className="font-medium">{order.products.title}</h3>
-                <p className="text-sm text-muted-foreground">{order.stores.store_name}</p>
-                <p className="text-xs text-muted-foreground">{order.products.product_code}</p>
-                <p className="text-sm mt-1">Qty: {order.quantity}</p>
-                <p className="font-bold text-lg text-primary mt-1">
+                <h3 className="font-bold text-xl mb-2">{order.products.title}</h3>
+                <p className="text-sm text-muted-foreground mb-1">{order.stores.store_name}</p>
+                <p className="text-xs text-muted-foreground mb-3">{order.products.product_code}</p>
+                <div className="flex items-center gap-4 mb-2">
+                  <span className="text-sm">Quantity: <span className="font-semibold">{order.quantity}</span></span>
+                  <Badge
+                    variant="secondary"
+                    className={`${getStatusColor(order.status)} text-white`}
+                  >
+                    <span className="flex items-center gap-1">
+                      {getStatusIcon(order.status)}
+                      <span className="capitalize">{order.status}</span>
+                    </span>
+                  </Badge>
+                </div>
+                <p className="text-2xl font-bold text-primary">
                   Le {order.total_amount.toLocaleString()}
                 </p>
               </div>
