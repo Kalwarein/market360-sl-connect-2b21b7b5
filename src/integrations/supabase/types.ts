@@ -419,7 +419,9 @@ export type Database = {
           created_at: string
           email: string
           id: string
+          language: string | null
           name: string | null
+          notification_preferences: Json | null
           phone: string | null
           region: string | null
           role: Database["public"]["Enums"]["user_role"]
@@ -432,7 +434,9 @@ export type Database = {
           created_at?: string
           email: string
           id: string
+          language?: string | null
           name?: string | null
+          notification_preferences?: Json | null
           phone?: string | null
           region?: string | null
           role?: Database["public"]["Enums"]["user_role"]
@@ -445,7 +449,9 @@ export type Database = {
           created_at?: string
           email?: string
           id?: string
+          language?: string | null
           name?: string | null
+          notification_preferences?: Json | null
           phone?: string | null
           region?: string | null
           role?: Database["public"]["Enums"]["user_role"]
