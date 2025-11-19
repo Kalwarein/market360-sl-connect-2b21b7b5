@@ -120,44 +120,46 @@ const ProductSelectorModal = ({ open, onClose, onSelectProduct }: ProductSelecto
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col p-0">
-        {/* Header with close button */}
+      <DialogContent className="sm:max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col p-0">
         {/* Header */}
-        <div className="bg-background border-b px-6 py-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-foreground">Select a Product</h2>
+        <div className="bg-gradient-to-r from-primary/5 to-primary-light/5 border-b px-6 py-5 flex items-center justify-between">
+          <h2 className="text-xl font-bold text-foreground">Select a Product</h2>
         </div>
 
         {/* Search */}
-        <div className="px-6 py-3 border-b">
+        <div className="px-6 py-4 border-b bg-accent/5">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-primary" />
             <Input
               placeholder="Search products..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
+              className="pl-12 h-12 rounded-xl border-2 border-border focus:border-primary transition-all duration-300 shadow-sm"
             />
           </div>
         </div>
 
         {/* Product List */}
-        <div className="flex-1 overflow-y-auto px-6 py-3">
+        <div className="flex-1 overflow-y-auto px-6 py-4 scrollbar-thin">
           <div className="space-y-3">
             {loading ? (
               <div className="space-y-3">
                 {[...Array(5)].map((_, i) => (
-                  <div key={i} className="flex items-center gap-4 p-4 rounded-xl border bg-card shadow-sm">
-                    <Skeleton className="h-20 w-20 rounded-lg" />
+                  <div key={i} className="flex items-center gap-4 p-4 rounded-2xl border bg-card shadow-sm animate-pulse">
+                    <Skeleton className="h-20 w-20 rounded-xl" />
                     <div className="flex-1 space-y-2">
-                      <Skeleton className="h-5 w-3/4" />
-                      <Skeleton className="h-4 w-1/2" />
+                      <Skeleton className="h-5 w-3/4 rounded-lg" />
+                      <Skeleton className="h-4 w-1/2 rounded-lg" />
                     </div>
                   </div>
                 ))}
               </div>
             ) : filteredProducts.length === 0 ? (
-              <div className="text-center py-16 text-muted-foreground">
-                <p className="text-lg">No products found</p>
+              <div className="text-center py-20 text-muted-foreground animate-fade-in">
+                <div className="w-16 h-16 bg-accent rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Search className="h-8 w-8 text-primary" />
+                </div>
+                <p className="text-lg font-semibold">No products found</p>
                 <p className="text-sm mt-2">Try searching with different keywords</p>
               </div>
             ) : (
@@ -166,15 +168,15 @@ const ProductSelectorModal = ({ open, onClose, onSelectProduct }: ProductSelecto
                   <button
                     key={product.id}
                     onClick={() => handleSelect(product)}
-                    className="w-full flex items-center gap-4 p-4 rounded-xl border border-border bg-card hover:bg-accent transition-all duration-200 hover:shadow-lg text-left hover:scale-[1.01] shadow-sm"
+                    className="w-full flex items-center gap-4 p-4 rounded-2xl border-2 border-border bg-card hover:bg-accent hover:border-primary transition-all duration-300 hover:shadow-xl text-left hover:scale-[1.02] shadow-sm group"
                   >
                     <img
                       src={product.images[0] || '/placeholder.svg'}
                       alt={product.title}
-                      className="h-20 w-20 object-cover rounded-xl"
+                      className="h-20 w-20 object-cover rounded-xl shadow-md group-hover:scale-105 transition-transform duration-300"
                     />
                     <div className="flex-1">
-                      <h4 className="font-semibold line-clamp-2 mb-1 text-foreground">{product.title}</h4>
+                      <h4 className="font-semibold line-clamp-2 mb-1 text-foreground group-hover:text-primary transition-colors">{product.title}</h4>
                       <p className="text-lg font-bold text-primary">Le {product.price.toLocaleString()}</p>
                       {product.moq && (
                         <p className="text-xs text-muted-foreground mt-1">MOQ: {product.moq}</p>

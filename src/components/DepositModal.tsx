@@ -78,55 +78,71 @@ export const DepositModal = ({ open, onOpenChange, onSuccess }: DepositModalProp
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent className="sm:max-w-md max-h-[85vh] overflow-hidden flex flex-col">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold text-primary">Top Up Wallet</DialogTitle>
+          <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-primary-light bg-clip-text text-transparent">
+            Top Up Wallet
+          </DialogTitle>
         </DialogHeader>
         
-        <div className="space-y-5 overflow-y-auto pr-2">
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-            <div className="flex gap-2 items-start">
-              <AlertCircle className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-              <div className="text-sm text-gray-700">
-                <p className="font-semibold mb-1">Instructions:</p>
-                <p>1. Send your payment to Market360's number</p>
-                <p>2. Enter the amount and your phone number</p>
-                <p>3. Upload proof of payment (optional)</p>
-                <p className="mt-2 text-primary font-semibold">Note: A 2% processing fee applies</p>
+        <div className="space-y-6 overflow-y-auto pr-2 scrollbar-thin">
+          <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-l-4 border-primary rounded-xl p-5 shadow-sm animate-fade-in">
+            <div className="flex gap-3 items-start">
+              <div className="p-2 bg-primary/10 rounded-full">
+                <AlertCircle className="h-5 w-5 text-primary" />
+              </div>
+              <div className="text-sm text-gray-700 space-y-2">
+                <p className="font-semibold text-gray-900">Payment Instructions</p>
+                <ol className="space-y-2 leading-relaxed list-decimal list-inside">
+                  <li>Send your payment to Market360's number</li>
+                  <li>Enter the amount and your phone number</li>
+                  <li>Upload proof of payment (optional)</li>
+                </ol>
+                <p className="text-xs text-primary font-semibold mt-3 pt-3 border-t border-green-200">
+                  Note: A 2% processing fee applies
+                </p>
               </div>
             </div>
           </div>
 
-          <div>
-            <Label htmlFor="amount">Amount (SLL)</Label>
+          <div className="space-y-2">
+            <Label htmlFor="amount" className="text-sm font-semibold text-foreground">
+              Amount (SLL)
+            </Label>
             <Input
               id="amount"
               type="number"
               placeholder="Enter amount"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              className="mt-2"
+              className="mt-2 h-12 rounded-xl border-2 border-border focus:border-primary transition-all duration-300 shadow-sm text-lg font-semibold"
             />
           </div>
 
-          <div>
-            <Label htmlFor="phone">Phone Number</Label>
+          <div className="space-y-2">
+            <Label htmlFor="phone" className="text-sm font-semibold text-foreground">
+              Phone Number
+            </Label>
             <Input
               id="phone"
               type="tel"
               placeholder="Enter phone number"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              className="mt-2"
+              className="mt-2 h-12 rounded-xl border-2 border-border focus:border-primary transition-all duration-300 shadow-sm"
             />
           </div>
 
-          <div>
-            <Label htmlFor="screenshot">Payment Proof (Optional)</Label>
+          <div className="space-y-2">
+            <Label htmlFor="screenshot" className="text-sm font-semibold text-foreground">
+              Payment Proof (Optional)
+            </Label>
             <div className="mt-2">
-              <label className="flex items-center justify-center gap-2 border-2 border-dashed border-gray-300 rounded-lg p-4 cursor-pointer hover:border-primary transition-colors">
-                <Upload className="h-5 w-5 text-gray-400" />
-                <span className="text-sm text-gray-600">
+              <label className="flex items-center justify-center gap-3 border-2 border-dashed border-border rounded-xl p-6 cursor-pointer hover:border-primary hover:bg-primary/5 transition-all duration-300 group">
+                <div className="p-2 bg-primary/10 rounded-full group-hover:bg-primary/20 transition-colors">
+                  <Upload className="h-5 w-5 text-primary" />
+                </div>
+                <span className="text-sm font-medium text-foreground">
                   {screenshot ? screenshot.name : 'Upload screenshot'}
                 </span>
                 <input
@@ -137,21 +153,24 @@ export const DepositModal = ({ open, onOpenChange, onSuccess }: DepositModalProp
                 />
               </label>
             </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              💡 Upload proof for faster processing
+            </p>
           </div>
         </div>
 
-        <div className="flex gap-3 mt-4 pt-4 border-t">
+        <div className="flex gap-3 mt-6 pt-5 border-t">
           <Button 
             variant="outline" 
             onClick={() => onOpenChange(false)}
-            className="flex-1"
+            className="flex-1 h-12 rounded-xl font-semibold transition-all hover:scale-105"
           >
             Cancel
           </Button>
           <Button 
             onClick={handleSubmit}
             disabled={submitting}
-            className="flex-1"
+            className="flex-1 h-12 rounded-xl font-semibold shadow-lg shadow-primary/30 transition-all hover:scale-105 hover:shadow-xl hover:shadow-primary/40"
           >
             {submitting ? 'Submitting...' : 'Submit Request'}
           </Button>
