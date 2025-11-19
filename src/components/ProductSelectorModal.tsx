@@ -120,36 +120,29 @@ const ProductSelectorModal = ({ open, onClose, onSelectProduct }: ProductSelecto
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="fixed inset-0 max-w-full w-full h-full rounded-none p-0 border-0 bg-background z-[100] flex flex-col m-0 data-[state=open]:animate-in data-[state=closed]:animate-out">
+      <DialogContent className="sm:max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col p-0">
         {/* Header with close button */}
-        <div className="sticky top-0 z-10 bg-card border-b border-border px-6 py-5 flex items-center justify-between shadow-sm shrink-0">
-          <h2 className="text-2xl font-bold text-primary">Select a Product</h2>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onClose}
-            className="rounded-full h-10 w-10 hover:bg-accent"
-          >
-            <X className="h-5 w-5" />
-          </Button>
+        {/* Header */}
+        <div className="bg-background border-b px-6 py-4 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-foreground">Select a Product</h2>
         </div>
 
-        {/* Search bar */}
-        <div className="px-6 py-5 border-b border-border bg-surface shrink-0">
-          <div className="relative max-w-2xl mx-auto">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+        {/* Search */}
+        <div className="px-6 py-3 border-b">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search products..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 h-12 text-base shadow-sm"
+              className="pl-10"
             />
           </div>
         </div>
 
-        {/* Scrollable product list */}
-        <div className="flex-1 overflow-y-auto px-6 py-6 bg-surface">
-          <div className="max-w-2xl mx-auto space-y-3">
+        {/* Product List */}
+        <div className="flex-1 overflow-y-auto px-6 py-3">
+          <div className="space-y-3">
             {loading ? (
               <div className="space-y-3">
                 {[...Array(5)].map((_, i) => (
