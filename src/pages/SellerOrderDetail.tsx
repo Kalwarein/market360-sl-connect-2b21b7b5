@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
+import { sendOrderStatusUpdateEmail } from '@/lib/emailService';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -158,6 +159,8 @@ const SellerOrderDetail = () => {
         delivered: 'Your order has been delivered'
       };
 
+      const orderNumber = `#360-${orderId?.substring(0, 8).toUpperCase()}`;
+
       // For delivered status, create rich notification with product details
       if (newStatus === 'delivered') {
         try {
@@ -199,6 +202,29 @@ const SellerOrderDetail = () => {
           body: `📦 Order Update: ${statusMessages[newStatus]}`,
           message_type: 'text'
         });
+      }
+
+      // Send email notification to buyer for order status updates
+      try {
+        if (order?.buyer_profile?.email) {
+          const statusLabels = {
+            processing: 'Processing',
+            packed: 'Packed',
+            shipped: 'Shipped',
+            delivered: 'Delivered'
+          };
+
+          await sendOrderStatusUpdateEmail(order.buyer_profile.email, {
+            orderNumber,
+            orderId: orderId!,
+            productName: order.products.title,
+            status: statusLabels[newStatus],
+            buyerName: order.buyer_profile.name || 'Customer'
+          }, order.buyer_id);
+        }
+      } catch (emailError) {
+        console.error('Failed to send status update email:', emailError);
+        // Don't fail the order update if email fails
       }
 
       toast({
