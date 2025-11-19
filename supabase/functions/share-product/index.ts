@@ -56,28 +56,42 @@ Deno.serve(async (req) => {
     console.log('Product found:', product.title)
 
     const productTitle = product.title
-    const productDescription = product.description || `${product.title} - Available on Market360`
     const productPrice = `Le ${Number(product.price).toLocaleString()}`
     
-    // Use real product image from database
+    // Use real product image from database - handle all storage formats
     let productImage = product.images?.[0]
     
-    // Ensure image URL is absolute and accessible
     if (productImage) {
-      if (productImage.startsWith('http')) {
-        // Already absolute URL
-      } else if (productImage.startsWith('/storage')) {
+      // If it's already a full URL (starts with http/https), use it as-is
+      if (productImage.startsWith('http://') || productImage.startsWith('https://')) {
+        // Already absolute URL - no changes needed
+      } 
+      // If it starts with /storage, prepend the Supabase URL
+      else if (productImage.startsWith('/storage')) {
         productImage = `${Deno.env.get('SUPABASE_URL')}${productImage}`
-      } else {
-        // Assume it's from product-images bucket
+      } 
+      // If it's just a filename, construct the full storage path
+      else {
         productImage = `${Deno.env.get('SUPABASE_URL')}/storage/v1/object/public/product-images/${productImage}`
       }
+      
+      console.log('✅ Using product image:', productImage)
     } else {
-      // Fallback to a generic shop image
+      // Fallback to a generic marketplace image if no product image exists
       productImage = 'https://images.unsplash.com/photo-1472851294608-062f824d29cc?w=1200&h=630&fit=crop&q=80'
+      console.log('⚠️ No product image found, using fallback')
     }
     
-    console.log('Product image URL:', productImage)
+    // Build rich metadata description with product name and key attributes
+    const metaParts = []
+    if (product.brand) metaParts.push(`Brand: ${product.brand}`)
+    if (product.category) metaParts.push(`Category: ${product.category}`)
+    if (product.moq && product.moq > 1) metaParts.push(`MOQ: ${product.moq}`)
+    if (product.origin) metaParts.push(`Origin: ${product.origin}`)
+    
+    const productDescription = metaParts.length > 0 
+      ? `${product.title} - ${metaParts.join(' • ')}`
+      : `${product.title} - Available on Market360`
     
     const storeName = product.stores?.store_name || 'Market360'
     const storeLocation = product.stores?.city && product.stores?.region 
@@ -85,15 +99,6 @@ Deno.serve(async (req) => {
       : 'Sierra Leone'
     const productUrl = `https://${req.headers.get('host')}/product/${productId}`
     const shareUrl = `https://${req.headers.get('host')}/share/product/${productId}`
-    
-    // Build rich description with key attributes
-    const attributes = []
-    if (product.brand) attributes.push(`Brand: ${product.brand}`)
-    if (product.category) attributes.push(`Category: ${product.category}`)
-    if (product.moq && product.moq > 1) attributes.push(`MOQ: ${product.moq}`)
-    const richDescription = attributes.length > 0 
-      ? `${productDescription}. ${attributes.join(' • ')}`
-      : productDescription
 
     // Generate rich HTML with OG meta tags
     const html = `<!DOCTYPE html>
@@ -105,14 +110,14 @@ Deno.serve(async (req) => {
   <!-- Primary Meta Tags -->
   <title>${productTitle} | ${storeName}</title>
   <meta name="title" content="${productTitle} | ${storeName}">
-  <meta name="description" content="${richDescription}">
+  <meta name="description" content="${productDescription}">
   <meta name="author" content="${storeName}">
   
   <!-- Open Graph / Facebook -->
   <meta property="og:type" content="product">
   <meta property="og:url" content="${shareUrl}">
   <meta property="og:title" content="${productTitle} - ${productPrice}">
-  <meta property="og:description" content="${richDescription}">
+  <meta property="og:description" content="${productDescription}">
   <meta property="og:image" content="${productImage}">
   <meta property="og:image:secure_url" content="${productImage}">
   <meta property="og:image:width" content="1200">
@@ -135,7 +140,7 @@ Deno.serve(async (req) => {
   <meta name="twitter:creator" content="@Market360">
   <meta name="twitter:url" content="${shareUrl}">
   <meta name="twitter:title" content="${productTitle} - ${productPrice}">
-  <meta name="twitter:description" content="${richDescription}">
+  <meta name="twitter:description" content="${productDescription}">
   <meta name="twitter:image" content="${productImage}">
   <meta name="twitter:image:alt" content="${productTitle}">
   <meta name="twitter:label1" content="Price">
@@ -158,7 +163,7 @@ Deno.serve(async (req) => {
     "@type": "Product",
     "name": "${productTitle}",
     "image": "${productImage}",
-    "description": "${richDescription}",
+    "description": "${productDescription}",
     "sku": "${product.product_code || productId}",
     ${product.brand ? `"brand": {
       "@type": "Brand",
@@ -327,10 +332,10 @@ Deno.serve(async (req) => {
       <img src="${productImage}" alt="${productTitle}">
       <div class="badge">Market360</div>
     </div>
-    <div class="content">
+      <div class="content">
       <div class="store-name">${storeName}</div>
       <h1 class="title">${productTitle}</h1>
-      ${productDescription ? `<p class="description">${productDescription.substring(0, 150)}${productDescription.length > 150 ? '...' : ''}</p>` : ''}
+      <p class="description">${productDescription}</p>
       <div class="price-container">
         <div class="price">${productPrice}</div>
         ${product.moq && product.moq > 1 ? `<div class="moq">MOQ: ${product.moq}</div>` : ''}
