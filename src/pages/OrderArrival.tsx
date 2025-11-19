@@ -77,74 +77,25 @@ const OrderArrival = () => {
   };
 
   const handleConfirmReceived = async () => {
+    if (!orderId || !user) return;
+
     setConfirming(true);
     try {
-      // Update order status to completed
-      const { error: orderError } = await supabase
-        .from('orders')
-        .update({ 
-          status: 'completed',
-          escrow_status: 'released'
-        })
-        .eq('id', orderId);
-
-      if (orderError) throw orderError;
-
-      // Get seller's wallet
-      const { data: sellerWallet, error: walletError } = await supabase
-        .from('wallets')
-        .select('id, balance_leones')
-        .eq('user_id', order?.seller_id)
-        .single();
-
-      if (walletError) throw walletError;
-
-      // Calculate amount after 2% fee
-      const escrowAmount = order?.total_amount || 0;
-      const fee = escrowAmount * 0.02;
-      const amountToRelease = escrowAmount - fee;
-
-      // Update seller wallet balance
-      const { error: balanceError } = await supabase
-        .from('wallets')
-        .update({ 
-          balance_leones: (sellerWallet.balance_leones || 0) + amountToRelease 
-        })
-        .eq('id', sellerWallet.id);
-
-      if (balanceError) throw balanceError;
-
-      // Create transaction record
-      await supabase.from('transactions').insert({
-        wallet_id: sellerWallet.id,
-        type: 'earning',
-        amount: amountToRelease,
-        status: 'completed',
-        reference: `Order ${orderId}`,
-        metadata: { order_id: orderId, fee_deducted: fee }
+      // Call edge function to release escrow (bypasses RLS)
+      const { data, error } = await supabase.functions.invoke('release-escrow', {
+        body: {
+          order_id: orderId,
+          buyer_id: user.id
+        }
       });
 
-      // Create notification for seller via edge function
-      try {
-        await supabase.functions.invoke('create-order-notification', {
-          body: {
-            user_id: order?.seller_id,
-            type: 'order',
-            title: 'Payment Released! 🎉',
-            body: `Buyer confirmed delivery for ${order?.products?.title}. Le ${amountToRelease.toFixed(2)} added to your wallet.`,
-            link_url: `/seller/order/${orderId}`,
-            metadata: { order_id: orderId, amount: amountToRelease }
-          }
-        });
-      } catch (notifError) {
-        console.error('Failed to send notification:', notifError);
-      }
+      if (error) throw error;
 
       toast.success('Order confirmed! Thank you for shopping with Market360.');
       navigate('/orders');
     } catch (error) {
       console.error('Error confirming order:', error);
-      toast.error('Failed to confirm order receipt');
+      toast.error('Failed to confirm order. Please try again.');
     } finally {
       setConfirming(false);
       setShowConfirmDialog(false);
