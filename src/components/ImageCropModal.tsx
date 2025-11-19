@@ -76,11 +76,13 @@ const ImageCropModal = ({ open, imageUrl, onClose, onCropComplete }: ImageCropMo
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Crop Profile Picture</DialogTitle>
+          <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-primary-light bg-clip-text text-transparent">
+            Crop Profile Picture
+          </DialogTitle>
         </DialogHeader>
-        <div className="relative h-[300px] bg-background">
+        <div className="relative h-[350px] bg-accent/10 rounded-2xl overflow-hidden shadow-inner border-2 border-border">
           <Cropper
             image={imageUrl}
             crop={crop}
@@ -93,21 +95,29 @@ const ImageCropModal = ({ open, imageUrl, onClose, onCropComplete }: ImageCropMo
             onCropComplete={onCropCompleteCallback}
           />
         </div>
-        <div className="px-4 py-2">
-          <label className="text-sm font-medium mb-2 block">Zoom</label>
+        <div className="px-2 py-3 space-y-3">
+          <label className="text-sm font-semibold text-foreground block">Zoom Level</label>
           <Slider
             value={[zoom]}
             min={1}
             max={3}
             step={0.1}
             onValueChange={(values) => setZoom(values[0])}
+            className="py-2"
           />
         </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
+        <DialogFooter className="gap-3">
+          <Button 
+            variant="outline" 
+            onClick={onClose}
+            className="flex-1 h-11 rounded-xl font-semibold transition-all hover:scale-105"
+          >
             Cancel
           </Button>
-          <Button onClick={handleSave}>
+          <Button 
+            onClick={handleSave}
+            className="flex-1 h-11 rounded-xl font-semibold shadow-lg shadow-primary/30 transition-all hover:scale-105 hover:shadow-xl hover:shadow-primary/40"
+          >
             Save
           </Button>
         </DialogFooter>
