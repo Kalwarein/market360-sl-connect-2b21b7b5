@@ -15,6 +15,7 @@ import { ArrowLeft, MapPin, Wallet, AlertCircle } from "lucide-react";
 import { NumericInput } from "@/components/NumericInput";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SIERRA_LEONE_REGIONS, getDistrictsByRegion } from "@/lib/sierraLeoneData";
+import { sendOrderConfirmationEmail, sendNewOrderSellerEmail } from "@/lib/emailService";
 
 export default function Checkout() {
   const navigate = useNavigate();
@@ -96,20 +97,33 @@ export default function Checkout() {
         // Get product details including seller_id
         const { data: product } = await supabase
           .from("products")
-          .select("store_id")
+          .select("store_id, images")
           .eq("id", item.id)
           .single();
 
         if (!product) throw new Error("Product not found");
 
-        // Get store owner (seller)
+        // Get store owner (seller) and store info
         const { data: store } = await supabase
           .from("stores")
-          .select("owner_id")
+          .select("owner_id, store_name")
           .eq("id", product.store_id)
           .single();
 
         if (!store) throw new Error("Store not found");
+
+        // Get buyer and seller profiles for emails
+        const { data: buyerProfile } = await supabase
+          .from("profiles")
+          .select("email, name")
+          .eq("id", user.id)
+          .single();
+
+        const { data: sellerProfile } = await supabase
+          .from("profiles")
+          .select("email, name")
+          .eq("id", store.owner_id)
+          .single();
 
         // Create order
         const { data: newOrder, error: orderError } = await supabase
@@ -135,6 +149,10 @@ export default function Checkout() {
 
         if (orderError) throw orderError;
 
+        const orderNumber = `#360-${newOrder.id.substring(0, 8).toUpperCase()}`;
+        const deliveryFullAddress = `${deliveryInfo.address}, ${deliveryInfo.city}, ${deliveryInfo.region}`;
+        const productImage = product.images?.[0] || '/placeholder.svg';
+
         // Send notification to seller via edge function (bypasses RLS)
         try {
           await supabase.functions.invoke('create-order-notification', {
@@ -153,6 +171,40 @@ export default function Checkout() {
         } catch (notifError) {
           console.error('Failed to send notification:', notifError);
           // Don't fail the order if notification fails
+        }
+
+        // Send email notifications
+        try {
+          // Send order confirmation to buyer
+          if (buyerProfile?.email) {
+            await sendOrderConfirmationEmail(buyerProfile.email, {
+              orderNumber,
+              orderId: newOrder.id,
+              productName: item.title,
+              productImage,
+              quantity: item.quantity,
+              totalAmount: item.price * item.quantity,
+              deliveryAddress: deliveryFullAddress,
+              storeName: store.store_name,
+            });
+          }
+
+          // Send new order notification to seller
+          if (sellerProfile?.email) {
+            await sendNewOrderSellerEmail(sellerProfile.email, {
+              orderNumber,
+              orderId: newOrder.id,
+              productName: item.title,
+              productImage,
+              quantity: item.quantity,
+              totalAmount: item.price * item.quantity,
+              buyerName: buyerProfile?.name || 'Customer',
+              deliveryAddress: deliveryFullAddress,
+            });
+          }
+        } catch (emailError) {
+          console.error('Failed to send email notifications:', emailError);
+          // Don't fail the order if email fails
         }
       });
 
