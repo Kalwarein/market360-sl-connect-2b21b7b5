@@ -22,13 +22,16 @@ interface ShareDialogProps {
 
 export function ShareDialog({ open, onOpenChange, product }: ShareDialogProps) {
   const [copied, setCopied] = useState(false);
-  const shareUrl = `${window.location.origin}/share/product/${product.id}`;
+  // Add version parameter to bypass social media caching
+  const shareUrl = `${window.location.origin}/share/product/${product.id}?v=${Date.now()}`;
 
   const copyToClipboard = async () => {
     try {
       await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
-      toast.success('Link copied! Share it anywhere for a beautiful preview 🎉');
+      toast.success('Link copied! 🎉', {
+        description: 'If previewing on WhatsApp, delete and re-paste to see the rich product card'
+      });
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
       // Fallback

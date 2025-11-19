@@ -12,9 +12,17 @@ Deno.serve(async (req) => {
 
   try {
     const url = new URL(req.url)
-    const productId = url.pathname.split('/').pop()
+    console.log('Full URL:', req.url)
+    console.log('Pathname:', url.pathname)
+    
+    // Extract product ID from various possible URL formats
+    const pathParts = url.pathname.split('/').filter(part => part.length > 0)
+    const productId = pathParts[pathParts.length - 1]
+    
+    console.log('Product ID:', productId)
 
-    if (!productId) {
+    if (!productId || productId.length < 10) {
+      console.error('Invalid product ID:', productId)
       return new Response('Product ID required', { status: 400, headers: corsHeaders })
     }
 
@@ -40,21 +48,36 @@ Deno.serve(async (req) => {
       .single()
 
     if (error || !product) {
+      console.error('Product fetch error:', error)
+      console.error('Product not found for ID:', productId)
       return new Response('Product not found', { status: 404, headers: corsHeaders })
     }
+    
+    console.log('Product found:', product.title)
 
     const productTitle = product.title
     const productDescription = product.description || `${product.title} - Available on Market360`
     const productPrice = `Le ${Number(product.price).toLocaleString()}`
     
-    // Use real product image from database, fallback to Market360 logo
-    const market360Logo = `${Deno.env.get('SUPABASE_URL')}/storage/v1/object/public/product-images/market360-logo.png`
-    let productImage = product.images?.[0] || market360Logo
+    // Use real product image from database
+    let productImage = product.images?.[0]
     
-    // Ensure image URL is absolute
-    if (productImage && !productImage.startsWith('http')) {
-      productImage = `${Deno.env.get('SUPABASE_URL')}${productImage}`
+    // Ensure image URL is absolute and accessible
+    if (productImage) {
+      if (productImage.startsWith('http')) {
+        // Already absolute URL
+      } else if (productImage.startsWith('/storage')) {
+        productImage = `${Deno.env.get('SUPABASE_URL')}${productImage}`
+      } else {
+        // Assume it's from product-images bucket
+        productImage = `${Deno.env.get('SUPABASE_URL')}/storage/v1/object/public/product-images/${productImage}`
+      }
+    } else {
+      // Fallback to a generic shop image
+      productImage = 'https://images.unsplash.com/photo-1472851294608-062f824d29cc?w=1200&h=630&fit=crop&q=80'
     }
+    
+    console.log('Product image URL:', productImage)
     
     const storeName = product.stores?.store_name || 'Market360'
     const storeLocation = product.stores?.city && product.stores?.region 
@@ -324,11 +347,16 @@ Deno.serve(async (req) => {
 </body>
 </html>`
 
+    console.log('Generating HTML response with title:', productTitle)
+    console.log('Image for OG tags:', productImage)
+    
     return new Response(html, {
       headers: {
         ...corsHeaders,
         'Content-Type': 'text/html; charset=utf-8',
-        'Cache-Control': 'public, max-age=3600',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
       },
     })
   } catch (error) {

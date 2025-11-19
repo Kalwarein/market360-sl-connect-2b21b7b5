@@ -1,5 +1,5 @@
 # Redirect share URLs to edge function for rich preview generation
-/share/product/* https://rhtqsqpdvawlfqxlagxw.supabase.co/functions/v1/share-product/:splat 200
+/share/product/:id https://rhtqsqpdvawlfqxlagxw.supabase.co/functions/v1/share-product/:id 200!
 
 # All other routes go to index.html for client-side routing
 /* /index.html 200
