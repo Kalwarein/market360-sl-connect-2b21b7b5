@@ -71,6 +71,8 @@ const Auth = () => {
         }
       } else {
         toast.success('Account created! Welcome to Market360!');
+        // Automatically sign in after successful sign up
+        await signIn(formData.email, formData.password);
       }
     } catch (err) {
       if (err instanceof z.ZodError) {
