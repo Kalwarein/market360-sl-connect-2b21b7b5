@@ -41,6 +41,7 @@ import AdminStores from "./pages/AdminStores";
 import AdminProducts from "./pages/AdminProducts";
 import AdminOrders from "./pages/AdminOrders";
 import AdminWalletRequests from "./pages/AdminWalletRequests";
+import AdminWalletRequestDetail from "./pages/AdminWalletRequestDetail";
 import AdminAuditLogs from "./pages/AdminAuditLogs";
 import Checkout from "./pages/Checkout";
 import About from "./pages/About";
@@ -97,7 +98,8 @@ const App = () => (
               <Route path="/admin/products" element={<AdminProducts />} />
               <Route path="/admin/orders" element={<AdminOrders />} />
               <Route path="/admin/wallet-requests" element={<AdminWalletRequests />} />
-          <Route path="/admin/audit-logs" element={<AdminAuditLogs />} />
+              <Route path="/admin-wallet-requests/:requestId" element={<ProtectedRoute><AdminWalletRequestDetail /></ProtectedRoute>} />
+              <Route path="/admin/audit-logs" element={<AdminAuditLogs />} />
           <Route path="/checkout" element={<Checkout />} />
           <Route path="/orders" element={<Orders />} />
           <Route path="/order-detail/:orderId" element={<OrderDetail />} />
