@@ -13,7 +13,7 @@ import { z } from 'zod';
 import { MultiStepForm } from '@/components/MultiStepForm';
 import { LocationPicker } from '@/components/LocationPicker';
 import ImageCropModal from '@/components/ImageCropModal';
-import { PRODUCT_CATEGORIES } from '@/lib/productCategories';
+import { CategorySelector } from '@/components/CategorySelector';
 
 const applicationSchema = z.object({
   contactPerson: z.string().min(2, 'Full name is required'),
@@ -256,25 +256,12 @@ export default function BecomeSellerMultiStep() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="businessCategory" className="flex items-center gap-2">
-              <Building2 className="h-4 w-4 text-primary" />
-              Business Category *
-            </Label>
-            <Select
+            <CategorySelector
               value={formData.businessCategory}
-              onValueChange={(value) => setFormData({ ...formData, businessCategory: value })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select business category" />
-              </SelectTrigger>
-              <SelectContent>
-                {PRODUCT_CATEGORIES.slice(0, 30).map((category) => (
-                  <SelectItem key={category} value={category}>
-                    {category}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              onChange={(value) => setFormData({ ...formData, businessCategory: value })}
+              label="Business Category *"
+              placeholder="Select or add category..."
+            />
           </div>
 
           <div className="space-y-2">

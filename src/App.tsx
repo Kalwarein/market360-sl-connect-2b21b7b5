@@ -55,6 +55,8 @@ import ProductManagement from "./pages/ProductManagement";
 import Perks from "./pages/Perks";
 import ProfileViewer from "./pages/ProfileViewer";
 import OrderArrival from "./pages/OrderArrival";
+import AdminSellerApplications from "./pages/AdminSellerApplications";
+import AdminSellerApplicationDetail from "./pages/AdminSellerApplicationDetail";
 
 const queryClient = new QueryClient();
 

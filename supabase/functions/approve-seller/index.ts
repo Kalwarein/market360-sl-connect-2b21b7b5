@@ -133,58 +133,73 @@ Deno.serve(async (req) => {
     console.log('Application approved')
 
     // Create notification
-    const { error: notifError } = await supabaseClient
+    await supabaseClient
       .from('notifications')
       .insert({
         user_id: application.user_id,
-        type: 'seller_approved',
+        type: 'system',
         title: 'Seller Application Approved! 🎉',
-        body: 'Congratulations! Your seller application has been approved. You can now start listing products.',
-        metadata: { store_id: store.id, application_id: applicationId }
+        body: `Congratulations! Your seller application has been approved. Your store "${application.store_name || application.business_name}" is now live on Market360. Start adding products and grow your business!`,
+        link_url: '/seller/dashboard'
       })
 
-    if (notifError) {
-      console.error('Notification error:', notifError)
+    console.log('Notification created')
+
+    // Send approval email
+    try {
+      const { error: emailError } = await supabaseClient.functions.invoke('send-email', {
+        body: {
+          to: application.contact_email,
+          type: 'seller_approved',
+          data: {
+            sellerName: application.contact_person,
+            businessName: application.business_name,
+            storeName: application.store_name || application.business_name,
+            storeUrl: `${Deno.env.get('SUPABASE_URL')}`
+          }
+        }
+      });
+
+      if (emailError) {
+        console.error('Email send error:', emailError);
+      } else {
+        console.log('Approval email sent to:', application.contact_email);
+      }
+    } catch (emailErr) {
+      console.error('Failed to send approval email:', emailErr);
     }
 
     // Create audit log
-    const { error: auditError } = await supabaseClient
+    await supabaseClient
       .from('audit_logs')
       .insert({
         actor_id: user.id,
         action: 'seller_application_approved',
-        target_type: 'seller_applications',
-        target_id: applicationId,
-        description: `Approved seller application for ${application.business_name}`,
-        metadata: { store_id: store.id }
+        target_id: application.id,
+        target_type: 'seller_application',
+        description: `Approved seller application for ${application.business_name}`
       })
 
-    if (auditError) {
-      console.error('Audit log error:', auditError)
-    }
-
-    console.log('Approval complete')
+    console.log('Audit log created')
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
-        store_id: store.id,
-        message: 'Seller application approved successfully'
+      JSON.stringify({
+        success: true,
+        message: 'Seller application approved successfully',
+        store_id: store.id
       }),
-      { 
+      {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200 
+        status: 200,
       }
     )
-
   } catch (error) {
     console.error('Error:', error)
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
     return new Response(
-      JSON.stringify({ error: errorMessage }),
-      { 
+      JSON.stringify({ error: (error as Error).message }),
+      {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400 
+        status: 400,
       }
     )
   }

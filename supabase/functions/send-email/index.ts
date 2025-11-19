@@ -372,6 +372,41 @@ const handler = async (req: Request): Promise<Response> => {
     let subject = '';
 
     switch (type) {
+      case 'seller_approved':
+        subject = 'Congratulations! Your Store is Approved 🎉';
+        html = `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="background: linear-gradient(135deg, #0FA86C 0%, #0B8A6D 100%); padding: 30px; text-align: center;">
+              <h1 style="color: white; margin: 0;">Welcome to Market360! 🎊</h1>
+            </div>
+            <div style="padding: 30px; background: #f9f9f9;">
+              <h2 style="color: #0B2B22;">Hello ${data.sellerName},</h2>
+              <p style="font-size: 16px; line-height: 1.6; color: #333;">
+                Great news! Your seller application for <strong>${data.businessName}</strong> has been approved!
+              </p>
+              <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #0FA86C;">
+                <h3 style="color: #0FA86C; margin-top: 0;">Your Store: ${data.storeName}</h3>
+                <p style="color: #666;">Your store is now live on Market360 and ready for customers!</p>
+              </div>
+              <h3 style="color: #0B2B22;">Next Steps:</h3>
+              <ul style="line-height: 1.8; color: #333;">
+                <li>Add your first products to your store</li>
+                <li>Set up your store profile and branding</li>
+                <li>Start receiving orders from customers</li>
+                <li>Manage your inventory and orders from the seller dashboard</li>
+              </ul>
+              <p style="color: #666; font-size: 14px; margin-top: 30px;">
+                If you have any questions, our support team is here to help!
+              </p>
+            </div>
+            <div style="background: #0B2B22; padding: 20px; text-align: center;">
+              <p style="color: #fff; margin: 0; font-size: 14px;">
+                © 2024 Market360. All rights reserved.
+              </p>
+            </div>
+          </div>
+        `;
+        break;
       case 'order_confirmation':
         html = generateOrderConfirmationEmail(data);
         subject = `Order Confirmed #${data.orderNumber} - Market360`;
