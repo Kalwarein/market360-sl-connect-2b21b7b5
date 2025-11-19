@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 
-const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+const MAILERSEND_API_KEY = Deno.env.get("MAILERSEND_API_KEY");
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -396,15 +396,20 @@ const handler = async (req: Request): Promise<Response> => {
         throw new Error(`Unknown email type: ${type}`);
     }
 
-    const emailResponse = await fetch('https://api.resend.com/emails', {
+    const emailResponse = await fetch('https://api.mailersend.com/v1/email', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${RESEND_API_KEY}`,
+        'Authorization': `Bearer ${MAILERSEND_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'Market360 <onboarding@resend.dev>',
-        to: [to],
+        from: {
+          email: 'MS_noreply@trial-z3m5jgrp1r04dpyo.mlsender.net',
+          name: 'Market360'
+        },
+        to: [{
+          email: to
+        }],
         subject,
         html,
       }),
@@ -413,7 +418,7 @@ const handler = async (req: Request): Promise<Response> => {
     const responseData = await emailResponse.json();
 
     if (!emailResponse.ok) {
-      throw new Error(`Resend API error: ${JSON.stringify(responseData)}`);
+      throw new Error(`MailerSend API error: ${JSON.stringify(responseData)}`);
     }
 
     console.log('Email sent successfully:', responseData);
