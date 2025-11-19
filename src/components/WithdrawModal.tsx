@@ -67,12 +67,12 @@ export const WithdrawModal = ({ open, onOpenChange, onSuccess, currentBalance }:
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="fixed inset-0 max-w-full w-full h-full md:max-w-md md:h-auto md:inset-auto rounded-none md:rounded-lg p-0 md:p-6 border-0 md:border bg-background z-[100]">
-        <DialogHeader className="p-6 md:p-0">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-primary">Withdraw Funds</DialogTitle>
         </DialogHeader>
         
-        <div className="space-y-5 py-4 px-6 md:px-0 overflow-y-auto max-h-[calc(100vh-120px)] md:max-h-none">
+        <div className="space-y-5 overflow-y-auto pr-2">
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
             <div className="flex gap-2 items-start">
               <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
@@ -113,13 +113,22 @@ export const WithdrawModal = ({ open, onOpenChange, onSuccess, currentBalance }:
               className="mt-2"
             />
           </div>
+        </div>
 
-          <Button
+        <div className="flex gap-3 mt-4 pt-4 border-t">
+          <Button 
+            variant="outline" 
+            onClick={() => onOpenChange(false)}
+            className="flex-1"
+          >
+            Cancel
+          </Button>
+          <Button 
             onClick={handleSubmit}
             disabled={submitting || !amount || parseFloat(amount) > currentBalance}
-            className="w-full h-12 text-base font-semibold"
+            className="flex-1"
           >
-            {submitting ? 'Submitting...' : 'Submit Withdrawal Request'}
+            {submitting ? 'Processing...' : 'Submit Request'}
           </Button>
         </div>
       </DialogContent>
