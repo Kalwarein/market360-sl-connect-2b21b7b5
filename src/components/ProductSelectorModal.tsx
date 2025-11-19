@@ -120,35 +120,35 @@ const ProductSelectorModal = ({ open, onClose, onSelectProduct }: ProductSelecto
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="fixed inset-0 max-w-full w-full h-full rounded-none p-0 border-0 bg-background animate-fade-in z-[100]">
+      <DialogContent className="fixed inset-0 max-w-full w-full h-full rounded-none p-0 border-0 bg-background z-[100] flex flex-col">
         {/* Header with close button */}
-        <div className="sticky top-0 z-10 bg-background border-b border-border px-6 py-4 flex items-center justify-between shadow-sm">
-          <h2 className="text-2xl font-semibold">Select a Product</h2>
+        <div className="sticky top-0 z-10 bg-card border-b border-border px-6 py-5 flex items-center justify-between shadow-sm shrink-0">
+          <h2 className="text-2xl font-bold text-primary">Select a Product</h2>
           <Button
             variant="ghost"
             size="icon"
             onClick={onClose}
-            className="rounded-full h-10 w-10 hover:bg-muted"
+            className="rounded-full h-10 w-10 hover:bg-accent"
           >
             <X className="h-5 w-5" />
           </Button>
         </div>
 
         {/* Search bar */}
-        <div className="px-6 py-4 border-b border-border bg-muted/30">
+        <div className="px-6 py-5 border-b border-border bg-surface shrink-0">
           <div className="relative max-w-2xl mx-auto">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <Input
               placeholder="Search products..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 h-12 text-base"
+              className="pl-10 h-12 text-base shadow-sm"
             />
           </div>
         </div>
 
         {/* Scrollable product list */}
-        <div className="overflow-y-auto h-[calc(100vh-140px)] px-6 py-6">
+        <div className="flex-1 overflow-y-auto px-6 py-6 bg-surface">
           <div className="max-w-2xl mx-auto space-y-3">
             {loading ? (
               <div className="space-y-3">
@@ -173,16 +173,16 @@ const ProductSelectorModal = ({ open, onClose, onSelectProduct }: ProductSelecto
                   <button
                     key={product.id}
                     onClick={() => handleSelect(product)}
-                    className="w-full flex items-center gap-4 p-4 rounded-xl border bg-card hover:bg-accent transition-all duration-200 hover:shadow-md text-left hover:scale-[1.02]"
+                    className="w-full flex items-center gap-4 p-4 rounded-xl border border-border bg-card hover:bg-accent transition-all duration-200 hover:shadow-lg text-left hover:scale-[1.01] shadow-sm"
                   >
                     <img
                       src={product.images[0] || '/placeholder.svg'}
                       alt={product.title}
-                      className="h-20 w-20 object-cover rounded-lg"
+                      className="h-20 w-20 object-cover rounded-xl"
                     />
                     <div className="flex-1">
-                      <h4 className="font-semibold line-clamp-2 mb-1">{product.title}</h4>
-                      <p className="text-lg font-bold text-[#0FA86C]">Le {product.price.toLocaleString()}</p>
+                      <h4 className="font-semibold line-clamp-2 mb-1 text-foreground">{product.title}</h4>
+                      <p className="text-lg font-bold text-primary">Le {product.price.toLocaleString()}</p>
                       {product.moq && (
                         <p className="text-xs text-muted-foreground mt-1">MOQ: {product.moq}</p>
                       )}
@@ -196,18 +196,18 @@ const ProductSelectorModal = ({ open, onClose, onSelectProduct }: ProductSelecto
 
         {/* Confirmation Dialog */}
         {showConfirmation && selectedProduct && (
-          <div className="absolute inset-0 bg-background/95 backdrop-blur-sm z-50 flex items-center justify-center p-6">
-            <div className="bg-card border border-border rounded-2xl p-6 max-w-md w-full shadow-2xl">
-              <h3 className="text-xl font-semibold mb-4">Confirm Product Selection</h3>
-              <div className="flex gap-4 mb-6">
+          <div className="absolute inset-0 bg-background/95 backdrop-blur-md z-50 flex items-center justify-center p-6 animate-fade-in">
+            <div className="bg-card border-2 border-primary/20 rounded-2xl p-6 max-w-md w-full shadow-2xl animate-scale-in">
+              <h3 className="text-xl font-bold text-primary mb-5">Confirm Product Selection</h3>
+              <div className="flex gap-4 mb-6 p-4 bg-surface rounded-xl">
                 <img
                   src={selectedProduct.images[0] || '/placeholder.svg'}
                   alt={selectedProduct.title}
-                  className="h-24 w-24 object-cover rounded-lg"
+                  className="h-24 w-24 object-cover rounded-xl shadow-md"
                 />
                 <div className="flex-1">
-                  <h4 className="font-semibold line-clamp-2 mb-2">{selectedProduct.title}</h4>
-                  <p className="text-lg font-bold text-[#0FA86C]">Le {selectedProduct.price.toLocaleString()}</p>
+                  <h4 className="font-semibold line-clamp-2 mb-2 text-foreground">{selectedProduct.title}</h4>
+                  <p className="text-lg font-bold text-primary">Le {selectedProduct.price.toLocaleString()}</p>
                   {selectedProduct.moq && (
                     <p className="text-xs text-muted-foreground mt-1">MOQ: {selectedProduct.moq}</p>
                   )}
@@ -220,13 +220,13 @@ const ProductSelectorModal = ({ open, onClose, onSelectProduct }: ProductSelecto
                 <Button
                   variant="outline"
                   onClick={handleCancelSelection}
-                  className="flex-1"
+                  className="flex-1 h-11"
                 >
                   Cancel
                 </Button>
                 <Button
                   onClick={handleConfirm}
-                  className="flex-1"
+                  className="flex-1 h-11 font-semibold"
                 >
                   Confirm & Send
                 </Button>
