@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Package, MapPin, Phone, User, MessageSquare, CheckCircle2, AlertCircle, Clock, Truck, XCircle, Shield } from 'lucide-react';
+import { ArrowLeft, Package, MapPin, Phone, User, MessageSquare, CheckCircle2, AlertCircle, Clock, Truck, XCircle, Shield, Store } from 'lucide-react';
 import BottomNav from '@/components/BottomNav';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
@@ -154,11 +154,193 @@ const OrderDetail = () => {
         </div>
       </div>
       <div className="p-4 space-y-4">
-        <Card><CardContent className="p-4"><div className="flex items-center gap-3"><div className="p-3 rounded-full bg-primary"><Package className="h-5 w-5" /></div><div className="flex-1"><p className="font-semibold text-lg capitalize">{order.status}</p><p className="text-sm text-muted-foreground">{format(new Date(order.created_at), 'MMM d, yyyy h:mm a')}</p></div><Badge variant="outline" className="capitalize">{order.escrow_status}</Badge></div></CardContent></Card>
+        {/* Order Status Card */}
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3 mb-4">
+              <div className={`p-3 rounded-full ${getStatusColor(order.status)}`}>
+                {getStatusIcon(order.status)}
+              </div>
+              <div className="flex-1">
+                <p className="font-semibold text-lg capitalize">{order.status}</p>
+                <p className="text-sm text-muted-foreground">{format(new Date(order.created_at), 'MMM d, yyyy h:mm a')}</p>
+              </div>
+              <Badge variant="outline" className="capitalize flex items-center gap-1">
+                <Shield className="h-3 w-3" />
+                {order.escrow_status}
+              </Badge>
+            </div>
+            <div className="text-sm text-muted-foreground">
+              Order ID: <span className="font-mono">#{order.id.slice(0, 8).toUpperCase()}</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Product Information */}
+        <Card>
+          <CardContent className="p-4">
+            <h3 className="font-semibold mb-3 flex items-center gap-2">
+              <Package className="h-4 w-4" />
+              Product Details
+            </h3>
+            <div className="flex gap-4">
+              <img 
+                src={order.products.images[0]} 
+                alt={order.products.title}
+                className="w-20 h-20 object-cover rounded-lg border"
+              />
+              <div className="flex-1">
+                <p className="font-semibold mb-1">{order.products.title}</p>
+                <p className="text-sm text-muted-foreground mb-1">Code: {order.products.product_code}</p>
+                <p className="text-sm font-semibold text-primary">Le {order.products.price.toLocaleString()}</p>
+                <p className="text-sm text-muted-foreground">Quantity: {order.quantity}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Store Information */}
+        <Card>
+          <CardContent className="p-4">
+            <h3 className="font-semibold mb-3 flex items-center gap-2">
+              <Store className="h-4 w-4" />
+              Store Details
+            </h3>
+            <div className="flex items-center gap-3">
+              {order.stores.logo_url && (
+                <img 
+                  src={order.stores.logo_url} 
+                  alt={order.stores.store_name}
+                  className="w-12 h-12 rounded-full object-cover border"
+                />
+              )}
+              <div className="flex-1">
+                <p className="font-semibold">{order.stores.store_name}</p>
+                <Button 
+                  variant="link" 
+                  className="h-auto p-0 text-primary"
+                  onClick={() => navigate(`/chat?sellerId=${order.seller_id}&productId=${order.products.id}`)}
+                >
+                  <MessageSquare className="h-3 w-3 mr-1" />
+                  Chat with Seller
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Delivery Information */}
+        <Card>
+          <CardContent className="p-4">
+            <h3 className="font-semibold mb-3 flex items-center gap-2">
+              <MapPin className="h-4 w-4" />
+              Delivery Information
+            </h3>
+            <div className="space-y-3">
+              <div className="flex items-start gap-2">
+                <User className="h-4 w-4 mt-0.5 text-muted-foreground" />
+                <div className="flex-1">
+                  <p className="text-sm text-muted-foreground">Recipient</p>
+                  <p className="font-medium">{order.delivery_name}</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-2">
+                <Phone className="h-4 w-4 mt-0.5 text-muted-foreground" />
+                <div className="flex-1">
+                  <p className="text-sm text-muted-foreground">Phone</p>
+                  <p className="font-medium">{order.delivery_phone}</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-2">
+                <MapPin className="h-4 w-4 mt-0.5 text-muted-foreground" />
+                <div className="flex-1">
+                  <p className="text-sm text-muted-foreground">Address</p>
+                  <p className="font-medium">{order.shipping_address}</p>
+                  <p className="text-sm text-muted-foreground">{order.shipping_city}, {order.shipping_region}</p>
+                  <p className="text-sm text-muted-foreground">{order.shipping_country}</p>
+                </div>
+              </div>
+              {order.delivery_notes && (
+                <div className="flex items-start gap-2">
+                  <Package className="h-4 w-4 mt-0.5 text-muted-foreground" />
+                  <div className="flex-1">
+                    <p className="text-sm text-muted-foreground">Delivery Notes</p>
+                    <p className="font-medium text-sm">{order.delivery_notes}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Payment Summary */}
+        <Card>
+          <CardContent className="p-4">
+            <h3 className="font-semibold mb-3">Payment Summary</h3>
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Subtotal ({order.quantity} item{order.quantity > 1 ? 's' : ''})</span>
+                <span className="font-medium">Le {(order.products.price * order.quantity).toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between text-sm pt-2 border-t">
+                <span className="font-semibold">Total Amount</span>
+                <span className="font-bold text-lg text-primary">Le {order.total_amount.toLocaleString()}</span>
+              </div>
+              <div className="flex items-center gap-2 mt-2 p-2 bg-muted/50 rounded-lg">
+                <Shield className="h-4 w-4 text-primary" />
+                <p className="text-xs text-muted-foreground">
+                  {order.escrow_status === 'holding' ? 'Payment secured in escrow until delivery confirmation' : 
+                   order.escrow_status === 'released' ? 'Payment released to seller' : 
+                   'Payment processed'}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Action Buttons */}
         <div className="space-y-2">
-          {order.status === 'delivered' && <Button onClick={() => setShowConfirmDialog(true)} className="w-full" size="lg"><CheckCircle2 className="mr-2 h-5 w-5" />Confirm Received</Button>}
-          {order.status === 'pending' && <Button onClick={() => setShowCancelDialog(true)} variant="destructive" className="w-full" size="lg"><XCircle className="mr-2 h-5 w-5" />Cancel Order</Button>}
-          {!['cancelled', 'completed', 'disputed'].includes(order.status) && <Button onClick={() => setShowDisputeDialog(true)} variant="outline" className="w-full" size="lg"><AlertCircle className="mr-2 h-5 w-5" />Report Problem</Button>}
+          {order.status === 'delivered' && (
+            <Button 
+              onClick={() => setShowConfirmDialog(true)} 
+              className="w-full" 
+              size="lg"
+            >
+              <CheckCircle2 className="mr-2 h-5 w-5" />
+              Confirm Received
+            </Button>
+          )}
+          {order.status === 'pending' && (
+            <Button 
+              onClick={() => setShowCancelDialog(true)} 
+              variant="destructive" 
+              className="w-full" 
+              size="lg"
+            >
+              <XCircle className="mr-2 h-5 w-5" />
+              Cancel Order
+            </Button>
+          )}
+          {!['cancelled', 'completed', 'disputed'].includes(order.status) && (
+            <Button 
+              onClick={() => setShowDisputeDialog(true)} 
+              variant="outline" 
+              className="w-full" 
+              size="lg"
+            >
+              <AlertCircle className="mr-2 h-5 w-5" />
+              Report Problem
+            </Button>
+          )}
+          <Button 
+            onClick={() => navigate(`/chat?sellerId=${order.seller_id}&productId=${order.products.id}`)}
+            variant="outline" 
+            className="w-full" 
+            size="lg"
+          >
+            <MessageSquare className="mr-2 h-5 w-5" />
+            Chat with Seller
+          </Button>
         </div>
       </div>
       <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}><DialogContent><DialogHeader><DialogTitle>Confirm Received?</DialogTitle></DialogHeader><p className="text-sm">Payment will be released to seller.</p><DialogFooter><Button variant="outline" onClick={() => setShowConfirmDialog(false)}>Cancel</Button><Button onClick={handleConfirmReceived}>Confirm</Button></DialogFooter></DialogContent></Dialog>
