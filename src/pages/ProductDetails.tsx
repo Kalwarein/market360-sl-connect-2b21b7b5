@@ -129,29 +129,22 @@ const ProductDetails = () => {
         conversationId = newConvo.id;
       }
 
-      if (isEnquiry && conversationId) {
-        const productCard = {
-          id: product.id,
-          title: product.title,
-          price: product.price,
-          image: product.images[0],
-          category: product.category,
-        };
-
-        await supabase.from('messages').insert({
-          conversation_id: conversationId,
-          sender_id: user.id,
-          body: JSON.stringify(productCard),
-          message_type: 'action',
+      // Navigate to chat with enquiry product info
+      if (isEnquiry) {
+        navigate(`/chat/${conversationId}`, {
+          state: {
+            enquiryProduct: {
+              id: product.id,
+              title: product.title,
+              price: product.price,
+              image: product.images[0],
+              category: product.category,
+            }
+          }
         });
-
-        await supabase
-          .from('conversations')
-          .update({ last_message_at: new Date().toISOString() })
-          .eq('id', conversationId);
+      } else {
+        navigate(`/chat/${conversationId}`);
       }
-
-      navigate(`/chat/${conversationId}`);
     } catch (error) {
       console.error('Error starting chat:', error);
       toast({

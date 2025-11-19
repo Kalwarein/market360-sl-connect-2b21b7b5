@@ -1,12 +1,12 @@
 import { useEffect, useState, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { ArrowLeft, Send, Package, Info, AtSign } from 'lucide-react';
+import { ArrowLeft, Send, Package, Info, AtSign, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import ProductSelectorModal from '@/components/ProductSelectorModal';
@@ -40,6 +40,7 @@ const Chat = () => {
   const { conversationId } = useParams();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [conversation, setConversation] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -48,6 +49,7 @@ const Chat = () => {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const [currentUserAvatar, setCurrentUserAvatar] = useState<string | null>(null);
   const [showProductSelector, setShowProductSelector] = useState(false);
+  const [attachedProduct, setAttachedProduct] = useState<any>(null);
 
   useEffect(() => {
     if (!user) {
@@ -61,6 +63,12 @@ const Chat = () => {
       subscribeToMessages();
       markMessagesAsRead();
       loadCurrentUserAvatar();
+      
+      // Check if there's an enquiry product from navigation state
+      const enquiryProduct = (location.state as any)?.enquiryProduct;
+      if (enquiryProduct) {
+        setAttachedProduct(enquiryProduct);
+      }
     }
   }, [conversationId, user]);
 
@@ -184,17 +192,35 @@ const Chat = () => {
   };
 
   const sendMessage = async () => {
-    if (!newMessage.trim()) return;
+    if (!newMessage.trim() && !attachedProduct) return;
 
     try {
-      const { error } = await supabase.from('messages').insert({
-        conversation_id: conversationId,
-        sender_id: user?.id,
-        body: newMessage,
-        message_type: 'text',
-      });
+      // If there's an attached product, send it as a product card
+      if (attachedProduct) {
+        const { error: productError } = await supabase.from('messages').insert({
+          conversation_id: conversationId,
+          sender_id: user?.id,
+          body: JSON.stringify(attachedProduct),
+          message_type: 'action',
+        });
 
-      if (error) throw error;
+        if (productError) throw productError;
+        
+        // Clear attached product after sending
+        setAttachedProduct(null);
+      }
+
+      // Send text message if there is one
+      if (newMessage.trim()) {
+        const { error } = await supabase.from('messages').insert({
+          conversation_id: conversationId,
+          sender_id: user?.id,
+          body: newMessage,
+          message_type: 'text',
+        });
+
+        if (error) throw error;
+      }
 
       // Update last_message_at
       await supabase
@@ -209,35 +235,17 @@ const Chat = () => {
     }
   };
 
-  const handleProductSelect = async (product: any) => {
-    try {
-      const productCard = {
-        id: product.id,
-        title: product.title,
-        price: product.price,
-        image: product.images[0],
-        category: product.category,
-      };
-
-      const { error } = await supabase.from('messages').insert([{
-        conversation_id: conversationId!,
-        sender_id: user?.id!,
-        body: JSON.stringify(productCard),
-        message_type: 'action',
-      }]);
-
-      if (error) throw error;
-
-      await supabase
-        .from('conversations')
-        .update({ last_message_at: new Date().toISOString() })
-        .eq('id', conversationId);
-
-      toast.success('Product card sent');
-    } catch (error) {
-      console.error('Error sending product card:', error);
-      toast.error('Failed to send product card');
-    }
+  const handleProductSelect = (product: any) => {
+    const productCard = {
+      id: product.id,
+      title: product.title,
+      price: product.price,
+      image: product.images[0],
+      category: product.category,
+    };
+    
+    setAttachedProduct(productCard);
+    setShowProductSelector(false);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -482,31 +490,60 @@ const Chat = () => {
       </div>
 
       {/* Input */}
-      <div className="bg-white border-t p-4">
-        <div className="flex gap-2 items-end">
-          <Button
-            onClick={() => setShowProductSelector(true)}
-            size="icon"
-            variant="ghost"
-            className="rounded-full h-10 w-10 flex-shrink-0"
-          >
-            <AtSign className="h-5 w-5" />
-          </Button>
-          <Input
-            value={newMessage}
-            onChange={handleInputChange}
-            onKeyPress={handleKeyPress}
-            placeholder="Type a message or @ to share products..."
-            className="flex-1 rounded-full"
-          />
-          <Button
-            onClick={sendMessage}
-            disabled={!newMessage.trim()}
-            size="icon"
-            className="rounded-full h-10 w-10 flex-shrink-0"
-          >
-            <Send className="h-4 w-4" />
-          </Button>
+      <div className="bg-white border-t">
+        {/* Attached Product Banner */}
+        {attachedProduct && (
+          <div className="p-3 bg-muted/30 border-b animate-fade-in">
+            <div className="flex items-center gap-3 p-3 bg-white rounded-xl shadow-sm border">
+              <img
+                src={attachedProduct.image}
+                alt={attachedProduct.title}
+                className="w-12 h-12 object-cover rounded-lg flex-shrink-0"
+              />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">{attachedProduct.title}</p>
+                <p className="text-xs text-primary font-semibold">
+                  Le {attachedProduct.price.toLocaleString()}
+                </p>
+              </div>
+              <Button
+                onClick={() => setAttachedProduct(null)}
+                size="icon"
+                variant="ghost"
+                className="h-8 w-8 rounded-full flex-shrink-0 hover:bg-destructive/10"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )}
+        
+        <div className="p-4">
+          <div className="flex gap-2 items-end">
+            <Button
+              onClick={() => setShowProductSelector(true)}
+              size="icon"
+              variant="ghost"
+              className="rounded-full h-10 w-10 flex-shrink-0 hover:bg-primary/10"
+            >
+              <AtSign className="h-5 w-5" />
+            </Button>
+            <Input
+              value={newMessage}
+              onChange={handleInputChange}
+              onKeyPress={handleKeyPress}
+              placeholder={attachedProduct ? "Add a message..." : "Type a message or @ to share products..."}
+              className="flex-1 rounded-full border-2 focus-visible:ring-primary"
+            />
+            <Button
+              onClick={sendMessage}
+              disabled={!newMessage.trim() && !attachedProduct}
+              size="icon"
+              className="rounded-full h-10 w-10 flex-shrink-0 bg-primary hover:bg-primary/90 shadow-md"
+            >
+              <Send className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </div>
 

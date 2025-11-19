@@ -48,27 +48,46 @@ const ProductSelectorModal = ({ open, onClose, onSelectProduct }: ProductSelecto
   const loadProducts = async () => {
     setLoading(true);
     try {
+      // Get recently viewed products
+      const { data: viewedProducts } = await supabase
+        .from('product_views')
+        .select('product_id, products(id, title, price, images, category)')
+        .eq('user_id', user?.id)
+        .order('viewed_at', { ascending: false })
+        .limit(20);
+
+      // Get user's store products if they're a seller
       const { data: store } = await supabase
         .from('stores')
         .select('id')
         .eq('owner_id', user?.id)
-        .single();
+        .maybeSingle();
 
-      if (!store) {
-        setLoading(false);
-        return;
+      let storeProducts: any[] = [];
+      if (store) {
+        const { data } = await supabase
+          .from('products')
+          .select('id, title, price, images, category')
+          .eq('store_id', store.id)
+          .eq('published', true)
+          .order('created_at', { ascending: false })
+          .limit(10);
+        
+        storeProducts = data || [];
       }
 
-      const { data, error } = await supabase
-        .from('products')
-        .select('id, title, price, images, category')
-        .eq('store_id', store.id)
-        .eq('published', true)
-        .order('created_at', { ascending: false });
+      // Combine and deduplicate products
+      const viewedProductsList = (viewedProducts || [])
+        .map((v: any) => v.products)
+        .filter(Boolean);
+      
+      const allProducts = [...viewedProductsList, ...storeProducts];
+      const uniqueProducts = Array.from(
+        new Map(allProducts.map((p: any) => [p.id, p])).values()
+      );
 
-      if (error) throw error;
-      setProducts(data || []);
-      setFilteredProducts(data || []);
+      setProducts(uniqueProducts);
+      setFilteredProducts(uniqueProducts);
     } catch (error) {
       console.error('Error loading products:', error);
     } finally {
