@@ -46,10 +46,31 @@ Deno.serve(async (req) => {
     const productTitle = product.title
     const productDescription = product.description || `${product.title} - Available on Market360`
     const productPrice = `Le ${Number(product.price).toLocaleString()}`
-    const productImage = product.images?.[0] || 'https://images.unsplash.com/photo-1472851294608-062f824d29cc'
+    
+    // Use real product image from database, fallback to Market360 logo
+    const market360Logo = `${Deno.env.get('SUPABASE_URL')}/storage/v1/object/public/product-images/market360-logo.png`
+    let productImage = product.images?.[0] || market360Logo
+    
+    // Ensure image URL is absolute
+    if (productImage && !productImage.startsWith('http')) {
+      productImage = `${Deno.env.get('SUPABASE_URL')}${productImage}`
+    }
+    
     const storeName = product.stores?.store_name || 'Market360'
+    const storeLocation = product.stores?.city && product.stores?.region 
+      ? `${product.stores.city}, ${product.stores.region}`
+      : 'Sierra Leone'
     const productUrl = `https://${req.headers.get('host')}/product/${productId}`
     const shareUrl = `https://${req.headers.get('host')}/share/product/${productId}`
+    
+    // Build rich description with key attributes
+    const attributes = []
+    if (product.brand) attributes.push(`Brand: ${product.brand}`)
+    if (product.category) attributes.push(`Category: ${product.category}`)
+    if (product.moq && product.moq > 1) attributes.push(`MOQ: ${product.moq}`)
+    const richDescription = attributes.length > 0 
+      ? `${productDescription}. ${attributes.join(' • ')}`
+      : productDescription
 
     // Generate rich HTML with OG meta tags
     const html = `<!DOCTYPE html>
@@ -59,40 +80,53 @@ Deno.serve(async (req) => {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <!-- Primary Meta Tags -->
-  <title>${productTitle} | Market360</title>
-  <meta name="title" content="${productTitle} | Market360">
-  <meta name="description" content="${productDescription}">
+  <title>${productTitle} | ${storeName}</title>
+  <meta name="title" content="${productTitle} | ${storeName}">
+  <meta name="description" content="${richDescription}">
+  <meta name="author" content="${storeName}">
   
   <!-- Open Graph / Facebook -->
   <meta property="og:type" content="product">
   <meta property="og:url" content="${shareUrl}">
-  <meta property="og:title" content="${productTitle}">
-  <meta property="og:description" content="${productDescription}">
+  <meta property="og:title" content="${productTitle} - ${productPrice}">
+  <meta property="og:description" content="${richDescription}">
   <meta property="og:image" content="${productImage}">
   <meta property="og:image:secure_url" content="${productImage}">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  <meta property="og:site_name" content="Market360">
+  <meta property="og:image:type" content="image/jpeg">
+  <meta property="og:image:alt" content="${productTitle}">
+  <meta property="og:site_name" content="Market360 - Sierra Leone's Premier Marketplace">
+  <meta property="og:locale" content="en_SL">
   <meta property="product:price:amount" content="${product.price}">
   <meta property="product:price:currency" content="SLL">
   <meta property="product:brand" content="${product.brand || storeName}">
   <meta property="product:availability" content="in stock">
   <meta property="product:condition" content="new">
+  <meta property="product:retailer_item_id" content="${productId}">
+  ${product.category ? `<meta property="product:category" content="${product.category}">` : ''}
   
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@Market360">
+  <meta name="twitter:creator" content="@Market360">
   <meta name="twitter:url" content="${shareUrl}">
-  <meta name="twitter:title" content="${productTitle}">
-  <meta name="twitter:description" content="${productDescription}">
+  <meta name="twitter:title" content="${productTitle} - ${productPrice}">
+  <meta name="twitter:description" content="${richDescription}">
   <meta name="twitter:image" content="${productImage}">
+  <meta name="twitter:image:alt" content="${productTitle}">
   <meta name="twitter:label1" content="Price">
   <meta name="twitter:data1" content="${productPrice}">
-  <meta name="twitter:label2" content="Store">
-  <meta name="twitter:data2" content="${storeName}">
+  <meta name="twitter:label2" content="Location">
+  <meta name="twitter:data2" content="${storeLocation}">
   
-  <!-- WhatsApp Optimization -->
+  <!-- WhatsApp & Telegram Optimization -->
   <meta property="og:image:type" content="image/jpeg">
-  <meta property="og:image:alt" content="${productTitle}">
+  <meta property="og:image:alt" content="${productTitle} - ${productPrice}">
+  
+  <!-- iMessage & LinkedIn -->
+  <meta property="al:web:url" content="${productUrl}">
+  <meta name="thumbnail" content="${productImage}">
   
   <!-- Schema.org Product Markup -->
   <script type="application/ld+json">
@@ -101,11 +135,13 @@ Deno.serve(async (req) => {
     "@type": "Product",
     "name": "${productTitle}",
     "image": "${productImage}",
-    "description": "${productDescription}",
-    "brand": {
+    "description": "${richDescription}",
+    "sku": "${product.product_code || productId}",
+    ${product.brand ? `"brand": {
       "@type": "Brand",
-      "name": "${product.brand || storeName}"
-    },
+      "name": "${product.brand}"
+    },` : ''}
+    ${product.category ? `"category": "${product.category}",` : ''}
     "offers": {
       "@type": "Offer",
       "url": "${productUrl}",
@@ -114,7 +150,13 @@ Deno.serve(async (req) => {
       "availability": "https://schema.org/InStock",
       "seller": {
         "@type": "Organization",
-        "name": "${storeName}"
+        "name": "${storeName}",
+        ${product.stores?.city || product.stores?.region ? `"address": {
+          "@type": "PostalAddress",
+          ${product.stores?.city ? `"addressLocality": "${product.stores.city}",` : ''}
+          ${product.stores?.region ? `"addressRegion": "${product.stores.region}",` : ''}
+          "addressCountry": "SL"
+        }` : ''}
       }
     }
   }
