@@ -1,311 +1,608 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ArrowLeft, User, Building2, MapPin, FileCheck, Store } from 'lucide-react';
 import { toast } from 'sonner';
-import { ArrowLeft, Store } from 'lucide-react';
 import { z } from 'zod';
 import { MultiStepForm } from '@/components/MultiStepForm';
 import { LocationPicker } from '@/components/LocationPicker';
-import { NumericInput } from '@/components/NumericInput';
+import ImageCropModal from '@/components/ImageCropModal';
+import { PRODUCT_CATEGORIES } from '@/lib/productCategories';
 
 const applicationSchema = z.object({
-  business_name: z.string().min(1, 'Business name is required').max(100),
-  contact_person: z.string().min(1, 'Contact person is required').max(100),
-  contact_email: z.string().email('Invalid email').max(255),
-  contact_phone: z.string().min(1, 'Phone is required').max(20),
-  business_category: z.string().min(1, 'Category is required'),
-  business_description: z.string().max(1000),
-  store_region: z.string().min(1, 'Region is required'),
-  store_city: z.string().min(1, 'District is required'),
+  contactPerson: z.string().min(2, 'Full name is required'),
+  contactEmail: z.string().email('Valid email is required'),
+  contactPhone: z.string().regex(/^\+?[0-9]{10,15}$/, 'Valid phone number is required (10-15 digits)'),
+  businessName: z.string().min(2, 'Business name is required'),
+  businessCategory: z.string().min(1, 'Business category is required'),
+  businessDescription: z.string().min(10, 'Please provide a brief description (min 10 characters)'),
+  storeCountry: z.string().default('Sierra Leone'),
+  storeRegion: z.string().min(1, 'Region is required'),
+  storeCity: z.string().min(1, 'District is required'),
+  storeName: z.string().min(2, 'Store name is required'),
+  storeDescription: z.string().optional(),
+  bankName: z.string().optional(),
+  bankAccountNumber: z.string().optional(),
+  bankAccountName: z.string().optional(),
 });
 
-const BecomeSellerMultiStep = () => {
-  const { user } = useAuth();
+export default function BecomeSellerMultiStep() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  
   const [formData, setFormData] = useState({
-    business_name: '',
-    contact_person: '',
-    contact_email: user?.email || '',
-    contact_phone: '',
-    business_category: '',
-    business_description: '',
-    how_heard_about: '',
-    store_description: '',
-    store_address: '',
-    store_city: '',
-    store_region: '',
-    store_country: 'Sierra Leone',
-    business_registration_number: '',
-    tax_id: '',
-    bank_account_name: '',
-    bank_account_number: '',
-    bank_name: ''
+    contactPerson: '',
+    contactEmail: user?.email || '',
+    contactPhone: '',
+    businessName: '',
+    businessCategory: '',
+    businessDescription: '',
+    storeCountry: 'Sierra Leone',
+    storeRegion: '',
+    storeCity: '',
+    storeName: '',
+    storeDescription: '',
+    bankName: '',
+    bankAccountNumber: '',
+    bankAccountName: '',
   });
+
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [bannerFile, setBannerFile] = useState<File | null>(null);
+  const [showLogoCrop, setShowLogoCrop] = useState(false);
+  const [showBannerCrop, setShowBannerCrop] = useState(false);
+  const [logoPreview, setLogoPreview] = useState<string>('');
+  const [bannerPreview, setBannerPreview] = useState<string>('');
+
+  const uploadImage = async (file: File, bucket: string, folder: string): Promise<string> => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${folder}/${user!.id}-${Date.now()}.${fileExt}`;
+    
+    const { error: uploadError, data } = await supabase.storage
+      .from(bucket)
+      .upload(fileName, file);
+
+    if (uploadError) throw uploadError;
+
+    const { data: { publicUrl } } = supabase.storage
+      .from(bucket)
+      .getPublicUrl(fileName);
+
+    return publicUrl;
+  };
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setLogoFile(file);
+      setLogoPreview(URL.createObjectURL(file));
+      setShowLogoCrop(true);
+    }
+  };
+
+  const handleBannerUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setBannerFile(file);
+      setBannerPreview(URL.createObjectURL(file));
+      setShowBannerCrop(true);
+    }
+  };
+
+  const handleLogoCropComplete = async (croppedBlob: Blob) => {
+    const croppedFile = new File([croppedBlob], logoFile!.name, { type: 'image/png' });
+    setLogoFile(croppedFile);
+    setLogoPreview(URL.createObjectURL(croppedBlob));
+    setShowLogoCrop(false);
+  };
+
+  const handleBannerCropComplete = async (croppedBlob: Blob) => {
+    const croppedFile = new File([croppedBlob], bannerFile!.name, { type: 'image/png' });
+    setBannerFile(croppedFile);
+    setBannerPreview(URL.createObjectURL(croppedBlob));
+    setShowBannerCrop(false);
+  };
 
   const handleSubmit = async () => {
     try {
-      applicationSchema.parse(formData);
+      const validated = applicationSchema.parse(formData);
+
+      let logoUrl = '';
+      let bannerUrl = '';
+
+      if (logoFile) {
+        logoUrl = await uploadImage(logoFile, 'store-logos', 'logos');
+      }
+
+      if (bannerFile) {
+        bannerUrl = await uploadImage(bannerFile, 'store-banners', 'banners');
+      }
 
       const { error } = await supabase
         .from('seller_applications')
-        .insert([{ user_id: user?.id, ...formData }]);
+        .insert({
+          user_id: user!.id,
+          contact_person: validated.contactPerson,
+          contact_email: validated.contactEmail,
+          contact_phone: validated.contactPhone,
+          business_name: validated.businessName,
+          business_category: validated.businessCategory,
+          business_description: validated.businessDescription,
+          store_country: validated.storeCountry,
+          store_region: validated.storeRegion,
+          store_city: validated.storeCity,
+          store_logo_url: logoUrl,
+          store_banner_url: bannerUrl,
+          store_description: validated.storeDescription,
+          bank_name: validated.bankName,
+          bank_account_number: validated.bankAccountNumber,
+          bank_account_name: validated.bankAccountName,
+          status: 'pending',
+        });
 
       if (error) throw error;
 
-      await supabase
-        .from('audit_logs')
-        .insert([{
-          actor_id: user?.id,
-          action: 'seller_application_submitted',
-          description: `User applied to become a seller: ${formData.business_name}`
-        }]);
+      await supabase.from('audit_logs').insert({
+        action: 'seller_application_submitted',
+        actor_id: user!.id,
+        description: `User ${validated.contactEmail} submitted seller application`,
+        metadata: { business_name: validated.businessName },
+      });
 
-      toast.success('Application submitted! We will review it shortly.');
-      navigate('/profile');
-    } catch (err) {
-      if (err instanceof z.ZodError) {
-        toast.error(err.errors[0].message);
+      toast.success('Application submitted successfully! We will review it soon.');
+      navigate('/');
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast.error(error.errors[0].message);
       } else {
-        console.error('Error submitting application:', err);
-        toast.error('Failed to submit application');
+        console.error('Error submitting application:', error);
+        toast.error('Failed to submit application. Please try again.');
       }
-      throw err;
     }
   };
 
   const steps = [
     {
       title: 'Personal Information',
-      description: 'Tell us about yourself and how to contact you',
+      description: 'Let us know who you are',
       content: (
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="contact_person">Contact Person Name *</Label>
+            <Label htmlFor="contactPerson" className="flex items-center gap-2">
+              <User className="h-4 w-4 text-primary" />
+              Full Name *
+            </Label>
             <Input
-              id="contact_person"
-              value={formData.contact_person}
-              onChange={(e) => setFormData({...formData, contact_person: e.target.value})}
-              placeholder="John Doe"
+              id="contactPerson"
+              placeholder="Enter your full name"
+              value={formData.contactPerson}
+              onChange={(e) => setFormData({ ...formData, contactPerson: e.target.value })}
               required
             />
           </div>
+
           <div className="space-y-2">
-            <Label htmlFor="contact_email">Email Address *</Label>
+            <Label htmlFor="contactEmail" className="flex items-center gap-2">
+              <User className="h-4 w-4 text-primary" />
+              Email Address *
+            </Label>
             <Input
-              id="contact_email"
+              id="contactEmail"
               type="email"
-              value={formData.contact_email}
-              onChange={(e) => setFormData({...formData, contact_email: e.target.value})}
-              placeholder="john@example.com"
+              placeholder="your.email@example.com"
+              value={formData.contactEmail}
+              onChange={(e) => setFormData({ ...formData, contactEmail: e.target.value })}
               required
             />
           </div>
+
           <div className="space-y-2">
-            <Label htmlFor="contact_phone">Phone Number *</Label>
-            <NumericInput
-              id="contact_phone"
-              value={formData.contact_phone}
-              onChange={(value) => setFormData({...formData, contact_phone: value})}
-              placeholder="076123456"
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="how_heard_about">How did you hear about us?</Label>
+            <Label htmlFor="contactPhone" className="flex items-center gap-2">
+              <User className="h-4 w-4 text-primary" />
+              Phone Number *
+            </Label>
             <Input
-              id="how_heard_about"
-              value={formData.how_heard_about}
-              onChange={(e) => setFormData({...formData, how_heard_about: e.target.value})}
-              placeholder="Social media, friend, advertisement..."
+              id="contactPhone"
+              type="tel"
+              placeholder="+232 XX XXX XXXX"
+              value={formData.contactPhone}
+              onChange={(e) => setFormData({ ...formData, contactPhone: e.target.value })}
+              required
             />
+            <p className="text-xs text-muted-foreground">Format: +232XXXXXXXXX or 10-15 digits</p>
           </div>
         </div>
       ),
-      validate: () => {
-        if (!formData.contact_person || !formData.contact_email || !formData.contact_phone) {
-          toast.error('Please fill in all required personal information fields');
+      validate: async () => {
+        try {
+          applicationSchema.pick({
+            contactPerson: true,
+            contactEmail: true,
+            contactPhone: true,
+          }).parse(formData);
+          return true;
+        } catch (error) {
+          if (error instanceof z.ZodError) {
+            toast.error(error.errors[0].message);
+          }
           return false;
         }
-        return true;
-      }
+      },
     },
     {
-      title: 'Business Details',
-      description: 'Provide information about your business',
+      title: 'Business Information',
+      description: 'Tell us about your business',
       content: (
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="business_name">Business Name *</Label>
+            <Label htmlFor="businessName" className="flex items-center gap-2">
+              <Building2 className="h-4 w-4 text-primary" />
+              Business Name *
+            </Label>
             <Input
-              id="business_name"
-              value={formData.business_name}
-              onChange={(e) => setFormData({...formData, business_name: e.target.value})}
-              placeholder="Your Business Name"
+              id="businessName"
+              placeholder="Your registered business name"
+              value={formData.businessName}
+              onChange={(e) => setFormData({ ...formData, businessName: e.target.value })}
               required
             />
           </div>
+
           <div className="space-y-2">
-            <Label htmlFor="business_category">Business Category *</Label>
-            <Input
-              id="business_category"
-              value={formData.business_category}
-              onChange={(e) => setFormData({...formData, business_category: e.target.value})}
-              placeholder="e.g., Electronics, Fashion, Food"
-              required
-            />
+            <Label htmlFor="businessCategory" className="flex items-center gap-2">
+              <Building2 className="h-4 w-4 text-primary" />
+              Business Category *
+            </Label>
+            <Select
+              value={formData.businessCategory}
+              onValueChange={(value) => setFormData({ ...formData, businessCategory: value })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select business category" />
+              </SelectTrigger>
+              <SelectContent>
+                {PRODUCT_CATEGORIES.slice(0, 30).map((category) => (
+                  <SelectItem key={category} value={category}>
+                    {category}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
+
           <div className="space-y-2">
-            <Label htmlFor="business_description">Business Description</Label>
+            <Label htmlFor="businessDescription" className="flex items-center gap-2">
+              <Building2 className="h-4 w-4 text-primary" />
+              Business Description *
+            </Label>
             <Textarea
-              id="business_description"
-              value={formData.business_description}
-              onChange={(e) => setFormData({...formData, business_description: e.target.value})}
-              placeholder="Describe your business and what you sell"
+              id="businessDescription"
+              placeholder="Describe what your business does (min 10 characters)"
+              value={formData.businessDescription}
+              onChange={(e) => setFormData({ ...formData, businessDescription: e.target.value })}
               rows={4}
+              required
             />
           </div>
         </div>
       ),
-      validate: () => {
-        if (!formData.business_name || !formData.business_category) {
-          toast.error('Please fill in all required business information fields');
+      validate: async () => {
+        try {
+          applicationSchema.pick({
+            businessName: true,
+            businessCategory: true,
+            businessDescription: true,
+          }).parse(formData);
+          return true;
+        } catch (error) {
+          if (error instanceof z.ZodError) {
+            toast.error(error.errors[0].message);
+          }
           return false;
         }
-        return true;
-      }
+      },
     },
     {
-      title: 'Store Location',
+      title: 'Location',
       description: 'Where is your business located?',
       content: (
         <div className="space-y-4">
-          <LocationPicker
-            region={formData.store_region}
-            district={formData.store_city}
-            onRegionChange={(value) => setFormData({...formData, store_region: value})}
-            onDistrictChange={(value) => setFormData({...formData, store_city: value})}
-            required
-          />
           <div className="space-y-2">
-            <Label htmlFor="store_address">Street Address</Label>
+            <Label className="flex items-center gap-2">
+              <MapPin className="h-4 w-4 text-primary" />
+              Business Location *
+            </Label>
+            <LocationPicker
+              region={formData.storeRegion}
+              district={formData.storeCity}
+              onRegionChange={(region) => setFormData({ ...formData, storeRegion: region })}
+              onDistrictChange={(district) => setFormData({ ...formData, storeCity: district })}
+              required
+            />
+            <p className="text-xs text-muted-foreground">
+              Select the region and district where your business operates
+            </p>
+          </div>
+        </div>
+      ),
+      validate: async () => {
+        try {
+          applicationSchema.pick({
+            storeRegion: true,
+            storeCity: true,
+          }).parse(formData);
+          return true;
+        } catch (error) {
+          if (error instanceof z.ZodError) {
+            toast.error(error.errors[0].message);
+          }
+          return false;
+        }
+      },
+    },
+    {
+      title: 'Store Setup',
+      description: 'Create your store presence',
+      content: (
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="storeName" className="flex items-center gap-2">
+              <Store className="h-4 w-4 text-primary" />
+              Store Name *
+            </Label>
             <Input
-              id="store_address"
-              value={formData.store_address}
-              onChange={(e) => setFormData({...formData, store_address: e.target.value})}
-              placeholder="123 Main Street"
+              id="storeName"
+              placeholder="Your store display name"
+              value={formData.storeName}
+              onChange={(e) => setFormData({ ...formData, storeName: e.target.value })}
+              required
             />
           </div>
+
           <div className="space-y-2">
-            <Label htmlFor="store_description">Store Description</Label>
+            <Label htmlFor="storeDescription" className="flex items-center gap-2">
+              <Store className="h-4 w-4 text-primary" />
+              Store Description (Optional)
+            </Label>
             <Textarea
-              id="store_description"
-              value={formData.store_description}
-              onChange={(e) => setFormData({...formData, store_description: e.target.value})}
-              placeholder="Tell customers about your store"
+              id="storeDescription"
+              placeholder="Brief description of your store"
+              value={formData.storeDescription}
+              onChange={(e) => setFormData({ ...formData, storeDescription: e.target.value })}
               rows={3}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label className="flex items-center gap-2">
+              <Store className="h-4 w-4 text-primary" />
+              Store Logo (Optional)
+            </Label>
+            <div className="flex flex-col gap-2">
+              <Input
+                type="file"
+                accept="image/*"
+                onChange={handleLogoUpload}
+                className="cursor-pointer"
+              />
+              {logoPreview && (
+                <div className="relative w-32 h-32 rounded-lg overflow-hidden border-2 border-border">
+                  <img src={logoPreview} alt="Logo preview" className="w-full h-full object-cover" />
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label className="flex items-center gap-2">
+              <Store className="h-4 w-4 text-primary" />
+              Store Banner (Optional)
+            </Label>
+            <div className="flex flex-col gap-2">
+              <Input
+                type="file"
+                accept="image/*"
+                onChange={handleBannerUpload}
+                className="cursor-pointer"
+              />
+              {bannerPreview && (
+                <div className="relative w-full h-32 rounded-lg overflow-hidden border-2 border-border">
+                  <img src={bannerPreview} alt="Banner preview" className="w-full h-full object-cover" />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      ),
+      validate: async () => {
+        try {
+          applicationSchema.pick({
+            storeName: true,
+          }).parse(formData);
+          return true;
+        } catch (error) {
+          if (error instanceof z.ZodError) {
+            toast.error(error.errors[0].message);
+          }
+          return false;
+        }
+      },
+    },
+    {
+      title: 'Banking Information',
+      description: 'Add your banking details for payments (Optional)',
+      content: (
+        <div className="space-y-4">
+          <div className="bg-muted/50 p-4 rounded-lg">
+            <p className="text-sm text-muted-foreground">
+              Banking information is optional but recommended for faster payment processing.
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="bankName">Bank Name</Label>
+            <Input
+              id="bankName"
+              placeholder="Name of your bank"
+              value={formData.bankName}
+              onChange={(e) => setFormData({ ...formData, bankName: e.target.value })}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="bankAccountNumber">Account Number</Label>
+            <Input
+              id="bankAccountNumber"
+              placeholder="Your bank account number"
+              value={formData.bankAccountNumber}
+              onChange={(e) => setFormData({ ...formData, bankAccountNumber: e.target.value })}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="bankAccountName">Account Name</Label>
+            <Input
+              id="bankAccountName"
+              placeholder="Account holder name"
+              value={formData.bankAccountName}
+              onChange={(e) => setFormData({ ...formData, bankAccountName: e.target.value })}
             />
           </div>
         </div>
       ),
-      validate: () => {
-        if (!formData.store_region || !formData.store_city) {
-          toast.error('Please select region and district');
-          return false;
-        }
-        return true;
-      }
     },
     {
-      title: 'Banking Information',
-      description: 'Add your banking details for payments (optional)',
+      title: 'Review & Submit',
+      description: 'Review your application before submitting',
       content: (
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="bank_name">Bank Name</Label>
-            <Input
-              id="bank_name"
-              value={formData.bank_name}
-              onChange={(e) => setFormData({...formData, bank_name: e.target.value})}
-              placeholder="e.g., Sierra Leone Commercial Bank"
-            />
+        <div className="space-y-6">
+          <div className="bg-muted/50 p-4 rounded-lg space-y-4">
+            <div>
+              <h3 className="font-semibold text-sm flex items-center gap-2 mb-2">
+                <User className="h-4 w-4 text-primary" />
+                Personal Information
+              </h3>
+              <div className="text-sm space-y-1 text-muted-foreground">
+                <p><span className="font-medium">Name:</span> {formData.contactPerson}</p>
+                <p><span className="font-medium">Email:</span> {formData.contactEmail}</p>
+                <p><span className="font-medium">Phone:</span> {formData.contactPhone}</p>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="font-semibold text-sm flex items-center gap-2 mb-2">
+                <Building2 className="h-4 w-4 text-primary" />
+                Business Information
+              </h3>
+              <div className="text-sm space-y-1 text-muted-foreground">
+                <p><span className="font-medium">Business Name:</span> {formData.businessName}</p>
+                <p><span className="font-medium">Category:</span> {formData.businessCategory}</p>
+                <p><span className="font-medium">Description:</span> {formData.businessDescription}</p>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="font-semibold text-sm flex items-center gap-2 mb-2">
+                <MapPin className="h-4 w-4 text-primary" />
+                Location
+              </h3>
+              <div className="text-sm space-y-1 text-muted-foreground">
+                <p><span className="font-medium">Region:</span> {formData.storeRegion}</p>
+                <p><span className="font-medium">District:</span> {formData.storeCity}</p>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="font-semibold text-sm flex items-center gap-2 mb-2">
+                <Store className="h-4 w-4 text-primary" />
+                Store Details
+              </h3>
+              <div className="text-sm space-y-1 text-muted-foreground">
+                <p><span className="font-medium">Store Name:</span> {formData.storeName}</p>
+                {formData.storeDescription && (
+                  <p><span className="font-medium">Description:</span> {formData.storeDescription}</p>
+                )}
+                {logoPreview && <p className="text-primary">✓ Logo uploaded</p>}
+                {bannerPreview && <p className="text-primary">✓ Banner uploaded</p>}
+              </div>
+            </div>
+
+            {formData.bankName && (
+              <div>
+                <h3 className="font-semibold text-sm flex items-center gap-2 mb-2">
+                  <FileCheck className="h-4 w-4 text-primary" />
+                  Banking Information
+                </h3>
+                <div className="text-sm space-y-1 text-muted-foreground">
+                  <p><span className="font-medium">Bank:</span> {formData.bankName}</p>
+                  <p><span className="font-medium">Account Number:</span> {formData.bankAccountNumber}</p>
+                  <p><span className="font-medium">Account Name:</span> {formData.bankAccountName}</p>
+                </div>
+              </div>
+            )}
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="bank_account_name">Account Name</Label>
-            <Input
-              id="bank_account_name"
-              value={formData.bank_account_name}
-              onChange={(e) => setFormData({...formData, bank_account_name: e.target.value})}
-              placeholder="Account holder name"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="bank_account_number">Account Number</Label>
-            <NumericInput
-              id="bank_account_number"
-              value={formData.bank_account_number}
-              onChange={(value) => setFormData({...formData, bank_account_number: value})}
-              placeholder="1234567890"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="business_registration_number">Business Registration Number</Label>
-            <Input
-              id="business_registration_number"
-              value={formData.business_registration_number}
-              onChange={(e) => setFormData({...formData, business_registration_number: e.target.value})}
-              placeholder="Optional"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="tax_id">Tax ID</Label>
-            <Input
-              id="tax_id"
-              value={formData.tax_id}
-              onChange={(e) => setFormData({...formData, tax_id: e.target.value})}
-              placeholder="Optional"
-            />
+
+          <div className="bg-primary/10 p-4 rounded-lg">
+            <p className="text-sm text-primary font-medium">
+              By submitting this application, you agree to our terms and conditions for sellers.
+            </p>
           </div>
         </div>
-      )
-    }
+      ),
+    },
   ];
 
   return (
-    <div className="min-h-screen bg-background pb-8">
-      <div className="bg-gradient-to-r from-primary to-secondary text-white p-6">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="text-white hover:bg-white/20 mb-4"
-          onClick={() => navigate(-1)}
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back
-        </Button>
-        <div className="flex items-center gap-3">
-          <Store className="h-8 w-8" />
-          <div>
-            <h1 className="text-2xl font-bold">Become a Seller</h1>
-            <p className="text-sm opacity-90">Join Market360 as a verified seller</p>
+    <>
+      <div className="min-h-screen bg-background pb-20">
+        <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b">
+          <div className="flex items-center gap-3 p-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate(-1)}
+              className="rounded-full"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <h1 className="text-xl font-bold">Become a Seller</h1>
           </div>
+        </div>
+
+        <div className="container max-w-2xl mx-auto p-4">
+          <MultiStepForm
+            steps={steps}
+            onComplete={handleSubmit}
+            onBack={() => navigate(-1)}
+            submitText="Submit Application"
+            backText="Cancel"
+          />
         </div>
       </div>
 
-      <div className="p-4">
-        <MultiStepForm
-          steps={steps}
-          onComplete={handleSubmit}
-          onBack={() => navigate(-1)}
-          submitText="Submit Application"
+      {showLogoCrop && logoPreview && (
+        <ImageCropModal
+          open={showLogoCrop}
+          imageUrl={logoPreview}
+          onClose={() => setShowLogoCrop(false)}
+          onCropComplete={handleLogoCropComplete}
         />
-      </div>
-    </div>
-  );
-};
+      )}
 
-export default BecomeSellerMultiStep;
+      {showBannerCrop && bannerPreview && (
+        <ImageCropModal
+          open={showBannerCrop}
+          imageUrl={bannerPreview}
+          onClose={() => setShowBannerCrop(false)}
+          onCropComplete={handleBannerCropComplete}
+        />
+      )}
+    </>
+  );
+}
