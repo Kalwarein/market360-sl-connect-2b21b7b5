@@ -78,12 +78,13 @@ export const DepositModal = ({ open, onOpenChange, onSuccess }: DepositModalProp
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
+      <DialogContent className="fixed inset-0 max-w-full w-full h-full md:max-w-md md:h-auto md:inset-auto rounded-none md:rounded-lg p-0 md:p-6 border-0 md:border bg-background z-[100]">
+        <DialogHeader className="p-6 md:p-0">
           <DialogTitle className="text-2xl font-bold text-primary">Top Up Wallet</DialogTitle>
         </DialogHeader>
         
-        <div className="space-y-5 py-4">
+        <div className="space-y-5 py-4 px-6 md:px-0 overflow-y-auto max-h-[calc(100vh-120px)] md:max-h-none"
+>
           <div className="bg-green-50 border border-green-200 rounded-lg p-4">
             <div className="flex gap-2 items-start">
               <AlertCircle className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />

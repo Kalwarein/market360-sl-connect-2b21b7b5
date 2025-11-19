@@ -28,6 +28,8 @@ const ProductSelectorModal = ({ open, onClose, onSelectProduct }: ProductSelecto
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [showConfirmation, setShowConfirmation] = useState(false);
 
   useEffect(() => {
     if (open && user) {
@@ -97,9 +99,23 @@ const ProductSelectorModal = ({ open, onClose, onSelectProduct }: ProductSelecto
   };
 
   const handleSelect = (product: Product) => {
-    onSelectProduct(product);
-    onClose();
-    setSearchQuery('');
+    setSelectedProduct(product);
+    setShowConfirmation(true);
+  };
+
+  const handleConfirm = () => {
+    if (selectedProduct) {
+      onSelectProduct(selectedProduct);
+      onClose();
+      setSearchQuery('');
+      setSelectedProduct(null);
+      setShowConfirmation(false);
+    }
+  };
+
+  const handleCancelSelection = () => {
+    setSelectedProduct(null);
+    setShowConfirmation(false);
   };
 
   return (
@@ -177,6 +193,47 @@ const ProductSelectorModal = ({ open, onClose, onSelectProduct }: ProductSelecto
             )}
           </div>
         </div>
+
+        {/* Confirmation Dialog */}
+        {showConfirmation && selectedProduct && (
+          <div className="absolute inset-0 bg-background/95 backdrop-blur-sm z-50 flex items-center justify-center p-6">
+            <div className="bg-card border border-border rounded-2xl p-6 max-w-md w-full shadow-2xl">
+              <h3 className="text-xl font-semibold mb-4">Confirm Product Selection</h3>
+              <div className="flex gap-4 mb-6">
+                <img
+                  src={selectedProduct.images[0] || '/placeholder.svg'}
+                  alt={selectedProduct.title}
+                  className="h-24 w-24 object-cover rounded-lg"
+                />
+                <div className="flex-1">
+                  <h4 className="font-semibold line-clamp-2 mb-2">{selectedProduct.title}</h4>
+                  <p className="text-lg font-bold text-[#0FA86C]">Le {selectedProduct.price.toLocaleString()}</p>
+                  {selectedProduct.moq && (
+                    <p className="text-xs text-muted-foreground mt-1">MOQ: {selectedProduct.moq}</p>
+                  )}
+                </div>
+              </div>
+              <p className="text-sm text-muted-foreground mb-6">
+                This product will be sent in your message. Do you want to continue?
+              </p>
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  onClick={handleCancelSelection}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleConfirm}
+                  className="flex-1"
+                >
+                  Confirm & Send
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );

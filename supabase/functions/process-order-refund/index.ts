@@ -139,7 +139,7 @@ serve(async (req) => {
       type: 'order',
       title: buyerNotifications[refund_type].title,
       body: buyerNotifications[refund_type].body,
-      link_url: `/order/${order_id}`,
+      link_url: `/order-detail/${order_id}`,
       image_url: order.products.images[0],
       metadata: { 
         order_id, 
