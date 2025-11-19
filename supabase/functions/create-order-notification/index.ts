@@ -53,6 +53,27 @@ serve(async (req) => {
       throw notificationError;
     }
 
+    // Send push notification
+    try {
+      await fetch(`${supabaseUrl}/functions/v1/send-push-notification`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabaseServiceKey}`
+        },
+        body: JSON.stringify({
+          userId: user_id,
+          title: title,
+          body: body,
+          url: link_url,
+          tag: type
+        })
+      });
+    } catch (error) {
+      console.error('Failed to send push notification:', error);
+      // Don't fail the request if push notification fails
+    }
+
     return new Response(
       JSON.stringify({ success: true }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
