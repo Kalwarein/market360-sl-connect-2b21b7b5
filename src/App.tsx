@@ -15,7 +15,7 @@ import Categories from "./pages/Categories";
 import Messages from "./pages/Messages";
 import Cart from "./pages/Cart";
 import Profile from "./pages/Profile";
-import BecomeSeller from "./pages/BecomeSeller";
+import BecomeSellerMultiStep from "./pages/BecomeSellerMultiStep";
 import Wallet from "./pages/Wallet";
 import NotFound from "./pages/NotFound";
 import SellerDashboard from "./pages/SellerDashboard";
@@ -77,7 +77,7 @@ const App = () => (
               <Route path="/profile-viewer/:userId" element={<ProtectedRoute><ProfileViewer /></ProtectedRoute>} />
               <Route path="/cart" element={<ProtectedRoute><Cart /></ProtectedRoute>} />
               <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-              <Route path="/become-seller" element={<ProtectedRoute><BecomeSeller /></ProtectedRoute>} />
+              <Route path="/become-seller" element={<ProtectedRoute><BecomeSellerMultiStep /></ProtectedRoute>} />
               <Route path="/wallet" element={<ProtectedRoute><Wallet /></ProtectedRoute>} />
               <Route path="/seller-dashboard" element={<ProtectedRoute><SellerDashboard /></ProtectedRoute>} />
               <Route path="/add-product" element={<ProtectedRoute><AddProduct /></ProtectedRoute>} />

@@ -80,7 +80,7 @@ Deno.serve(async (req) => {
         .from('stores')
         .insert({
           owner_id: application.user_id,
-          store_name: application.business_name,
+          store_name: application.store_name || application.business_name,
           description: application.store_description || application.business_description,
           logo_url: application.store_logo_url,
           banner_url: application.store_banner_url,
