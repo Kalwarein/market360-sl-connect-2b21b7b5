@@ -58,16 +58,16 @@ const BottomNav = () => {
     }
 
     const checkSellerStatus = async () => {
-      const { data: application } = await supabase
+      const { data: application, error } = await supabase
         .from('seller_applications')
         .select('status')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
       const hasSeenPromo = localStorage.getItem(`seller_promo_seen_${user.id}`);
       
-      // Show badge if: not a seller, no application, and hasn't seen promo
-      setShouldShowSellerBadge(!application && !hasSeenPromo);
+      // Show badge only if: not a seller, no application (and no error), and hasn't seen promo
+      setShouldShowSellerBadge(!error && !application && !hasSeenPromo);
     };
 
     checkSellerStatus();
