@@ -30,6 +30,7 @@ import Contact from "./pages/Contact";
 import AdminAuth from "./pages/AdminAuth";
 import AdminDashboard from "./pages/AdminDashboard";
 import Notifications from "./pages/Notifications";
+import NotificationDetail from "./pages/NotificationDetail";
 import Search from "./pages/Search";
 import Settings from "./pages/Settings";
 import Orders from "./pages/Orders";
@@ -83,6 +84,7 @@ const App = () => (
               <Route path="/support" element={<ProtectedRoute><Support /></ProtectedRoute>} />
               <Route path="/contact" element={<ProtectedRoute><Contact /></ProtectedRoute>} />
               <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+              <Route path="/notification/:notificationId" element={<ProtectedRoute><NotificationDetail /></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
               <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
               <Route path="/store-settings" element={<ProtectedRoute><StoreSettings /></ProtectedRoute>} />

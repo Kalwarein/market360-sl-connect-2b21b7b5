@@ -105,10 +105,7 @@ const Notifications = () => {
     if (!notification.read_at) {
       await markAsRead(notification.id);
     }
-
-    if (notification.link_url) {
-      navigate(notification.link_url);
-    }
+    navigate(`/notification/${notification.id}`);
   };
 
   const unreadCount = notifications.filter(n => !n.read_at).length;
