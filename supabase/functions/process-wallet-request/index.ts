@@ -81,7 +81,7 @@ Deno.serve(async (req) => {
 
     if (action === 'approve') {
       if (request.type === 'deposit') {
-        const net = Number(request.amount) * 0.95
+        const net = Number(request.amount) * 0.98
         walletDelta = net
         const { error: wUpdErr } = await supabaseClient
           .from('wallets')
@@ -95,11 +95,11 @@ Deno.serve(async (req) => {
           type: 'deposit',
           status: 'completed',
           reference: `DEP-${request.id}`,
-          metadata: { original_amount: request.amount, fee_percentage: 5, wallet_request_id: request.id, processed_by: user.id }
+          metadata: { original_amount: request.amount, fee_percentage: 2, wallet_request_id: request.id, processed_by: user.id }
         })
         if (txErr) throw txErr
       } else if (request.type === 'withdrawal') {
-        const net = Number(request.amount) * 0.95
+        const net = Number(request.amount) * 0.98
         // Deduct the full requested amount from wallet; user receives net
         walletDelta = -Number(request.amount)
         const { error: wUpdErr } = await supabaseClient
@@ -114,7 +114,7 @@ Deno.serve(async (req) => {
           type: 'withdrawal',
           status: 'completed',
           reference: `WTH-${request.id}`,
-          metadata: { original_amount: request.amount, fee_percentage: 5, net_payout: net, wallet_request_id: request.id, processed_by: user.id }
+          metadata: { original_amount: request.amount, fee_percentage: 2, net_payout: net, wallet_request_id: request.id, processed_by: user.id }
         })
         if (txErr) throw txErr
       }

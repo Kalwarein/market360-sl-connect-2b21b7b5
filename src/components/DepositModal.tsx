@@ -92,7 +92,7 @@ export const DepositModal = ({ open, onOpenChange, onSuccess }: DepositModalProp
                 <p>1. Send your payment to Market360's number</p>
                 <p>2. Enter the amount and your phone number</p>
                 <p>3. Upload proof of payment (optional)</p>
-                <p className="mt-2 text-primary font-semibold">Note: A 5% processing fee applies</p>
+                <p className="mt-2 text-primary font-semibold">Note: A 2% processing fee applies</p>
               </div>
             </div>
           </div>

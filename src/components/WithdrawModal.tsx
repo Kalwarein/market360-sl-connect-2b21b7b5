@@ -78,7 +78,7 @@ export const WithdrawModal = ({ open, onOpenChange, onSuccess, currentBalance }:
               <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
               <div className="text-sm text-gray-700">
                 <p className="font-semibold mb-1">Withdrawal Information:</p>
-                <p>A 5% processing fee will be deducted from your withdrawal amount.</p>
+                <p>A 2% processing fee will be deducted from your withdrawal amount.</p>
                 <p className="mt-2">Available Balance: <span className="font-bold text-primary">SLL {currentBalance.toLocaleString()}</span></p>
               </div>
             </div>

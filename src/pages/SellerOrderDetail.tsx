@@ -133,6 +133,24 @@ const SellerOrderDetail = () => {
         delivered: 'Your order has been delivered'
       };
 
+      // Send system message to chat
+      const { data: conversation } = await supabase
+        .from('conversations')
+        .select('id')
+        .eq('buyer_id', order?.buyer_id)
+        .eq('seller_id', user?.id)
+        .eq('product_id', order?.products?.id)
+        .maybeSingle();
+
+      if (conversation) {
+        await supabase.from('messages').insert({
+          conversation_id: conversation.id,
+          sender_id: user?.id!,
+          body: `📦 Order Update: ${statusMessages[newStatus]}`,
+          message_type: 'text'
+        });
+      }
+
       // Notify buyer
       await supabase.from('notifications').insert({
         user_id: order?.buyer_id,
@@ -141,24 +159,6 @@ const SellerOrderDetail = () => {
         body: statusMessages[newStatus],
         link_url: `/order-detail/${orderId}`
       });
-
-      // Send system message to chat
-      const { data: conversation } = await supabase
-        .from('conversations')
-        .select('id')
-        .eq('buyer_id', order?.buyer_id)
-        .eq('seller_id', user?.id)
-        .eq('product_id', order?.products.id)
-        .single();
-
-      if (conversation) {
-        await supabase.from('messages').insert({
-          conversation_id: conversation.id,
-          sender_id: user?.id,
-          body: `📦 ${statusMessages[newStatus]}`,
-          message_type: 'action'
-        });
-      }
 
       toast({
         title: 'Success',
