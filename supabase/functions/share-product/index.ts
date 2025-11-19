@@ -77,9 +77,9 @@ Deno.serve(async (req) => {
       
       console.log('✅ Using product image:', productImage)
     } else {
-      // Fallback to a generic marketplace image if no product image exists
-      productImage = 'https://images.unsplash.com/photo-1472851294608-062f824d29cc?w=1200&h=630&fit=crop&q=80'
-      console.log('⚠️ No product image found, using fallback')
+      // Fallback to Market360 default product image if no product image exists
+      productImage = `https://${req.headers.get('host')}/default-product-og.png`
+      console.log('⚠️ No product image found, using Market360 default image')
     }
     
     // Build rich metadata description with product name and key attributes
