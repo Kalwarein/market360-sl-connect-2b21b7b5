@@ -452,19 +452,23 @@ const Chat = () => {
                         
                         {/* Start Order Button */}
                         <Button
-                          onClick={(e) => {
+                          onClick={async (e) => {
                             e.stopPropagation();
-                            navigate('/checkout', { 
-                              state: { 
-                                items: [{
-                                  id: productData.id,
-                                  title: productData.title,
-                                  price: productData.price,
-                                  image: productData.image,
-                                  quantity: productData.moq || 1
-                                }]
-                              } 
-                            });
+                            
+                            // Add to cart first
+                            try {
+                              await supabase.from('cart_items').upsert({
+                                user_id: user?.id,
+                                product_id: productData.id,
+                                quantity: productData.moq || 1,
+                              });
+                              
+                              // Then navigate to checkout
+                              navigate('/checkout');
+                            } catch (error) {
+                              console.error('Error adding to cart:', error);
+                              toast.error('Failed to add product to cart');
+                            }
                           }}
                           className="w-full bg-[#FF6B00] hover:bg-[#FF6B00]/90 text-white font-semibold rounded-full h-11 text-base shadow-sm"
                         >
