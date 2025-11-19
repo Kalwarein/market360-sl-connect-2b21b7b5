@@ -412,27 +412,71 @@ const Chat = () => {
               if (!productData) return null;
 
               return (
-                <div key={message.id} className="flex justify-center">
+                <div key={message.id} className={`flex ${isOwn ? 'justify-end' : 'justify-start'} mb-4`}>
                   <Card 
-                    className="max-w-[280px] cursor-pointer hover:shadow-lg transition-shadow"
-                    onClick={() => navigate(`/product/${productData.id}`)}
+                    className="w-[280px] bg-white rounded-2xl shadow-md overflow-hidden border border-border/50 hover:shadow-lg transition-all duration-300"
                   >
-                    <CardContent className="p-3">
-                      <div className="flex gap-3">
+                    <CardContent className="p-0">
+                      {/* Product Image */}
+                      <div 
+                        className="w-full aspect-square bg-muted/30 cursor-pointer"
+                        onClick={() => navigate(`/product/${productData.id}`)}
+                      >
                         <img
                           src={productData.image}
                           alt={productData.title}
-                          className="w-16 h-16 object-cover rounded-lg"
+                          className="w-full h-full object-cover"
                         />
-                        <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-sm truncate">{productData.title}</p>
-                          <p className="text-primary font-bold text-sm">
-                            Le {productData.price?.toLocaleString()}
+                      </div>
+                      
+                      {/* Product Details */}
+                      <div className="p-4 space-y-2">
+                        <p 
+                          className="font-medium text-sm leading-tight line-clamp-2 cursor-pointer hover:text-primary transition-colors"
+                          onClick={() => navigate(`/product/${productData.id}`)}
+                        >
+                          {productData.title}
+                        </p>
+                        
+                        <div className="space-y-1">
+                          <p className="text-2xl font-bold text-foreground">
+                            Le{productData.price?.toLocaleString()}
                           </p>
-                          <p className="text-xs text-muted-foreground truncate">
-                            {productData.category}
-                          </p>
+                          
+                          {productData.moq && (
+                            <p className="text-xs text-muted-foreground">
+                              Min. Order: {productData.moq} Pieces
+                            </p>
+                          )}
                         </div>
+                        
+                        {/* Start Order Button */}
+                        <Button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate('/checkout', { 
+                              state: { 
+                                items: [{
+                                  id: productData.id,
+                                  title: productData.title,
+                                  price: productData.price,
+                                  image: productData.image,
+                                  quantity: productData.moq || 1
+                                }]
+                              } 
+                            });
+                          }}
+                          className="w-full bg-[#FF6B00] hover:bg-[#FF6B00]/90 text-white font-semibold rounded-full h-11 text-base shadow-sm"
+                        >
+                          Start Order
+                        </Button>
+                      </div>
+                      
+                      {/* Read Indicator */}
+                      <div className="px-4 pb-3 flex justify-end">
+                        <span className="text-[10px] text-muted-foreground">
+                          {formatMessageTime(message.created_at)}
+                        </span>
                       </div>
                     </CardContent>
                   </Card>

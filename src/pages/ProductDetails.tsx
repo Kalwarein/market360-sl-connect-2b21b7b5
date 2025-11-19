@@ -139,6 +139,7 @@ const ProductDetails = () => {
               price: product.price,
               image: product.images[0],
               category: product.category,
+              moq: product.moq,
             }
           }
         });

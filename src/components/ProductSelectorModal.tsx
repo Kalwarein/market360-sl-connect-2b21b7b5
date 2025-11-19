@@ -13,6 +13,7 @@ interface Product {
   price: number;
   images: string[];
   category: string;
+  moq?: number;
 }
 
 interface ProductSelectorModalProps {
@@ -51,7 +52,7 @@ const ProductSelectorModal = ({ open, onClose, onSelectProduct }: ProductSelecto
       // Get recently viewed products
       const { data: viewedProducts } = await supabase
         .from('product_views')
-        .select('product_id, products(id, title, price, images, category)')
+        .select('product_id, products(id, title, price, images, category, moq)')
         .eq('user_id', user?.id)
         .order('viewed_at', { ascending: false })
         .limit(20);
@@ -67,7 +68,7 @@ const ProductSelectorModal = ({ open, onClose, onSelectProduct }: ProductSelecto
       if (store) {
         const { data } = await supabase
           .from('products')
-          .select('id, title, price, images, category')
+          .select('id, title, price, images, category, moq')
           .eq('store_id', store.id)
           .eq('published', true)
           .order('created_at', { ascending: false })
