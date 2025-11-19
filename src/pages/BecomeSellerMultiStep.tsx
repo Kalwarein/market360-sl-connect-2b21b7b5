@@ -137,6 +137,7 @@ export default function BecomeSellerMultiStep() {
           store_country: validated.storeCountry,
           store_region: validated.storeRegion,
           store_city: validated.storeCity,
+          store_name: validated.storeName,
           store_logo_url: logoUrl,
           store_banner_url: bannerUrl,
           store_description: validated.storeDescription,
