@@ -12,6 +12,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, MapPin, Wallet, AlertCircle } from "lucide-react";
+import { NumericInput } from "@/components/NumericInput";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SIERRA_LEONE_REGIONS, getDistrictsByRegion } from "@/lib/sierraLeoneData";
 
 export default function Checkout() {
   const navigate = useNavigate();
@@ -70,7 +73,7 @@ export default function Checkout() {
     }
 
     // Validate delivery info
-    if (!deliveryInfo.name || !deliveryInfo.phone || !deliveryInfo.address || !deliveryInfo.city) {
+    if (!deliveryInfo.name || !deliveryInfo.phone || !deliveryInfo.address || !deliveryInfo.city || !deliveryInfo.region) {
       toast({
         title: "Incomplete delivery information",
         description: "Please fill in all required delivery fields",
@@ -286,11 +289,11 @@ export default function Checkout() {
               </div>
               <div>
                 <Label htmlFor="phone">Phone Number *</Label>
-                <Input
+                <NumericInput
                   id="phone"
                   value={deliveryInfo.phone}
-                  onChange={(e) =>
-                    setDeliveryInfo({ ...deliveryInfo, phone: e.target.value })
+                  onChange={(value) =>
+                    setDeliveryInfo({ ...deliveryInfo, phone: value })
                   }
                   placeholder="+232 XX XXX XXXX"
                 />
@@ -309,26 +312,45 @@ export default function Checkout() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label htmlFor="city">City / District *</Label>
-                <Input
-                  id="city"
-                  value={deliveryInfo.city}
-                  onChange={(e) =>
-                    setDeliveryInfo({ ...deliveryInfo, city: e.target.value })
-                  }
-                  placeholder="Freetown"
-                />
+                <Label htmlFor="region">Region *</Label>
+                <Select
+                  value={deliveryInfo.region}
+                  onValueChange={(value) => {
+                    setDeliveryInfo({ ...deliveryInfo, region: value, city: "" });
+                  }}
+                >
+                  <SelectTrigger className="bg-background">
+                    <SelectValue placeholder="Select Region" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border border-border shadow-lg z-50">
+                    {SIERRA_LEONE_REGIONS.map((region) => (
+                      <SelectItem key={region} value={region}>
+                        {region}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div>
-                <Label htmlFor="region">Region</Label>
-                <Input
-                  id="region"
-                  value={deliveryInfo.region}
-                  onChange={(e) =>
-                    setDeliveryInfo({ ...deliveryInfo, region: e.target.value })
+                <Label htmlFor="city">City / District *</Label>
+                <Select
+                  value={deliveryInfo.city}
+                  onValueChange={(value) =>
+                    setDeliveryInfo({ ...deliveryInfo, city: value })
                   }
-                  placeholder="Western Area"
-                />
+                  disabled={!deliveryInfo.region}
+                >
+                  <SelectTrigger className="bg-background">
+                    <SelectValue placeholder={deliveryInfo.region ? "Select District" : "Select Region first"} />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border border-border shadow-lg z-50 max-h-[300px]">
+                    {deliveryInfo.region && getDistrictsByRegion(deliveryInfo.region as any).map((district) => (
+                      <SelectItem key={district} value={district}>
+                        {district}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             <div>
