@@ -333,11 +333,16 @@ export type Database = {
           brand: string | null
           category: string
           category_cards: string[] | null
+          condition: string | null
           created_at: string
+          custom_labels: string[] | null
           description: string | null
+          eco_badges: string[] | null
+          enhancement_tags: string[] | null
           hs_code: string | null
           id: string
           images: string[]
+          included_in_box: string[] | null
           inquiry_only: boolean | null
           material: string | null
           model_number: string | null
@@ -346,22 +351,42 @@ export type Database = {
           perks: Json | null
           price: number
           product_code: string
+          product_highlights: string[] | null
+          product_requirements: string | null
+          product_video_url: string | null
           published: boolean | null
+          replacement_available: boolean | null
+          safety_tags: string[] | null
+          search_phrases: string[] | null
+          seller_story: string | null
+          seo_keywords: string[] | null
+          shipping_details: Json | null
+          spin_images: string[] | null
           store_id: string
+          support_contact: string | null
           tags: string[] | null
+          target_audience: string[] | null
+          technical_specs: Json | null
           title: string
           updated_at: string
+          variants: Json | null
           warranty: string | null
+          warranty_type: string | null
         }
         Insert: {
           brand?: string | null
           category: string
           category_cards?: string[] | null
+          condition?: string | null
           created_at?: string
+          custom_labels?: string[] | null
           description?: string | null
+          eco_badges?: string[] | null
+          enhancement_tags?: string[] | null
           hs_code?: string | null
           id?: string
           images?: string[]
+          included_in_box?: string[] | null
           inquiry_only?: boolean | null
           material?: string | null
           model_number?: string | null
@@ -370,22 +395,42 @@ export type Database = {
           perks?: Json | null
           price: number
           product_code?: string
+          product_highlights?: string[] | null
+          product_requirements?: string | null
+          product_video_url?: string | null
           published?: boolean | null
+          replacement_available?: boolean | null
+          safety_tags?: string[] | null
+          search_phrases?: string[] | null
+          seller_story?: string | null
+          seo_keywords?: string[] | null
+          shipping_details?: Json | null
+          spin_images?: string[] | null
           store_id: string
+          support_contact?: string | null
           tags?: string[] | null
+          target_audience?: string[] | null
+          technical_specs?: Json | null
           title: string
           updated_at?: string
+          variants?: Json | null
           warranty?: string | null
+          warranty_type?: string | null
         }
         Update: {
           brand?: string | null
           category?: string
           category_cards?: string[] | null
+          condition?: string | null
           created_at?: string
+          custom_labels?: string[] | null
           description?: string | null
+          eco_badges?: string[] | null
+          enhancement_tags?: string[] | null
           hs_code?: string | null
           id?: string
           images?: string[]
+          included_in_box?: string[] | null
           inquiry_only?: boolean | null
           material?: string | null
           model_number?: string | null
@@ -394,12 +439,27 @@ export type Database = {
           perks?: Json | null
           price?: number
           product_code?: string
+          product_highlights?: string[] | null
+          product_requirements?: string | null
+          product_video_url?: string | null
           published?: boolean | null
+          replacement_available?: boolean | null
+          safety_tags?: string[] | null
+          search_phrases?: string[] | null
+          seller_story?: string | null
+          seo_keywords?: string[] | null
+          shipping_details?: Json | null
+          spin_images?: string[] | null
           store_id?: string
+          support_contact?: string | null
           tags?: string[] | null
+          target_audience?: string[] | null
+          technical_specs?: Json | null
           title?: string
           updated_at?: string
+          variants?: Json | null
           warranty?: string | null
+          warranty_type?: string | null
         }
         Relationships: [
           {
