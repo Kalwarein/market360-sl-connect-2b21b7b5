@@ -1,1 +1,4 @@
 project_id = "rhtqsqpdvawlfqxlagxw"
+
+[functions.share-product]
+verify_jwt = false

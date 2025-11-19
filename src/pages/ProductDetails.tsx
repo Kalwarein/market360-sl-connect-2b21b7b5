@@ -15,6 +15,7 @@ import ProductPerks from '@/components/ProductPerks';
 import KeyAttributes from '@/components/KeyAttributes';
 import ProductTags from '@/components/ProductTags';
 import { CategoryCarousel } from '@/components/CategoryCard';
+import { ShareDialog } from '@/components/ShareDialog';
 
 interface Product {
   id: string;
@@ -50,6 +51,7 @@ const ProductDetails = () => {
   const { toast } = useToast();
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showShareDialog, setShowShareDialog] = useState(false);
 
   useEffect(() => {
     loadProduct();
@@ -179,23 +181,7 @@ const ProductDetails = () => {
   };
 
   const handleShare = async () => {
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: product?.title,
-          text: product?.description,
-          url: window.location.href,
-        });
-      } catch (error) {
-        console.log('Error sharing:', error);
-      }
-    } else {
-      navigator.clipboard.writeText(window.location.href);
-      toast({
-        title: 'Link Copied',
-        description: 'Product link copied to clipboard',
-      });
-    }
+    setShowShareDialog(true);
   };
 
   const isSeller = user?.id === product?.stores.owner_id;
@@ -236,9 +222,17 @@ const ProductDetails = () => {
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <Button variant="ghost" size="icon" onClick={handleShare}>
-            <Share2 className="h-5 w-5" />
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="default" 
+              size="sm"
+              onClick={handleShare}
+              className="gap-2 bg-gradient-to-r from-primary to-secondary hover:opacity-90 transition-all shadow-sm"
+            >
+              <Share2 className="h-4 w-4" />
+              <span className="hidden sm:inline">Share</span>
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -350,6 +344,14 @@ const ProductDetails = () => {
             Enquire Now
           </Button>
         </div>
+      )}
+
+      {product && (
+        <ShareDialog 
+          open={showShareDialog} 
+          onOpenChange={setShowShareDialog}
+          product={product}
+        />
       )}
     </div>
   );
