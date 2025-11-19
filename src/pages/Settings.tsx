@@ -51,6 +51,7 @@ const Settings = () => {
     messages: true,
     promotions: false,
     updates: true,
+    email_notifications: true,
   });
 
   const [language, setLanguage] = useState('english');
@@ -79,7 +80,6 @@ const Settings = () => {
           phone: data.phone || '',
         });
         
-        // Type-safe notification preferences
         const notifPrefs = data.notification_preferences as any;
         setNotifications(
           typeof notifPrefs === 'object' && notifPrefs !== null
@@ -88,12 +88,14 @@ const Settings = () => {
                 messages: notifPrefs.messages ?? true,
                 promotions: notifPrefs.promotions ?? false,
                 updates: notifPrefs.updates ?? true,
+                email_notifications: notifPrefs.email_notifications ?? true,
               }
             : {
                 orders: true,
                 messages: true,
                 promotions: false,
                 updates: true,
+                email_notifications: true,
               }
         );
         setLanguage(data.language || 'english');

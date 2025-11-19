@@ -186,7 +186,7 @@ export default function Checkout() {
               totalAmount: item.price * item.quantity,
               deliveryAddress: deliveryFullAddress,
               storeName: store.store_name,
-            });
+            }, user.id);
           }
 
           // Send new order notification to seller
@@ -200,7 +200,7 @@ export default function Checkout() {
               totalAmount: item.price * item.quantity,
               buyerName: buyerProfile?.name || 'Customer',
               deliveryAddress: deliveryFullAddress,
-            });
+            }, store.owner_id);
           }
         } catch (emailError) {
           console.error('Failed to send email notifications:', emailError);

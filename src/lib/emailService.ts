@@ -29,8 +29,25 @@ interface EmailData {
   conversationId?: string;
 }
 
-export const sendEmail = async (type: EmailType, to: string, data: EmailData) => {
+export const sendEmail = async (type: EmailType, to: string, data: EmailData, userId?: string) => {
   try {
+    // Check if user has email notifications enabled
+    if (userId) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('notification_preferences')
+        .eq('id', userId)
+        .single();
+
+      const notifPrefs = profile?.notification_preferences as any;
+      const emailEnabled = notifPrefs?.email_notifications !== false;
+      
+      if (!emailEnabled) {
+        console.log(`Email notifications disabled for user ${userId}, skipping ${type} email`);
+        return null;
+      }
+    }
+
     console.log(`Sending ${type} email to ${to}`);
     
     const { data: response, error } = await supabase.functions.invoke('send-email', {
@@ -67,9 +84,10 @@ export const sendOrderConfirmationEmail = async (
     totalAmount: number;
     deliveryAddress: string;
     storeName: string;
-  }
+  },
+  userId?: string
 ) => {
-  return sendEmail('order_confirmation', buyerEmail, orderData);
+  return sendEmail('order_confirmation', buyerEmail, orderData, userId);
 };
 
 export const sendNewOrderSellerEmail = async (
@@ -83,9 +101,10 @@ export const sendNewOrderSellerEmail = async (
     totalAmount: number;
     buyerName: string;
     deliveryAddress: string;
-  }
+  },
+  userId?: string
 ) => {
-  return sendEmail('new_order_seller', sellerEmail, orderData);
+  return sendEmail('new_order_seller', sellerEmail, orderData, userId);
 };
 
 export const sendOrderStatusUpdateEmail = async (
@@ -96,9 +115,10 @@ export const sendOrderStatusUpdateEmail = async (
     productName: string;
     status: string;
     buyerName: string;
-  }
+  },
+  userId?: string
 ) => {
-  return sendEmail('order_status_update', buyerEmail, orderData);
+  return sendEmail('order_status_update', buyerEmail, orderData, userId);
 };
 
 export const sendWalletTransactionEmail = async (
@@ -108,9 +128,10 @@ export const sendWalletTransactionEmail = async (
     amount: number;
     balance: number;
     userName: string;
-  }
+  },
+  userId?: string
 ) => {
-  return sendEmail('wallet_transaction', userEmail, transactionData);
+  return sendEmail('wallet_transaction', userEmail, transactionData, userId);
 };
 
 export const sendNewMessageEmail = async (
@@ -120,7 +141,8 @@ export const sendNewMessageEmail = async (
     productName?: string;
     messagePreview: string;
     conversationId: string;
-  }
+  },
+  userId?: string
 ) => {
-  return sendEmail('new_message', recipientEmail, messageData);
+  return sendEmail('new_message', recipientEmail, messageData, userId);
 };
