@@ -333,6 +333,20 @@ const Settings = () => {
                 }
               />
             </div>
+            <Separator />
+            <div className="flex items-center justify-between">
+              <div>
+                <Label htmlFor="email_notifications" className="font-semibold">Email Notifications</Label>
+                <p className="text-xs text-muted-foreground mt-1">Receive email alerts for orders, messages, and updates</p>
+              </div>
+              <Switch
+                id="email_notifications"
+                checked={notifications.email_notifications}
+                onCheckedChange={(checked) =>
+                  setNotifications({ ...notifications, email_notifications: checked })
+                }
+              />
+            </div>
           </CardContent>
         </Card>
 
