@@ -182,9 +182,27 @@ const AddProduct = () => {
         .from('stores')
         .select('id')
         .eq('owner_id', user.id)
-        .single();
+        .maybeSingle();
 
-      if (storeError) throw storeError;
+      if (storeError) {
+        console.error('Store fetch error:', storeError);
+        toast({
+          title: 'Error',
+          description: 'Failed to fetch store information',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      if (!store) {
+        toast({
+          title: 'No store found',
+          description: 'You need to create a store before adding products. Please complete the seller application.',
+          variant: 'destructive',
+        });
+        navigate('/become-seller');
+        return;
+      }
 
       const imageUrls: string[] = [];
       const orderedImages = [...images];
@@ -269,7 +287,15 @@ const AddProduct = () => {
         product_video_url: videoUrl,
       });
 
-      if (insertError) throw insertError;
+      if (insertError) {
+        console.error('Product insert error:', insertError);
+        toast({
+          title: 'Error adding product',
+          description: insertError.message || 'Failed to add product',
+          variant: 'destructive',
+        });
+        return;
+      }
 
       await supabase.from('audit_logs').insert({
         actor_id: user.id,
@@ -284,11 +310,11 @@ const AddProduct = () => {
       });
 
       navigate('/product-creation-success');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding product:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to add product',
+        title: 'Error adding product',
+        description: error.message || 'An unexpected error occurred. Please try again.',
         variant: 'destructive',
       });
     }
