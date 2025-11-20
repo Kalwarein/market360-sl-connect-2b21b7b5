@@ -18,10 +18,17 @@ interface Moderation {
   created_at: string;
 }
 
+interface Appeal {
+  id: string;
+  status: string;
+  created_at: string;
+}
+
 const ModerationScreen = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const [moderation, setModeration] = useState<Moderation | null>(null);
+  const [existingAppeal, setExistingAppeal] = useState<Appeal | null>(null);
   const [appealMessage, setAppealMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -62,6 +69,18 @@ const ModerationScreen = () => {
         }
         
         setModeration(data);
+
+        // Check if user already submitted an appeal for this moderation
+        const { data: appealData } = await supabase
+          .from('moderation_appeals')
+          .select('id, status, created_at')
+          .eq('moderation_id', data.id)
+          .eq('user_id', user!.id)
+          .maybeSingle();
+
+        if (appealData) {
+          setExistingAppeal(appealData);
+        }
       } else {
         // No active moderation, redirect to home
         navigate('/');
@@ -91,6 +110,9 @@ const ModerationScreen = () => {
 
       toast.success('Appeal submitted successfully');
       setAppealMessage('');
+      
+      // Reload to hide the appeal form
+      checkModeration();
     } catch (error) {
       console.error('Error submitting appeal:', error);
       toast.error('Failed to submit appeal');
@@ -160,30 +182,45 @@ const ModerationScreen = () => {
             </div>
           </div>
 
-          <div className="space-y-3">
-            <Label>
-              {isBanned ? 'Request Account Restoration' : 'Submit an Appeal'}
-            </Label>
-            <Textarea
-              placeholder={
-                isBanned 
-                  ? "Explain why you believe your account should be restored..."
-                  : "Explain why you believe this suspension should be reviewed..."
-              }
-              value={appealMessage}
-              onChange={(e) => setAppealMessage(e.target.value)}
-              rows={5}
-              className="resize-none"
-            />
-            <Button
-              onClick={handleSubmitAppeal}
-              disabled={submitting}
-              className="w-full"
-            >
-              <Send className="h-4 w-4 mr-2" />
-              {submitting ? 'Submitting...' : (isBanned ? 'Request Restoration' : 'Submit Appeal')}
-            </Button>
-          </div>
+          {existingAppeal ? (
+            <div className="p-4 bg-muted rounded-lg border">
+              <h3 className="font-semibold mb-2">Appeal Submitted</h3>
+              <p className="text-sm text-muted-foreground mb-2">
+                You have already submitted an appeal for this {isBanned ? 'ban' : 'suspension'} on {format(new Date(existingAppeal.created_at), 'MMMM dd, yyyy')}.
+              </p>
+              <p className="text-sm">
+                <strong>Status:</strong> {existingAppeal.status.charAt(0).toUpperCase() + existingAppeal.status.slice(1)}
+              </p>
+              <p className="text-sm text-muted-foreground mt-2">
+                The admin team will review your appeal. You cannot submit another appeal for this moderation action.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <Label>
+                {isBanned ? 'Request Account Restoration' : 'Submit an Appeal'}
+              </Label>
+              <Textarea
+                placeholder={
+                  isBanned 
+                    ? "Explain why you believe your account should be restored..."
+                    : "Explain why you believe this suspension should be reviewed..."
+                }
+                value={appealMessage}
+                onChange={(e) => setAppealMessage(e.target.value)}
+                rows={5}
+                className="resize-none"
+              />
+              <Button
+                onClick={handleSubmitAppeal}
+                disabled={submitting}
+                className="w-full"
+              >
+                <Send className="h-4 w-4 mr-2" />
+                {submitting ? 'Submitting...' : (isBanned ? 'Request Restoration' : 'Submit Appeal')}
+              </Button>
+            </div>
+          )}
 
           <div className="pt-4 border-t">
             <Button
