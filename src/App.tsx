@@ -57,6 +57,9 @@ import ProfileViewer from "./pages/ProfileViewer";
 import OrderArrival from "./pages/OrderArrival";
 import AdminSellerApplications from "./pages/AdminSellerApplications";
 import AdminSellerApplicationDetail from "./pages/AdminSellerApplicationDetail";
+import TopDeals from "./pages/TopDeals";
+import TopRanking from "./pages/TopRanking";
+import NewArrivals from "./pages/NewArrivals";
 
 const queryClient = new QueryClient();
 
@@ -71,8 +74,11 @@ const App = () => (
             <Routes>
               <Route path="/auth" element={<Auth />} />
               <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
-              <Route path="/perks" element={<ProtectedRoute><Perks /></ProtectedRoute>} /> {/* Added Perks route */}
+              <Route path="/perks" element={<ProtectedRoute><Perks /></ProtectedRoute>} />
               <Route path="/search" element={<ProtectedRoute><Search /></ProtectedRoute>} />
+              <Route path="/top-deals" element={<ProtectedRoute><TopDeals /></ProtectedRoute>} />
+              <Route path="/top-ranking" element={<ProtectedRoute><TopRanking /></ProtectedRoute>} />
+              <Route path="/new-arrivals" element={<ProtectedRoute><NewArrivals /></ProtectedRoute>} />
               <Route path="/categories" element={<ProtectedRoute><Stores /></ProtectedRoute>} />
               <Route path="/messages" element={<ProtectedRoute><MessagesPage /></ProtectedRoute>} />
               <Route path="/chat/:conversationId" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
