@@ -144,8 +144,9 @@ const ModerationScreen = () => {
             {!isBanned && moderation.expires_at && (
               <div className="p-4 bg-warning/10 rounded-lg border border-warning">
                 <p className="text-sm">
-                  <strong>Suspension Period:</strong> Until{' '}
-                  {format(new Date(moderation.expires_at), 'MMMM dd, yyyy HH:mm')}
+                  <strong>Your account will be automatically restored on:</strong>
+                  <br />
+                  {format(new Date(moderation.expires_at), 'MMMM dd, yyyy')} at {format(new Date(moderation.expires_at), 'HH:mm')}
                 </p>
               </div>
             )}
@@ -160,9 +161,15 @@ const ModerationScreen = () => {
           </div>
 
           <div className="space-y-3">
-            <Label>Submit an Appeal</Label>
+            <Label>
+              {isBanned ? 'Request Account Restoration' : 'Submit an Appeal'}
+            </Label>
             <Textarea
-              placeholder="Explain why you believe this decision should be reviewed..."
+              placeholder={
+                isBanned 
+                  ? "Explain why you believe your account should be restored..."
+                  : "Explain why you believe this suspension should be reviewed..."
+              }
               value={appealMessage}
               onChange={(e) => setAppealMessage(e.target.value)}
               rows={5}
@@ -174,7 +181,7 @@ const ModerationScreen = () => {
               className="w-full"
             >
               <Send className="h-4 w-4 mr-2" />
-              {submitting ? 'Submitting...' : 'Submit Appeal'}
+              {submitting ? 'Submitting...' : (isBanned ? 'Request Restoration' : 'Submit Appeal')}
             </Button>
           </div>
 
