@@ -56,11 +56,16 @@ const Profile = () => {
 
   const loadProfile = async () => {
     try {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', user?.id)
-        .single();
+        .maybeSingle();
+
+      if (error) {
+        console.error('Profile fetch error:', error);
+        throw error;
+      }
 
       setProfile(data);
     } catch (error) {
@@ -76,9 +81,19 @@ const Profile = () => {
         .from('wallets')
         .select('balance_leones')
         .eq('user_id', user?.id)
-        .single();
+        .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Wallet fetch error:', error);
+        throw error;
+      }
+
+      if (!data) {
+        console.log('No wallet found, may need to create one');
+        setWalletBalance(0);
+        return;
+      }
+
       setWalletBalance(data.balance_leones || 0);
     } catch (error) {
       console.error('Error loading wallet balance:', error);

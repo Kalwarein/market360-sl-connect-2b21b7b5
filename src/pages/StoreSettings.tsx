@@ -34,12 +34,43 @@ const StoreSettings = () => {
 
   const loadStore = async () => {
     try {
-      const { data, error } = await supabase.from('stores').select('*').eq('owner_id', user?.id).single();
-      if (error) throw error;
+      const { data, error } = await supabase
+        .from('stores')
+        .select('*')
+        .eq('owner_id', user?.id)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Store fetch error:', error);
+        throw error;
+      }
+
+      if (!data) {
+        console.log('No store found for user');
+        toast({
+          title: 'No store found',
+          description: 'Please complete your seller application first',
+          variant: 'destructive',
+        });
+        navigate('/become-seller');
+        return;
+      }
+
       setStore(data);
-      setFormData({ store_name: data.store_name || '', description: data.description || '', city: data.city || '', region: data.region || '', country: data.country || '' });
+      setFormData({
+        store_name: data.store_name || '',
+        description: data.description || '',
+        city: data.city || '',
+        region: data.region || '',
+        country: data.country || ''
+      });
     } catch (error) {
       console.error('Error loading store:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load store information',
+        variant: 'destructive',
+      });
     } finally {
       setLoading(false);
     }

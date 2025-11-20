@@ -52,12 +52,29 @@ export default function Checkout() {
         .from("wallets")
         .select("balance_leones")
         .eq("user_id", user.id)
-        .single();
+        .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Wallet fetch error:', error);
+        throw error;
+      }
+
+      if (!data) {
+        console.log('No wallet found for user, creating one...');
+        // Try to create a wallet if it doesn't exist
+        const { data: newWallet } = await supabase
+          .from('wallets')
+          .insert({ user_id: user.id, balance_leones: 0 })
+          .select()
+          .single();
+        setWalletBalance(newWallet?.balance_leones || 0);
+        return;
+      }
+
       setWalletBalance(data.balance_leones || 0);
     } catch (error) {
       console.error("Error loading wallet:", error);
+      setWalletBalance(0);
     } finally {
       setLoadingBalance(false);
     }

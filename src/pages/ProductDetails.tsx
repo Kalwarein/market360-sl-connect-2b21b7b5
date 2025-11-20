@@ -83,13 +83,26 @@ const ProductDetails = () => {
         .from('products')
         .select('*, stores(id, store_name, logo_url, owner_id)')
         .eq('id', id)
-        .single();
+        .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Product fetch error:', error);
+        throw error;
+      }
+
+      if (!data) {
+        console.error('Product not found:', id);
+        setProduct(null);
+        return;
+      }
+      
+      console.log('Product loaded:', data);
+      console.log('Product images:', data.images);
       
       const parsedData = {
         ...data,
         perks: Array.isArray(data.perks) ? data.perks : [],
+        images: Array.isArray(data.images) ? data.images : [],
       };
       
       setProduct(parsedData as any);
@@ -105,6 +118,7 @@ const ProductDetails = () => {
         description: 'Failed to load product',
         variant: 'destructive',
       });
+      setProduct(null);
     } finally {
       setLoading(false);
     }

@@ -39,22 +39,48 @@ const Wallet = () => {
       // Load wallet balance
       const { data: walletData, error: walletError } = await supabase
         .from('wallets')
-        .select('balance_leones')
+        .select('id, balance_leones')
         .eq('user_id', user?.id)
-        .single();
+        .maybeSingle();
 
-      if (walletError) throw walletError;
+      if (walletError) {
+        console.error('Wallet fetch error:', walletError);
+        throw walletError;
+      }
+
+      if (!walletData) {
+        console.log('No wallet found, creating one...');
+        const { data: newWallet, error: createError } = await supabase
+          .from('wallets')
+          .insert({ user_id: user?.id, balance_leones: 0 })
+          .select('id, balance_leones')
+          .single();
+        
+        if (createError) {
+          console.error('Wallet creation error:', createError);
+          throw createError;
+        }
+        
+        setBalance(0);
+        setTransactions([]);
+        return;
+      }
+
       setBalance(walletData.balance_leones);
 
       // Load transactions
       const { data: transData, error: transError } = await supabase
         .from('transactions')
         .select('*')
-        .eq('wallet_id', (await supabase.from('wallets').select('id').eq('user_id', user?.id).single()).data?.id)
+        .eq('wallet_id', walletData.id)
         .order('created_at', { ascending: false })
         .limit(50);
 
-      if (transError) throw transError;
+      if (transError) {
+        console.error('Transaction fetch error:', transError);
+        throw transError;
+      }
+
       setTransactions(transData || []);
     } catch (error) {
       console.error('Error loading wallet data:', error);

@@ -68,14 +68,21 @@ const ProductImageCarousel = ({ images }: ProductImageCarouselProps) => {
     setTouchEnd(0);
   };
 
+  if (!images || images.length === 0) {
+    return (
+      <div className="relative w-full rounded-2xl overflow-hidden bg-muted flex items-center justify-center h-96">
+        <p className="text-muted-foreground">No images available</p>
+      </div>
+    );
+  }
+
   return (
     <div 
       ref={containerRef}
-      className="relative w-full rounded-2xl overflow-hidden bg-muted flex items-center justify-center"
+      className="relative w-full rounded-2xl overflow-hidden bg-muted flex items-center justify-center h-96"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
-      style={{ minHeight: '400px', maxHeight: '600px' }}
     >
       {/* Images */}
       <div className="relative w-full h-full flex items-center justify-center">
@@ -90,6 +97,10 @@ const ProductImageCarousel = ({ images }: ProductImageCarouselProps) => {
               src={image}
               alt={`Product ${index + 1}`}
               className="max-w-full max-h-full object-contain"
+              onError={(e) => {
+                console.error('Image failed to load:', image);
+                e.currentTarget.src = '/placeholder.svg';
+              }}
             />
             {/* Shimmer effect */}
             {index === currentIndex && (
