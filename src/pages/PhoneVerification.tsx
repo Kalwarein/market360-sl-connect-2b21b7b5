@@ -68,8 +68,19 @@ export default function PhoneVerification() {
     setLoading(true);
 
     try {
-      // Remove any leading zeros and add country code
-      const formattedPhone = `+232${phoneNumber.replace(/^0+/, '')}`;
+      // Smart phone formatting:
+      // If starts with 232, add + prefix
+      // If starts with 0, remove it and add +232
+      // Otherwise, add +232 prefix
+      let formattedPhone = phoneNumber;
+      
+      if (formattedPhone.startsWith('232')) {
+        formattedPhone = `+${formattedPhone}`;
+      } else if (formattedPhone.startsWith('0')) {
+        formattedPhone = `+232${formattedPhone.substring(1)}`;
+      } else {
+        formattedPhone = `+232${formattedPhone}`;
+      }
 
       const { error } = await supabase.functions.invoke('send-otp', {
         body: {
