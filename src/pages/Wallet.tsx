@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { ArrowLeft, Wallet as WalletIcon, ArrowUpCircle, ArrowDownCircle, Clock } from 'lucide-react';
+import { ArrowLeft, Wallet as WalletIcon, ArrowUpCircle, ArrowDownCircle, Clock, Info } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { DepositModal } from '@/components/DepositModal';
@@ -152,6 +152,16 @@ const Wallet = () => {
             Withdraw
           </Button>
         </div>
+        
+        <Button
+          onClick={() => navigate('/how-to-topup')}
+          variant="ghost"
+          size="sm"
+          className="w-full text-sm text-muted-foreground hover:text-foreground"
+        >
+          <Info className="mr-2 h-4 w-4" />
+          How to Top Up with Orange Money
+        </Button>
 
         <Card>
           <CardHeader>

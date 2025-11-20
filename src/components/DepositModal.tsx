@@ -3,10 +3,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Upload, AlertCircle } from 'lucide-react';
+import { Upload, AlertCircle, Info } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 
 interface DepositModalProps {
   open: boolean;
@@ -16,6 +17,7 @@ interface DepositModalProps {
 
 export const DepositModal = ({ open, onOpenChange, onSuccess }: DepositModalProps) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [amount, setAmount] = useState('');
   const [phone, setPhone] = useState('');
   const [referenceNumber, setReferenceNumber] = useState('');
@@ -83,9 +85,23 @@ export const DepositModal = ({ open, onOpenChange, onSuccess }: DepositModalProp
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md max-h-[85vh] overflow-hidden flex flex-col">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-primary-light bg-clip-text text-transparent">
-            Top Up Wallet
-          </DialogTitle>
+          <div className="flex items-center justify-between">
+            <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-primary-light bg-clip-text text-transparent">
+              Top Up Wallet
+            </DialogTitle>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                onOpenChange(false);
+                navigate('/how-to-topup');
+              }}
+              className="text-primary hover:text-primary-hover"
+            >
+              <Info className="h-4 w-4 mr-1" />
+              How to Top Up
+            </Button>
+          </div>
         </DialogHeader>
         
         <div className="space-y-6 overflow-y-auto pr-2 scrollbar-thin">
