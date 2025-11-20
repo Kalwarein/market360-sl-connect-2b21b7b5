@@ -148,17 +148,6 @@ const Settings = () => {
   const handleSave = async () => {
     try {
       setSaving(true);
-      
-      // If phone is being updated and not verified, prevent save
-      if (profile.phone && !profile.phone_verified) {
-        toast({
-          title: 'Phone Not Verified',
-          description: 'Please verify your phone number before saving',
-          variant: 'destructive',
-        });
-        setSaving(false);
-        return;
-      }
 
       // Convert comma-separated interests to array
       const interestsArray = profile.interests
@@ -171,6 +160,7 @@ const Settings = () => {
         .update({
           name: profile.name,
           full_name: profile.full_name,
+          phone: profile.phone ? `+232${profile.phone}` : null,
           date_of_birth: profile.date_of_birth || null,
           gender: profile.gender,
           street_address: profile.street_address,
@@ -366,14 +356,7 @@ const Settings = () => {
               </select>
             </div>
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label>Phone Number</Label>
-                {profile.phone_verified && (
-                  <span className="text-xs bg-green-500/10 text-green-600 px-2 py-1 rounded-full border border-green-500/20">
-                    ✓ Verified
-                  </span>
-                )}
-              </div>
+              <Label>Phone Number</Label>
               <div className="flex gap-2">
                 <div className="flex items-center px-3 py-2 border border-border rounded-lg bg-muted/30">
                   <span className="text-sm font-medium">+232</span>
@@ -388,13 +371,10 @@ const Settings = () => {
                     setProfile({ ...profile, phone: value });
                   }}
                   maxLength={9}
-                  disabled={profile.phone_verified}
                 />
               </div>
               <p className="text-xs text-muted-foreground">
-                {profile.phone_verified 
-                  ? 'Your phone number is verified'
-                  : 'Enter your number without the leading zero (e.g., 76123456)'}
+                Enter your number without the leading zero (e.g., 76123456)
               </p>
             </div>
           </CardContent>
