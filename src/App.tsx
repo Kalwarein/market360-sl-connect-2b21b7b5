@@ -120,7 +120,7 @@ const App = () => (
               <Route path="/admin/seller-applications" element={<AdminSellerApplications />} />
               <Route path="/admin/seller-application/:id" element={<AdminSellerApplicationDetail />} />
               <Route path="/admin/audit-logs" element={<AdminAuditLogs />} />
-              <Route path="/moderation" element={<ProtectedRoute><ModerationScreen /></ProtectedRoute>} />
+              <Route path="/moderation" element={<ModerationScreen />} />
           <Route path="/checkout" element={<Checkout />} />
           <Route path="/orders" element={<Orders />} />
           <Route path="/order-detail/:orderId" element={<OrderDetail />} />
