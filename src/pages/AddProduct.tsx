@@ -283,7 +283,7 @@ const AddProduct = () => {
         description: 'Product added successfully',
       });
 
-      navigate('/seller/products');
+      navigate('/product-creation-success');
     } catch (error) {
       console.error('Error adding product:', error);
       toast({
