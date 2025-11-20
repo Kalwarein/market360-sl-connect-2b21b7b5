@@ -11,6 +11,8 @@ const ProductImageCarousel = ({ images }: ProductImageCarouselProps) => {
   const [isAnimating, setIsAnimating] = useState(false);
   const [touchStart, setTouchStart] = useState(0);
   const [touchEnd, setTouchEnd] = useState(0);
+  const [imageLoadStates, setImageLoadStates] = useState<Record<number, boolean>>({});
+  const [imageErrorStates, setImageErrorStates] = useState<Record<number, boolean>>({});
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -68,6 +70,15 @@ const ProductImageCarousel = ({ images }: ProductImageCarouselProps) => {
     setTouchEnd(0);
   };
 
+  const handleImageLoad = (index: number) => {
+    setImageLoadStates(prev => ({ ...prev, [index]: true }));
+  };
+
+  const handleImageError = (index: number, imageUrl: string) => {
+    console.error('Failed to load image:', imageUrl);
+    setImageErrorStates(prev => ({ ...prev, [index]: true }));
+  };
+
   if (!images || images.length === 0) {
     return (
       <div className="relative w-full rounded-2xl overflow-hidden bg-muted flex items-center justify-center h-96">
@@ -93,17 +104,30 @@ const ProductImageCarousel = ({ images }: ProductImageCarouselProps) => {
               index === currentIndex ? 'opacity-100 z-10' : 'opacity-0 z-0'
             }`}
           >
-            <img
-              src={image}
-              alt={`Product ${index + 1}`}
-              className="max-w-full max-h-full object-contain"
-              onError={(e) => {
-                console.error('Image failed to load:', image);
-                e.currentTarget.src = '/placeholder.svg';
-              }}
-            />
+            {!imageLoadStates[index] && !imageErrorStates[index] && (
+              <div className="absolute inset-0 flex items-center justify-center bg-muted">
+                <div className="animate-pulse text-muted-foreground">Loading...</div>
+              </div>
+            )}
+            {imageErrorStates[index] ? (
+              <div className="absolute inset-0 flex items-center justify-center bg-muted">
+                <div className="text-center text-muted-foreground">
+                  <p>Failed to load image</p>
+                  <p className="text-xs mt-1">Please check your connection</p>
+                </div>
+              </div>
+            ) : (
+              <img
+                src={image}
+                alt={`Product ${index + 1}`}
+                className="max-w-full max-h-full object-contain"
+                onLoad={() => handleImageLoad(index)}
+                onError={() => handleImageError(index, image)}
+                style={{ display: imageLoadStates[index] ? 'block' : 'none' }}
+              />
+            )}
             {/* Shimmer effect */}
-            {index === currentIndex && (
+            {index === currentIndex && imageLoadStates[index] && !imageErrorStates[index] && (
               <div className="absolute inset-0 animate-shimmer pointer-events-none">
                 <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent animate-slide" />
               </div>
