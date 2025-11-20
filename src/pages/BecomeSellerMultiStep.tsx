@@ -117,11 +117,11 @@ export default function BecomeSellerMultiStep() {
       let bannerUrl = '';
 
       if (logoFile) {
-        logoUrl = await uploadImage(logoFile, 'store-logos', 'logos');
+        logoUrl = await uploadImage(logoFile, 'product-images', 'logos');
       }
 
       if (bannerFile) {
-        bannerUrl = await uploadImage(bannerFile, 'store-banners', 'banners');
+        bannerUrl = await uploadImage(bannerFile, 'product-images', 'banners');
       }
 
       const { error } = await supabase
