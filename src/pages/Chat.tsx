@@ -244,8 +244,11 @@ const Chat = () => {
         conversation_id: conversationId,
         sender_id: user?.id,
         body: newMessage.trim() || (attachedProduct ? 'Shared a product' : ''),
-        message_type: attachedProduct ? 'action' : 'text',
       };
+
+      if (!attachedProduct) {
+        messageData.message_type = 'text';
+      }
 
       if (attachedProduct) {
         messageData.attachments = [JSON.stringify(attachedProduct)];
@@ -276,7 +279,7 @@ const Chat = () => {
     const senderName = isOwn ? currentUserName : conversation?.other_user?.name || 'Unknown';
     const senderAvatar = isOwn ? currentUserAvatar : conversation?.other_user?.avatar_url;
 
-    if (message.message_type === 'action' && message.attachments?.[0]) {
+    if (message.attachments?.[0]) {
       try {
         const product = JSON.parse(message.attachments[0]);
         return (
