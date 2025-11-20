@@ -280,31 +280,39 @@ const Chat = () => {
       try {
         const product = JSON.parse(message.attachments[0]);
         return (
-          <div className={`flex gap-3 ${isOwn ? 'flex-row-reverse' : ''} mb-4 animate-fade-in`}>
-            <Avatar className="h-10 w-10 border-2 border-primary/20">
+          <div className={`flex gap-2 ${isOwn ? 'flex-row-reverse' : ''} mb-3 animate-fade-in`}>
+            <Avatar className="h-8 w-8 border-2 border-primary/20">
               <AvatarImage src={senderAvatar || undefined} />
-              <AvatarFallback className="bg-primary/10 text-primary">
-                {senderName?.charAt(0)?.toUpperCase() || <User className="h-5 w-5" />}
+              <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                {senderName?.charAt(0)?.toUpperCase() || <User className="h-4 w-4" />}
               </AvatarFallback>
             </Avatar>
-            <div className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'} max-w-[75%]`}>
+            <div className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'} max-w-[70%]`}>
               <span className="text-xs text-muted-foreground mb-1 font-medium">{senderName}</span>
-              <Card className="shadow-md hover:shadow-lg transition-all hover:scale-[1.02] cursor-pointer" onClick={() => navigate(`/product/${product.id}`)}>
-                <CardContent className="p-3">
-                  <div className="flex gap-3">
+              <Card className="shadow-sm hover:shadow-md transition-all cursor-pointer border-2 border-primary/10" onClick={() => navigate(`/product/${product.id}`)}>
+                <CardContent className="p-2">
+                  <div className="flex gap-2">
                     <img
-                      src={product.images?.[0]}
+                      src={product.images?.[0] || product.image}
                       alt={product.title}
-                      className="w-20 h-20 object-cover rounded-lg"
+                      className="w-16 h-16 object-cover rounded-md"
                     />
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-sm line-clamp-2">{product.title}</h4>
-                      <p className="text-primary font-bold mt-1">Le {product.price?.toLocaleString()}</p>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-semibold text-xs line-clamp-2">{product.title}</h4>
+                      <p className="text-primary font-bold text-sm mt-0.5">Le {product.price?.toLocaleString()}</p>
                       {product.moq && (
                         <p className="text-xs text-muted-foreground">MOQ: {product.moq}</p>
                       )}
-                      <Button size="sm" className="mt-2 w-full rounded-full" variant="outline">
-                        Start Order Now
+                      <Button 
+                        size="sm" 
+                        className="mt-1.5 w-full h-7 text-xs rounded-full" 
+                        variant="outline"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/product/${product.id}`);
+                        }}
+                      >
+                        View Details
                       </Button>
                     </div>
                   </div>
