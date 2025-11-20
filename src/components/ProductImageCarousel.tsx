@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from './ui/button';
 
@@ -9,11 +9,14 @@ interface ProductImageCarouselProps {
 const ProductImageCarousel = ({ images }: ProductImageCarouselProps) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [touchStart, setTouchStart] = useState(0);
+  const [touchEnd, setTouchEnd] = useState(0);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const interval = setInterval(() => {
       handleNext();
-    }, 5000);
+    }, 1000); // Auto-advance every 1 second
 
     return () => clearInterval(interval);
   }, [currentIndex, images.length]);
@@ -39,25 +42,58 @@ const ProductImageCarousel = ({ images }: ProductImageCarouselProps) => {
     setTimeout(() => setIsAnimating(false), 500);
   };
 
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > 50;
+    const isRightSwipe = distance < -50;
+
+    if (isLeftSwipe) {
+      handleNext();
+    }
+    if (isRightSwipe) {
+      handlePrevious();
+    }
+
+    setTouchStart(0);
+    setTouchEnd(0);
+  };
+
   return (
-    <div className="relative w-full aspect-square rounded-2xl overflow-hidden bg-muted">
+    <div 
+      ref={containerRef}
+      className="relative w-full rounded-2xl overflow-hidden bg-muted"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      style={{ minHeight: '300px' }}
+    >
       {/* Images */}
-      <div className="relative w-full h-full">
+      <div className="relative w-full h-full flex items-center justify-center">
         {images.map((image, index) => (
           <div
             key={index}
-            className={`absolute inset-0 transition-opacity duration-500 ${
+            className={`absolute inset-0 transition-opacity duration-500 flex items-center justify-center ${
               index === currentIndex ? 'opacity-100 z-10' : 'opacity-0 z-0'
             }`}
           >
             <img
               src={image}
               alt={`Product ${index + 1}`}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-contain"
             />
             {/* Shimmer effect */}
             {index === currentIndex && (
-              <div className="absolute inset-0 animate-shimmer">
+              <div className="absolute inset-0 animate-shimmer pointer-events-none">
                 <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent animate-slide" />
               </div>
             )}
