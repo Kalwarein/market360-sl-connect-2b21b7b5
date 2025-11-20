@@ -62,6 +62,10 @@ import TopRanking from "./pages/TopRanking";
 import NewArrivals from "./pages/NewArrivals";
 import ProductCreationSuccess from "./pages/ProductCreationSuccess";
 import HowToTopUp from "./pages/HowToTopUp";
+import ModerationScreen from "./pages/ModerationScreen";
+import AdminUserDetail from "./pages/AdminUserDetail";
+import AdminAppeals from "./pages/AdminAppeals";
+import AdminAppealDetail from "./pages/AdminAppealDetail";
 
 const queryClient = new QueryClient();
 
@@ -105,6 +109,9 @@ const App = () => (
               <Route path="/admin-auth" element={<AdminAuth />} />
               <Route path="/admin-dashboard" element={<AdminDashboard />} />
               <Route path="/admin/users" element={<AdminUsers />} />
+              <Route path="/admin/users/:userId" element={<AdminUserDetail />} />
+              <Route path="/admin/appeals" element={<AdminAppeals />} />
+              <Route path="/admin/appeals/:appealId" element={<AdminAppealDetail />} />
               <Route path="/admin/stores" element={<AdminStores />} />
               <Route path="/admin/products" element={<AdminProducts />} />
               <Route path="/admin/orders" element={<AdminOrders />} />
@@ -113,6 +120,7 @@ const App = () => (
               <Route path="/admin/seller-applications" element={<AdminSellerApplications />} />
               <Route path="/admin/seller-application/:id" element={<AdminSellerApplicationDetail />} />
               <Route path="/admin/audit-logs" element={<AdminAuditLogs />} />
+              <Route path="/moderation" element={<ProtectedRoute><ModerationScreen /></ProtectedRoute>} />
           <Route path="/checkout" element={<Checkout />} />
           <Route path="/orders" element={<Orders />} />
           <Route path="/order-detail/:orderId" element={<OrderDetail />} />

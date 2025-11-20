@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { 
   Shield, Users, Store, Package, ShoppingBag, 
   FileText, MessageSquare, CheckCircle, XCircle, Clock,
-  Wallet, Radio
+  Wallet, Radio, AlertCircle
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -242,6 +242,16 @@ const AdminDashboard = () => {
             >
               <Wallet className="h-6 w-6" />
               <span className="text-xs font-semibold">Wallet</span>
+            </Button>
+            
+            <Button
+              variant={window.location.pathname === '/admin/appeals' ? 'default' : 'outline'}
+              size="lg"
+              onClick={() => navigate('/admin/appeals')}
+              className="h-auto flex-col gap-2 py-4"
+            >
+              <AlertCircle className="h-6 w-6" />
+              <span className="text-xs font-semibold">Appeals</span>
             </Button>
             
             <Button

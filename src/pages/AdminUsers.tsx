@@ -111,7 +111,11 @@ const AdminUsers = () => {
 
         <div className="space-y-4">
           {filteredUsers.map((user) => (
-            <Card key={user.id} className="shadow-md hover:shadow-lg transition-all">
+            <Card 
+              key={user.id} 
+              className="shadow-md hover:shadow-lg transition-all cursor-pointer"
+              onClick={() => navigate(`/admin/users/${user.id}`)}
+            >
               <CardContent className="p-4">
                 <div className="flex items-center gap-4">
                   <Avatar className="h-12 w-12">
