@@ -132,13 +132,13 @@ export default function Checkout() {
         // Get buyer and seller profiles for emails
         const { data: buyerProfile } = await supabase
           .from("profiles")
-          .select("email, name")
+          .select("email, name, phone")
           .eq("id", user.id)
           .single();
 
         const { data: sellerProfile } = await supabase
           .from("profiles")
-          .select("email, name")
+          .select("email, name, phone")
           .eq("id", store.owner_id)
           .single();
 
@@ -193,6 +193,21 @@ export default function Checkout() {
         } catch (notifError) {
           console.error('Failed to send notification:', notifError);
           // Don't fail the order if notification fails
+        }
+
+        // Send SMS notification to seller for new order
+        try {
+          if (sellerProfile?.phone) {
+            await supabase.functions.invoke('send-sms', {
+              body: {
+                to: sellerProfile.phone,
+                message: `🛒 Market360 - New Order Alert!\n\n${buyerProfile?.name || 'A customer'} placed an order for ${item.title}.\n\nOrder: ${orderNumber}\nAmount: Le ${(item.price * item.quantity).toLocaleString()}\n\nLogin to process: market360.app`
+              }
+            });
+          }
+        } catch (smsError) {
+          console.error('Failed to send SMS to seller:', smsError);
+          // Don't fail the order if SMS fails
         }
 
         // Send email notifications

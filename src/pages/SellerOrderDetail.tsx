@@ -211,6 +211,24 @@ const SellerOrderDetail = () => {
         console.error('Failed to send notification:', notifError);
       }
 
+      // Send SMS notification to buyer when order is delivered
+      if (newStatus === 'delivered') {
+        try {
+          if (order?.buyer_profile?.phone) {
+            const orderNumber = `#360-${orderId?.substring(0, 8).toUpperCase()}`;
+            await supabase.functions.invoke('send-sms', {
+              body: {
+                to: order.buyer_profile.phone,
+                message: `📦 Market360 - Product Delivered!\n\n${order.products.title} has been delivered to your address.\n\nOrder: ${orderNumber}\n\nPlease confirm receipt to release payment to seller: market360.app/orders/${orderId}`
+              }
+            });
+          }
+        } catch (smsError) {
+          console.error('Failed to send SMS to buyer:', smsError);
+          // Don't fail the order update if SMS fails
+        }
+      }
+
       // Send system message to chat
       const { data: conversation } = await supabase
         .from('conversations')
