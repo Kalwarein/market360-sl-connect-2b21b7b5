@@ -91,108 +91,127 @@ export function ShareDialog({ open, onOpenChange, product }: ShareDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Share2 className="h-5 w-5 text-primary" />
+      <DialogContent className="max-w-md bg-card border-border shadow-floating animate-scale-in">
+        <DialogHeader className="space-y-3">
+          <DialogTitle className="flex items-center gap-2 text-2xl">
+            <div className="p-2 bg-primary/10 rounded-xl">
+              <Share2 className="h-5 w-5 text-primary" />
+            </div>
             Share Product
           </DialogTitle>
-          <DialogDescription>
-            Share this product with friends and on social media
+          <DialogDescription className="text-muted-foreground">
+            Share this amazing product with friends and on social media
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-6 mt-2">
           {/* Preview Card */}
-          <div className="border rounded-xl overflow-hidden bg-muted/30">
-            <div className="aspect-video w-full bg-gradient-to-br from-primary/10 to-secondary/10 relative overflow-hidden">
+          <div className="border border-border rounded-2xl overflow-hidden bg-gradient-to-br from-background to-muted/20 shadow-card hover:shadow-elevated transition-smooth animate-fade-in">
+            <div className="aspect-video w-full bg-gradient-to-br from-primary/10 to-secondary/10 relative overflow-hidden group">
               <img 
                 src={product.images[0]} 
                 alt={product.title}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover transition-smooth group-hover:scale-105"
               />
-              <Badge className="absolute top-2 right-2 bg-primary">
-                Rich Preview
+              <Badge className="absolute top-3 right-3 bg-primary shadow-lg backdrop-blur-sm animate-scale-in">
+                ✨ Rich Preview
               </Badge>
             </div>
-            <div className="p-4 space-y-2">
-              <div className="text-xs text-muted-foreground uppercase tracking-wide">
+            <div className="p-5 space-y-2.5">
+              <div className="text-xs text-muted-foreground uppercase tracking-wider font-medium flex items-center gap-1.5">
+                <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></div>
                 {product.stores.store_name}
               </div>
-              <div className="font-semibold line-clamp-2">{product.title}</div>
-              <div className="text-lg font-bold text-primary">
+              <div className="font-semibold text-foreground line-clamp-2 text-lg">
+                {product.title}
+              </div>
+              <div className="text-2xl font-bold text-primary">
                 Le {product.price.toLocaleString()}
               </div>
-              <div className="text-xs text-muted-foreground">
-                ✨ This preview will appear on WhatsApp, Facebook, Twitter, and more!
+              <div className="text-xs text-muted-foreground bg-muted/50 px-3 py-2 rounded-lg border border-border/50">
+                💫 This preview will appear on WhatsApp, Facebook, Twitter, and more!
               </div>
             </div>
           </div>
 
           {/* Share Options */}
-          <div className="space-y-2">
-            <div className="text-sm font-medium mb-2">Share via:</div>
-            <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-3 animate-fade-in">
+            <div className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+              <div className="h-px flex-1 bg-border"></div>
+              Share via
+              <div className="h-px flex-1 bg-border"></div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
               <Button 
                 variant="outline" 
-                className="gap-2 justify-start"
+                className="gap-2.5 justify-start h-12 hover:bg-green-50 dark:hover:bg-green-950 hover:border-green-500 transition-smooth rounded-xl group"
                 onClick={shareToWhatsApp}
               >
-                <MessageCircle className="h-4 w-4 text-green-600" />
-                WhatsApp
+                <MessageCircle className="h-5 w-5 text-green-600 group-hover:scale-110 transition-transform" />
+                <span className="font-medium">WhatsApp</span>
               </Button>
               <Button 
                 variant="outline" 
-                className="gap-2 justify-start"
+                className="gap-2.5 justify-start h-12 hover:bg-blue-50 dark:hover:bg-blue-950 hover:border-blue-600 transition-smooth rounded-xl group"
                 onClick={shareToFacebook}
               >
-                <Facebook className="h-4 w-4 text-blue-600" />
-                Facebook
+                <Facebook className="h-5 w-5 text-blue-600 group-hover:scale-110 transition-transform" />
+                <span className="font-medium">Facebook</span>
               </Button>
               <Button 
                 variant="outline" 
-                className="gap-2 justify-start"
+                className="gap-2.5 justify-start h-12 hover:bg-sky-50 dark:hover:bg-sky-950 hover:border-sky-500 transition-smooth rounded-xl group"
                 onClick={shareToTwitter}
               >
-                <Twitter className="h-4 w-4 text-sky-500" />
-                Twitter
+                <Twitter className="h-5 w-5 text-sky-500 group-hover:scale-110 transition-transform" />
+                <span className="font-medium">Twitter</span>
               </Button>
               <Button 
                 variant="outline" 
-                className="gap-2 justify-start"
+                className="gap-2.5 justify-start h-12 hover:bg-blue-50 dark:hover:bg-blue-950 hover:border-blue-500 transition-smooth rounded-xl group"
                 onClick={shareToTelegram}
               >
-                <Send className="h-4 w-4 text-blue-500" />
-                Telegram
+                <Send className="h-5 w-5 text-blue-500 group-hover:scale-110 transition-transform" />
+                <span className="font-medium">Telegram</span>
               </Button>
             </div>
 
             {navigator.share && (
               <Button 
                 variant="default" 
-                className="w-full gap-2"
+                className="w-full gap-2.5 h-12 rounded-xl shadow-md hover:shadow-lg transition-smooth"
                 onClick={shareNative}
               >
-                <Share2 className="h-4 w-4" />
-                More Options
+                <Share2 className="h-5 w-5" />
+                <span className="font-semibold">More Share Options</span>
               </Button>
             )}
           </div>
 
           {/* Copy Link */}
-          <div className="space-y-2">
-            <div className="text-sm font-medium">Or copy link:</div>
+          <div className="space-y-3 animate-fade-in">
+            <div className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <div className="h-px flex-1 bg-border"></div>
+              Or copy link
+              <div className="h-px flex-1 bg-border"></div>
+            </div>
             <div className="flex gap-2">
-              <div className="flex-1 bg-muted rounded-lg px-3 py-2 text-sm font-mono overflow-x-auto whitespace-nowrap">
+              <div className="flex-1 bg-muted border border-border rounded-xl px-4 py-3 text-sm font-mono overflow-x-auto whitespace-nowrap text-muted-foreground">
                 {shareUrl.replace('https://', '').substring(0, 40)}...
               </div>
               <Button 
                 variant={copied ? "default" : "outline"}
                 size="icon"
                 onClick={copyToClipboard}
-                className="shrink-0"
+                className={`shrink-0 h-12 w-12 rounded-xl transition-all ${
+                  copied ? 'bg-primary shadow-lg scale-105' : 'hover:bg-primary/10 hover:border-primary'
+                }`}
               >
-                {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                {copied ? (
+                  <Check className="h-5 w-5 animate-scale-in" />
+                ) : (
+                  <Copy className="h-5 w-5" />
+                )}
               </Button>
             </div>
           </div>
