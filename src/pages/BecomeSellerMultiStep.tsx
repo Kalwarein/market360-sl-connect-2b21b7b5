@@ -110,24 +110,51 @@ export default function BecomeSellerMultiStep() {
   };
 
   const handleSubmit = async () => {
+    if (!user) {
+      toast.error('You must be logged in to submit an application');
+      navigate('/auth');
+      return;
+    }
+
     try {
+      console.log('Starting application submission...');
       const validated = applicationSchema.parse(formData);
+      console.log('Form validation passed');
 
       let logoUrl = '';
       let bannerUrl = '';
 
+      // Upload logo
       if (logoFile) {
-        logoUrl = await uploadImage(logoFile, 'product-images', 'logos');
+        console.log('Uploading logo...');
+        try {
+          logoUrl = await uploadImage(logoFile, 'product-images', 'logos');
+          console.log('Logo uploaded:', logoUrl);
+        } catch (uploadError) {
+          console.error('Logo upload failed:', uploadError);
+          toast.error('Failed to upload logo. Please try again.');
+          return;
+        }
       }
 
+      // Upload banner
       if (bannerFile) {
-        bannerUrl = await uploadImage(bannerFile, 'product-images', 'banners');
+        console.log('Uploading banner...');
+        try {
+          bannerUrl = await uploadImage(bannerFile, 'product-images', 'banners');
+          console.log('Banner uploaded:', bannerUrl);
+        } catch (uploadError) {
+          console.error('Banner upload failed:', uploadError);
+          toast.error('Failed to upload banner. Please try again.');
+          return;
+        }
       }
 
-      const { error } = await supabase
+      console.log('Inserting application to database...');
+      const { data, error } = await supabase
         .from('seller_applications')
         .insert({
-          user_id: user!.id,
+          user_id: user.id,
           contact_person: validated.contactPerson,
           contact_email: validated.contactEmail,
           contact_phone: validated.contactPhone,
@@ -138,32 +165,69 @@ export default function BecomeSellerMultiStep() {
           store_region: validated.storeRegion,
           store_city: validated.storeCity,
           store_name: validated.storeName,
-          store_logo_url: logoUrl,
-          store_banner_url: bannerUrl,
-          store_description: validated.storeDescription,
-          bank_name: validated.bankName,
-          bank_account_number: validated.bankAccountNumber,
-          bank_account_name: validated.bankAccountName,
+          store_logo_url: logoUrl || '',
+          store_banner_url: bannerUrl || '',
+          store_description: validated.storeDescription || '',
+          bank_name: validated.bankName || '',
+          bank_account_number: validated.bankAccountNumber || '',
+          bank_account_name: validated.bankAccountName || '',
           status: 'pending',
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Database insert error:', error);
+        throw error;
+      }
+
+      console.log('Application inserted successfully:', data);
+
+      // Create notification for admins about new application
+      try {
+        const { data: adminRoles } = await supabase
+          .from('user_roles')
+          .select('user_id')
+          .eq('role', 'admin');
+
+        if (adminRoles && adminRoles.length > 0) {
+          const adminNotifications = adminRoles.map(admin => ({
+            user_id: admin.user_id,
+            type: 'system' as const,
+            title: 'New Seller Application',
+            body: `${validated.businessName} has submitted a seller application for review`,
+            link_url: `/admin/seller-application/${data.id}`
+          }));
+
+          await supabase.from('notifications').insert(adminNotifications);
+          console.log('Admin notifications created');
+        }
+      } catch (notifError) {
+        console.error('Failed to notify admins (non-critical):', notifError);
+      }
+
+      // Log audit trail
+      try {
+        await supabase.from('audit_logs').insert({
+          action: 'seller_application_submitted',
+          actor_id: user.id,
+          description: `User ${validated.contactEmail} submitted seller application`,
+          metadata: { business_name: validated.businessName, application_id: data.id },
         });
-
-      if (error) throw error;
-
-      await supabase.from('audit_logs').insert({
-        action: 'seller_application_submitted',
-        actor_id: user!.id,
-        description: `User ${validated.contactEmail} submitted seller application`,
-        metadata: { business_name: validated.businessName },
-      });
+      } catch (auditError) {
+        console.error('Audit log failed (non-critical):', auditError);
+      }
 
       toast.success('Application submitted successfully! We will review it soon.');
-      navigate('/');
-    } catch (error) {
+      navigate('/profile');
+    } catch (error: any) {
       if (error instanceof z.ZodError) {
-        toast.error(error.errors[0].message);
+        const firstError = error.errors[0];
+        toast.error(`Validation error: ${firstError.message}`);
+        console.error('Validation errors:', error.errors);
       } else {
         console.error('Error submitting application:', error);
-        toast.error('Failed to submit application. Please try again.');
+        toast.error(error.message || 'Failed to submit application. Please try again.');
       }
     }
   };

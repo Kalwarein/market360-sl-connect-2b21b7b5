@@ -185,13 +185,13 @@ const AdminDashboard = () => {
           {/* Navigation Grid */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
             <Button
-              variant={window.location.pathname === '/admin-dashboard' ? 'default' : 'outline'}
+              variant={window.location.pathname === '/admin/seller-applications' ? 'default' : 'outline'}
               size="lg"
-              onClick={() => navigate('/admin-dashboard')}
+              onClick={() => navigate('/admin/seller-applications')}
               className="h-auto flex-col gap-2 py-4"
             >
-              <CheckCircle className="h-6 w-6" />
-              <span className="text-xs font-semibold">Applications</span>
+              <FileText className="h-6 w-6" />
+              <span className="text-xs font-semibold">Seller Apps</span>
             </Button>
             
             <Button
