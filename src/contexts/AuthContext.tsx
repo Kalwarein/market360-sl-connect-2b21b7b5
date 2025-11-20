@@ -23,22 +23,90 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
+        
+        // Check moderation status when user logs in
+        if (session?.user) {
+          setTimeout(async () => {
+            const { data: moderation } = await supabase
+              .from('user_moderation')
+              .select('*')
+              .eq('user_id', session.user.id)
+              .eq('is_active', true)
+              .order('created_at', { ascending: false })
+              .limit(1)
+              .maybeSingle();
+
+            if (moderation) {
+              // Check if suspension has expired
+              if (moderation.type === 'suspension' && moderation.expires_at) {
+                const expiresAt = new Date(moderation.expires_at);
+                if (expiresAt < new Date()) {
+                  // Suspension expired, deactivate it
+                  await supabase
+                    .from('user_moderation')
+                    .update({ is_active: false })
+                    .eq('id', moderation.id);
+                } else {
+                  // Suspension still active, redirect
+                  navigate('/moderation');
+                }
+              } else {
+                // Ban is active, redirect
+                navigate('/moderation');
+              }
+            }
+          }, 0);
+        }
+        
         setLoading(false);
       }
     );
 
     // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
+      
+      // Check moderation status for existing session
+      if (session?.user) {
+        const { data: moderation } = await supabase
+          .from('user_moderation')
+          .select('*')
+          .eq('user_id', session.user.id)
+          .eq('is_active', true)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (moderation) {
+          // Check if suspension has expired
+          if (moderation.type === 'suspension' && moderation.expires_at) {
+            const expiresAt = new Date(moderation.expires_at);
+            if (expiresAt < new Date()) {
+              // Suspension expired, deactivate it
+              await supabase
+                .from('user_moderation')
+                .update({ is_active: false })
+                .eq('id', moderation.id);
+            } else {
+              // Suspension still active, redirect
+              navigate('/moderation');
+            }
+          } else {
+            // Ban is active, redirect
+            navigate('/moderation');
+          }
+        }
+      }
+      
       setLoading(false);
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [navigate]);
 
   const signUp = async (email: string, password: string, name: string) => {
     const redirectUrl = `${window.location.origin}/`;
