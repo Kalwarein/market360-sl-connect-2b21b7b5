@@ -10,6 +10,10 @@ import { ArrowLeft, Send, Package, AtSign, X, User } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import ProductSelectorModal from '@/components/ProductSelectorModal';
+import { EnquiryCard } from '@/components/EnquiryCard';
+import { SellerQuickActions } from '@/components/SellerQuickActions';
+import { ProductSpecsCard } from '@/components/ProductSpecsCard';
+import { QuotationCard } from '@/components/QuotationCard';
 
 interface Message {
   id: string;
@@ -55,6 +59,8 @@ const Chat = () => {
   const [isTyping, setIsTyping] = useState(false);
   const [otherUserTyping, setOtherUserTyping] = useState(false);
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
+  const [isEnquiryConversation, setIsEnquiryConversation] = useState(false);
+  const [isSeller, setIsSeller] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -67,11 +73,6 @@ const Chat = () => {
       loadMessages();
       loadCurrentUserProfile();
       markMessagesAsRead();
-      
-      const enquiryProduct = (location.state as any)?.enquiryProduct;
-      if (enquiryProduct) {
-        setAttachedProduct(enquiryProduct);
-      }
     }
 
     return () => {
@@ -180,6 +181,8 @@ const Chat = () => {
         other_user: profile || { name: 'Unknown User', avatar_url: null },
         products: product
       });
+
+      setIsSeller(data.seller_id === user?.id);
     } catch (error) {
       console.error('Error loading conversation:', error);
       toast.error('Failed to load conversation');
@@ -197,6 +200,20 @@ const Chat = () => {
 
       if (error) throw error;
       setMessages(data || []);
+
+      // Check if this is an enquiry conversation
+      const hasEnquiryMessage = (data || []).some((msg: Message) => {
+        if (msg.attachments?.[0]) {
+          try {
+            const parsed = JSON.parse(msg.attachments[0]);
+            return parsed.type === 'enquiry';
+          } catch (e) {
+            return false;
+          }
+        }
+        return false;
+      });
+      setIsEnquiryConversation(hasEnquiryMessage);
     } catch (error) {
       console.error('Error loading messages:', error);
       toast.error('Failed to load messages');
@@ -274,6 +291,115 @@ const Chat = () => {
     }
   };
 
+  const handleSendProductSpecs = async () => {
+    if (!conversation?.products) return;
+
+    try {
+      const { data: fullProduct } = await supabase
+        .from('products')
+        .select('*')
+        .eq('id', conversation.products.id)
+        .single();
+
+      if (!fullProduct) {
+        toast.error('Product not found');
+        return;
+      }
+
+      const specsCard = {
+        type: 'product_specs',
+        ...fullProduct,
+      };
+
+      await supabase.from('messages').insert({
+        conversation_id: conversationId,
+        sender_id: user?.id,
+        body: 'Here are the complete product specifications:',
+        message_type: 'action',
+        attachments: [JSON.stringify(specsCard)],
+      });
+
+      await supabase
+        .from('conversations')
+        .update({ last_message_at: new Date().toISOString() })
+        .eq('id', conversationId);
+
+      toast.success('Product specifications sent');
+    } catch (error) {
+      console.error('Error sending specs:', error);
+      toast.error('Failed to send specifications');
+    }
+  };
+
+  const handleSendQuotation = async (quotationData: any) => {
+    try {
+      const quotationCard = {
+        type: 'quotation',
+        ...quotationData,
+      };
+
+      await supabase.from('messages').insert({
+        conversation_id: conversationId,
+        sender_id: user?.id,
+        body: 'Here is your price quotation:',
+        message_type: 'action',
+        attachments: [JSON.stringify(quotationCard)],
+      });
+
+      await supabase
+        .from('conversations')
+        .update({ last_message_at: new Date().toISOString() })
+        .eq('id', conversationId);
+
+      toast.success('Quotation sent');
+    } catch (error) {
+      console.error('Error sending quotation:', error);
+      toast.error('Failed to send quotation');
+    }
+  };
+
+  const handleRequestDetails = async () => {
+    try {
+      await supabase.from('messages').insert({
+        conversation_id: conversationId,
+        sender_id: user?.id,
+        body: 'Could you please provide your delivery details? I need your full address, phone number, and any special delivery instructions.',
+        message_type: 'text',
+      });
+
+      await supabase
+        .from('conversations')
+        .update({ last_message_at: new Date().toISOString() })
+        .eq('id', conversationId);
+
+      toast.success('Request sent');
+    } catch (error) {
+      console.error('Error requesting details:', error);
+      toast.error('Failed to send request');
+    }
+  };
+
+  const handleConfirmAvailability = async () => {
+    try {
+      await supabase.from('messages').insert({
+        conversation_id: conversationId,
+        sender_id: user?.id,
+        body: '✅ Great news! This product is currently in stock and available for immediate delivery.',
+        message_type: 'text',
+      });
+
+      await supabase
+        .from('conversations')
+        .update({ last_message_at: new Date().toISOString() })
+        .eq('id', conversationId);
+
+      toast.success('Availability confirmed');
+    } catch (error) {
+      console.error('Error confirming availability:', error);
+      toast.error('Failed to confirm availability');
+    }
+  };
+
   const renderMessage = (message: Message) => {
     const isOwn = message.sender_id === user?.id;
     const senderName = isOwn ? currentUserName : conversation?.other_user?.name || 'Unknown';
@@ -281,7 +407,85 @@ const Chat = () => {
 
     if (message.attachments?.[0]) {
       try {
-        const product = JSON.parse(message.attachments[0]);
+        const attachment = JSON.parse(message.attachments[0]);
+
+        // Enquiry Card
+        if (attachment.type === 'enquiry') {
+          return (
+            <div className={`flex gap-2 ${isOwn ? 'flex-row-reverse' : ''} mb-4 animate-fade-in`}>
+              <Avatar className="h-8 w-8 border-2 border-primary/20">
+                <AvatarImage src={senderAvatar || undefined} />
+                <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                  {senderName?.charAt(0)?.toUpperCase() || <User className="h-4 w-4" />}
+                </AvatarFallback>
+              </Avatar>
+              <div className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'} max-w-[85%]`}>
+                <span className="text-xs text-muted-foreground mb-1 font-medium">{senderName}</span>
+                <EnquiryCard
+                  productName={attachment.product_name}
+                  productImage={attachment.product_image}
+                  productPrice={attachment.product_price}
+                  storeName={attachment.store_name}
+                  productId={attachment.product_id}
+                  moq={attachment.moq}
+                />
+                <span className="text-xs text-muted-foreground mt-1">
+                  {format(new Date(message.created_at), 'HH:mm')}
+                </span>
+              </div>
+            </div>
+          );
+        }
+
+        // Product Specs Card
+        if (attachment.type === 'product_specs') {
+          return (
+            <div className={`flex gap-2 ${isOwn ? 'flex-row-reverse' : ''} mb-4 animate-fade-in`}>
+              <Avatar className="h-8 w-8 border-2 border-primary/20">
+                <AvatarImage src={senderAvatar || undefined} />
+                <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                  {senderName?.charAt(0)?.toUpperCase() || <User className="h-4 w-4" />}
+                </AvatarFallback>
+              </Avatar>
+              <div className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'} max-w-[85%]`}>
+                <span className="text-xs text-muted-foreground mb-1 font-medium">{senderName}</span>
+                <ProductSpecsCard product={attachment} />
+                <span className="text-xs text-muted-foreground mt-1">
+                  {format(new Date(message.created_at), 'HH:mm')}
+                </span>
+              </div>
+            </div>
+          );
+        }
+
+        // Quotation Card
+        if (attachment.type === 'quotation') {
+          return (
+            <div className={`flex gap-2 ${isOwn ? 'flex-row-reverse' : ''} mb-4 animate-fade-in`}>
+              <Avatar className="h-8 w-8 border-2 border-primary/20">
+                <AvatarImage src={senderAvatar || undefined} />
+                <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                  {senderName?.charAt(0)?.toUpperCase() || <User className="h-4 w-4" />}
+                </AvatarFallback>
+              </Avatar>
+              <div className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'} max-w-[85%]`}>
+                <span className="text-xs text-muted-foreground mb-1 font-medium">{senderName}</span>
+                <QuotationCard
+                  price={attachment.price}
+                  deliveryDate={attachment.deliveryDate}
+                  shippingCost={attachment.shippingCost}
+                  note={attachment.note}
+                />
+                <span className="text-xs text-muted-foreground mt-1">
+                  {format(new Date(message.created_at), 'HH:mm')}
+                </span>
+              </div>
+            </div>
+          );
+        }
+
+        // Regular Product Card
+        const product = attachment;
         return (
           <div className={`flex gap-2 ${isOwn ? 'flex-row-reverse' : ''} mb-3 animate-fade-in`}>
             <Avatar className="h-8 w-8 border-2 border-primary/20">
@@ -328,7 +532,7 @@ const Chat = () => {
           </div>
         );
       } catch (e) {
-        console.error('Error parsing product:', e);
+        console.error('Error parsing attachment:', e);
       }
     }
 
@@ -453,6 +657,16 @@ const Chat = () => {
             </Button>
           </div>
         </div>
+      )}
+
+      {/* Input Area */}
+      {isSeller && isEnquiryConversation && (
+        <SellerQuickActions
+          onSendSpecs={handleSendProductSpecs}
+          onSendQuotation={handleSendQuotation}
+          onRequestDetails={handleRequestDetails}
+          onConfirmAvailability={handleConfirmAvailability}
+        />
       )}
 
       {/* Input */}

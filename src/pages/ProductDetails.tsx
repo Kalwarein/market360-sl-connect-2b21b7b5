@@ -149,23 +149,41 @@ const ProductDetails = () => {
         conversationId = newConvo.id;
       }
 
-      // Navigate to chat with enquiry product info
       if (isEnquiry) {
-        navigate(`/chat/${conversationId}`, {
-          state: {
-            enquiryProduct: {
-              id: product.id,
-              title: product.title,
-              price: product.price,
-              image: product.images[0],
-              category: product.category,
-              moq: product.moq,
-            }
-          }
+        // Send enquiry card message
+        const enquiryCard = {
+          type: 'enquiry',
+          product_id: product.id,
+          product_name: product.title,
+          product_image: product.images[0],
+          product_price: product.price,
+          store_name: product.stores.store_name,
+          moq: product.moq,
+        };
+
+        await supabase.from('messages').insert({
+          conversation_id: conversationId,
+          sender_id: user.id,
+          body: "Hi, I'm interested in this product and would like to make an enquiry.",
+          message_type: 'action',
+          attachments: [JSON.stringify(enquiryCard)],
         });
-      } else {
-        navigate(`/chat/${conversationId}`);
+
+        // Send follow-up message
+        await supabase.from('messages').insert({
+          conversation_id: conversationId,
+          sender_id: user.id,
+          body: "I would like to know more about this product. When can it be delivered and what is the final price?",
+          message_type: 'text',
+        });
+
+        await supabase
+          .from('conversations')
+          .update({ last_message_at: new Date().toISOString() })
+          .eq('id', conversationId);
       }
+
+      navigate(`/chat/${conversationId}`);
     } catch (error) {
       console.error('Error starting chat:', error);
       toast({
