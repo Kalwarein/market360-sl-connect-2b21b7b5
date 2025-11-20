@@ -32,11 +32,17 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
         .eq('id', user!.id)
         .single();
 
-      if (error) throw error;
-
-      setOnboardingCompleted(data?.onboarding_completed || false);
+      if (error) {
+        console.error('Error checking onboarding status:', error);
+        // Default to completed if error to prevent blocking access
+        setOnboardingCompleted(true);
+      } else {
+        setOnboardingCompleted(data?.onboarding_completed === true);
+      }
     } catch (error) {
       console.error('Error checking onboarding status:', error);
+      // Default to completed if error to prevent blocking access
+      setOnboardingCompleted(true);
     } finally {
       setCheckingOnboarding(false);
     }

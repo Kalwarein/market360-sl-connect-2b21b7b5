@@ -58,8 +58,15 @@ const Onboarding = () => {
   ];
 
   const handleComplete = async () => {
+    if (loading) return;
+    
     try {
       setLoading(true);
+
+      if (!user?.id) {
+        toast.error('User session not found. Please login again.');
+        return;
+      }
 
       // Convert comma-separated interests to array
       const interestsArray = formData.interests
@@ -75,7 +82,9 @@ const Onboarding = () => {
         dateOfBirth = `${formData.birth_year}-${month}-${day}`;
       }
 
-      const { error } = await supabase
+      console.log('Updating profile for user:', user.id);
+
+      const { data, error } = await supabase
         .from('profiles')
         .update({
           full_name: formData.full_name,
@@ -91,15 +100,25 @@ const Onboarding = () => {
           interests: interestsArray,
           onboarding_completed: true,
         })
-        .eq('id', user?.id);
+        .eq('id', user.id)
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Database error:', error);
+        throw error;
+      }
 
+      console.log('Profile updated successfully:', data);
       toast.success('Welcome to Market360! Your profile is complete.');
-      navigate('/');
-    } catch (error) {
+      
+      // Force a full page reload to re-check onboarding status
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 1000);
+
+    } catch (error: any) {
       console.error('Error saving onboarding data:', error);
-      toast.error('Failed to save your information. Please try again.');
+      toast.error(error?.message || 'Failed to save your information. Please try again.');
     } finally {
       setLoading(false);
     }
