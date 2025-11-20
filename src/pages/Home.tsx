@@ -33,6 +33,7 @@ const Home = () => {
   const [activeTab, setActiveTab] = useState('products');
   const [unreadCount, setUnreadCount] = useState(0);
   const [cartCount, setCartCount] = useState(0);
+  const [notificationCount, setNotificationCount] = useState(0);
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -40,6 +41,31 @@ const Home = () => {
     loadCategories();
     loadUnreadCount();
     loadCartCount();
+    loadNotificationCount();
+
+    // Real-time subscriptions
+    if (!user) return;
+
+    const messagesChannel = supabase
+      .channel('messages-count-home')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, loadUnreadCount)
+      .subscribe();
+
+    const cartChannel = supabase
+      .channel('cart-count-home')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'cart_items' }, loadCartCount)
+      .subscribe();
+
+    const notificationsChannel = supabase
+      .channel('notifications-count-home')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, loadNotificationCount)
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(messagesChannel);
+      supabase.removeChannel(cartChannel);
+      supabase.removeChannel(notificationsChannel);
+    };
   }, [user]);
 
   useEffect(() => {
@@ -249,6 +275,22 @@ const Home = () => {
     }
   };
 
+  const loadNotificationCount = async () => {
+    if (!user) return;
+
+    try {
+      const { count } = await supabase
+        .from('notifications')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .is('read_at', null);
+
+      setNotificationCount(count || 0);
+    } catch (error) {
+      console.error('Error loading notification count:', error);
+    }
+  };
+
   const filteredCategories = availableCategories.filter(cat =>
     cat.toLowerCase().includes(categorySearch.toLowerCase())
   );
@@ -309,6 +351,11 @@ const Home = () => {
                 onClick={() => navigate('/notifications')}
               >
                 <Bell className="h-5 w-5" />
+                {notificationCount > 0 && (
+                  <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs">
+                    {notificationCount}
+                  </Badge>
+                )}
               </Button>
 
               <Button
