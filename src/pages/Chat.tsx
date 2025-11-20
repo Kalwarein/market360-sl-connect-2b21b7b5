@@ -550,7 +550,7 @@ const Chat = () => {
       <div className={`flex gap-3 ${isOwn ? 'flex-row-reverse' : ''} mb-4 animate-fade-in`} key={message.id}>
         <Avatar className="h-10 w-10 border-2 border-primary/20 cursor-pointer" onClick={() => {
           const otherUserId = conversation?.buyer_id === user?.id ? conversation?.seller_id : conversation?.buyer_id;
-          if (!isOwn && otherUserId) navigate(`/profile/${otherUserId}`);
+          if (!isOwn && otherUserId) navigate(`/profile-viewer/${otherUserId}`);
         }}>
           <AvatarImage src={senderAvatar || undefined} />
           <AvatarFallback className="bg-primary/10 text-primary font-semibold">
@@ -596,7 +596,7 @@ const Chat = () => {
             className="h-12 w-12 border-2 border-primary/20 cursor-pointer hover:ring-2 hover:ring-primary transition-all" 
             onClick={() => {
               const otherUserId = conversation?.buyer_id === user?.id ? conversation.seller_id : conversation.buyer_id;
-              if (otherUserId) navigate(`/profile/${otherUserId}`);
+              if (otherUserId) navigate(`/profile-viewer/${otherUserId}`);
             }}
           >
             <AvatarImage src={conversation?.other_user?.avatar_url || undefined} />

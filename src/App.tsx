@@ -60,6 +60,7 @@ import AdminSellerApplicationDetail from "./pages/AdminSellerApplicationDetail";
 import TopDeals from "./pages/TopDeals";
 import TopRanking from "./pages/TopRanking";
 import NewArrivals from "./pages/NewArrivals";
+import ProductCreationSuccess from "./pages/ProductCreationSuccess";
 
 const queryClient = new QueryClient();
 
@@ -89,6 +90,7 @@ const App = () => (
               <Route path="/wallet" element={<ProtectedRoute><Wallet /></ProtectedRoute>} />
               <Route path="/seller-dashboard" element={<ProtectedRoute><SellerDashboard /></ProtectedRoute>} />
               <Route path="/add-product" element={<ProtectedRoute><AddProduct /></ProtectedRoute>} />
+              <Route path="/product-creation-success" element={<ProtectedRoute><ProductCreationSuccess /></ProtectedRoute>} />
               <Route path="/product/:id" element={<ProtectedRoute><ProductDetails /></ProtectedRoute>} />
               <Route path="/store/:storeId" element={<ProtectedRoute><StorePage /></ProtectedRoute>} />
               <Route path="/support" element={<ProtectedRoute><Support /></ProtectedRoute>} />
