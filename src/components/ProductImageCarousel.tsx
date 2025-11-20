@@ -71,25 +71,25 @@ const ProductImageCarousel = ({ images }: ProductImageCarouselProps) => {
   return (
     <div 
       ref={containerRef}
-      className="relative w-full rounded-2xl overflow-hidden bg-muted"
+      className="relative w-full rounded-2xl overflow-hidden bg-muted flex items-center justify-center"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
-      style={{ minHeight: '300px' }}
+      style={{ minHeight: '400px', maxHeight: '600px' }}
     >
       {/* Images */}
       <div className="relative w-full h-full flex items-center justify-center">
         {images.map((image, index) => (
           <div
             key={index}
-            className={`absolute inset-0 transition-opacity duration-500 flex items-center justify-center ${
+            className={`absolute inset-0 transition-opacity duration-500 flex items-center justify-center p-4 ${
               index === currentIndex ? 'opacity-100 z-10' : 'opacity-0 z-0'
             }`}
           >
             <img
               src={image}
               alt={`Product ${index + 1}`}
-              className="w-full h-full object-contain"
+              className="max-w-full max-h-full object-contain"
             />
             {/* Shimmer effect */}
             {index === currentIndex && (
