@@ -11,36 +11,14 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const { user, loading } = useAuth();
   const [checkingModeration, setCheckingModeration] = useState(true);
   const [hasActiveModeration, setHasActiveModeration] = useState(false);
-  const [phoneVerified, setPhoneVerified] = useState(true);
-  const [checkingPhone, setCheckingPhone] = useState(true);
 
   useEffect(() => {
     if (user) {
       checkModeration();
-      checkPhoneVerification();
     } else {
       setCheckingModeration(false);
-      setCheckingPhone(false);
     }
   }, [user]);
-
-  const checkPhoneVerification = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('phone_verified')
-        .eq('id', user!.id)
-        .single();
-
-      if (error) throw error;
-
-      setPhoneVerified(data?.phone_verified || false);
-    } catch (error) {
-      console.error('Error checking phone verification:', error);
-    } finally {
-      setCheckingPhone(false);
-    }
-  };
 
   const checkModeration = async () => {
     try {
@@ -81,7 +59,7 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     }
   };
 
-  if (loading || checkingModeration || checkingPhone) {
+  if (loading || checkingModeration) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
@@ -95,12 +73,6 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
 
   if (hasActiveModeration) {
     return <Navigate to="/moderation" replace />;
-  }
-
-  // Allow access to verify-phone page without phone verification
-  const currentPath = window.location.pathname;
-  if (!phoneVerified && currentPath !== '/verify-phone') {
-    return <Navigate to="/verify-phone" replace />;
   }
 
   return <>{children}</>;
