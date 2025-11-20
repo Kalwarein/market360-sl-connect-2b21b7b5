@@ -353,6 +353,7 @@ export type Database = {
           product_code: string
           product_highlights: string[] | null
           product_requirements: string | null
+          product_type: string | null
           product_video_url: string | null
           published: boolean | null
           replacement_available: boolean | null
@@ -397,6 +398,7 @@ export type Database = {
           product_code?: string
           product_highlights?: string[] | null
           product_requirements?: string | null
+          product_type?: string | null
           product_video_url?: string | null
           published?: boolean | null
           replacement_available?: boolean | null
@@ -441,6 +443,7 @@ export type Database = {
           product_code?: string
           product_highlights?: string[] | null
           product_requirements?: string | null
+          product_type?: string | null
           product_video_url?: string | null
           published?: boolean | null
           replacement_available?: boolean | null

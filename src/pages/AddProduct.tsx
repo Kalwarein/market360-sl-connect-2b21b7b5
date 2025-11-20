@@ -67,6 +67,7 @@ const AddProduct = () => {
     price: '',
     moq: '1',
     category: '',
+    product_type: 'worldwide',
     tags: '',
     material: '',
     origin: '',
@@ -236,6 +237,7 @@ const AddProduct = () => {
         price: parseFloat(formData.price),
         moq: parseInt(formData.moq),
         category: formData.category,
+        product_type: formData.product_type,
         tags: formData.tags.split(',').map(t => t.trim()).filter(Boolean),
         material: formData.material || null,
         origin: formData.origin || null,
@@ -413,6 +415,25 @@ const AddProduct = () => {
               placeholder="Describe your product"
               rows={4}
             />
+          </div>
+
+          <div>
+            <Label htmlFor="product_type">Product Type *</Label>
+            <Select
+              value={formData.product_type}
+              onValueChange={(value) => setFormData({ ...formData, product_type: value })}
+            >
+              <SelectTrigger id="product_type">
+                <SelectValue placeholder="Select product type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="manufacturer">Manufacturer Product</SelectItem>
+                <SelectItem value="worldwide">Worldwide Product</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground mt-1">
+              Manufacturer: Direct from local manufacturers | Worldwide: International or general products
+            </p>
           </div>
 
           <TargetAudienceSelector

@@ -1,0 +1,2 @@
+-- Add product_type column to products table to distinguish between manufacturer and worldwide products
+ALTER TABLE products ADD COLUMN product_type TEXT DEFAULT 'worldwide' CHECK (product_type IN ('manufacturer', 'worldwide'));
