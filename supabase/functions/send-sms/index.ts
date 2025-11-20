@@ -30,8 +30,29 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error('Phone number and message are required');
     }
 
-    // Note: Phone verification check removed to allow order notification SMS
-    // Re-enable verification check once all users have verified their phones
+    // Verify phone number is verified in the app before sending SMS
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Normalize phone to match stored format
+    let normalizedTo = to;
+    if (normalizedTo && !normalizedTo.startsWith('+232')) {
+      const withoutZeros = normalizedTo.replace(/^0+/, '');
+      normalizedTo = `+232${withoutZeros}`;
+    }
+
+    const { data: profiles, error: profileError } = await supabase
+      .from('profiles')
+      .select('id, phone_verified')
+      .eq('phone', normalizedTo);
+
+    if (profileError) {
+      console.error('Error checking phone verification status:', profileError);
+      throw new Error('Failed to validate phone verification status');
+    }
+
+    if (!profiles || profiles.length === 0 || !profiles[0].phone_verified) {
+      throw new Error('Phone number not verified in Market360. SMS can only be sent to verified numbers.');
+    }
 
     // Send SMS via Twilio
     const auth = btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`);

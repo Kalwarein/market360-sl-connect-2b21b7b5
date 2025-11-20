@@ -40,13 +40,38 @@ const handler = async (req: Request): Promise<Response> => {
     // Create Supabase client with service role key
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Store OTP in database
+    // Normalize phone number to match database format (+232 prefix, no leading zeros)
+    let normalizedPhone = phone_number;
+    if (normalizedPhone) {
+      if (!normalizedPhone.startsWith('+232')) {
+        const withoutZeros = normalizedPhone.replace(/^0+/, '');
+        normalizedPhone = `+232${withoutZeros}`;
+      }
+    }
+
+    // Ensure phone number is not already used by another account
+    const { data: existingProfiles, error: existingError } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('phone', normalizedPhone)
+      .neq('id', user_id);
+
+    if (existingError) {
+      console.error('Error checking existing phone numbers:', existingError);
+      throw new Error('Failed to validate phone number uniqueness');
+    }
+
+    if (existingProfiles && existingProfiles.length > 0) {
+      throw new Error('This phone number is already linked to another account');
+    }
+
+    // Store OTP in database for this user
     const { error: updateError } = await supabase
       .from('profiles')
       .update({
         phone_verification_code: otpCode,
         phone_verification_expires_at: expiresAt.toISOString(),
-        phone: phone_number // Ensure phone is updated (trigger will format it)
+        phone: normalizedPhone, // Trigger will ensure final formatting
       })
       .eq('id', user_id);
 

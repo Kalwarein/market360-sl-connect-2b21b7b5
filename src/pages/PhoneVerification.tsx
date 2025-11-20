@@ -82,18 +82,22 @@ export default function PhoneVerification() {
         formattedPhone = `+232${formattedPhone}`;
       }
 
-      const { error } = await supabase.functions.invoke('send-otp', {
+      const { data, error } = await supabase.functions.invoke('send-otp', {
         body: {
           user_id: user?.id,
-          phone_number: formattedPhone
-        }
+          phone_number: formattedPhone,
+        },
       });
 
-      if (error) throw error;
+      if (error) {
+        // Try to surface more helpful error message from the edge function
+        const serverMessage = (data as any)?.error;
+        throw new Error(serverMessage || error.message || 'Failed to send OTP');
+      }
 
       toast({
         title: 'OTP Sent',
-        description: 'Check your phone for the verification code'
+        description: 'Check your phone for the verification code',
       });
 
       setStep('otp');
@@ -102,7 +106,7 @@ export default function PhoneVerification() {
       toast({
         title: 'Error',
         description: error.message || 'Failed to send OTP',
-        variant: 'destructive'
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
