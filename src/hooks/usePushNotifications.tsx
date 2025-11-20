@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { getNotificationEnvironment } from '@/lib/notificationEnvironment';
+import { useNativePushNotifications } from './useNativePushNotifications';
 
 const PUBLIC_VAPID_KEY = 'BBlaVa85xf0mZh_WsjHwAAQdBTwSxHRcvBzYvcuEFqukB-Ovr5TzeD5inRY3KUEonnqUgrx8-uwstAmvx8tbuvE';
 
@@ -9,6 +11,10 @@ export function usePushNotifications() {
   const { user } = useAuth();
   const [permission, setPermission] = useState<NotificationPermission>('default');
   const [isSubscribed, setIsSubscribed] = useState(false);
+  const environment = getNotificationEnvironment();
+  
+  // Native push notifications hook (only active in native app)
+  const nativePush = useNativePushNotifications();
 
   useEffect(() => {
     if ('Notification' in window) {
@@ -17,6 +23,13 @@ export function usePushNotifications() {
   }, []);
 
   const requestPermission = async () => {
+    // Native app uses native push notifications
+    if (environment === 'native') {
+      // Native permissions are handled automatically by useNativePushNotifications
+      return nativePush.isEnabled;
+    }
+
+    // Web/PWA uses web push notifications
     if (!('Notification' in window)) {
       toast.error('Browser does not support notifications');
       return false;
@@ -78,6 +91,13 @@ export function usePushNotifications() {
   const unsubscribe = async () => {
     if (!user) return;
 
+    // Native app uses native unsubscribe
+    if (environment === 'native') {
+      await nativePush.disableNotifications();
+      return;
+    }
+
+    // Web/PWA unsubscribe
     try {
       const registration = await navigator.serviceWorker.ready;
       const subscription = await registration.pushManager.getSubscription();
@@ -102,10 +122,11 @@ export function usePushNotifications() {
 
   return {
     permission,
-    isSubscribed,
+    isSubscribed: environment === 'native' ? nativePush.isEnabled : isSubscribed,
     requestPermission,
     subscribeToPush,
-    unsubscribe
+    unsubscribe,
+    environment,
   };
 }
 
