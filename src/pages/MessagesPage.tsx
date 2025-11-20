@@ -29,6 +29,7 @@ interface Conversation {
     sender_id: string;
   };
   unread_count: number;
+  is_enquiry?: boolean;
 }
 
 const MessagesPage = () => {
@@ -95,12 +96,33 @@ const MessagesPage = () => {
             .neq('sender_id', user?.id)
             .is('read_at', null);
           
+          // Check if this is an enquiry conversation
+          const { data: enquiryMessages } = await supabase
+            .from('messages')
+            .select('attachments')
+            .eq('conversation_id', conv.id)
+            .not('attachments', 'is', null)
+            .limit(10);
+
+          const isEnquiry = enquiryMessages?.some((msg) => {
+            if (msg.attachments?.[0]) {
+              try {
+                const parsed = JSON.parse(msg.attachments[0]);
+                return parsed.type === 'enquiry';
+              } catch (e) {
+                return false;
+              }
+            }
+            return false;
+          });
+          
           return {
             ...conv,
             other_user: profile || { name: 'Unknown', avatar_url: null },
             products: product,
             last_message: lastMessage,
-            unread_count: count || 0
+            unread_count: count || 0,
+            is_enquiry: isEnquiry,
           };
         })
       );
@@ -260,9 +282,16 @@ const MessagesPage = () => {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between mb-1">
                           <div className="flex-1">
-                            <h3 className="font-bold text-base truncate">
-                              {conversation.other_user?.name || 'Unknown User'}
-                            </h3>
+                            <div className="flex items-center gap-2 mb-1">
+                              <h3 className="font-bold text-base truncate">
+                                {conversation.other_user?.name || 'Unknown User'}
+                              </h3>
+                              {conversation.is_enquiry && (
+                                <Badge variant="secondary" className="bg-primary/10 text-primary text-xs px-2 py-0.5">
+                                  Enquiry
+                                </Badge>
+                              )}
+                            </div>
                             <p className="text-xs text-muted-foreground">
                               {isBuyer ? 'Seller' : 'Buyer'}
                               {conversation.products?.title && ` • ${conversation.products.title}`}
