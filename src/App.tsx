@@ -110,6 +110,8 @@ const App = () => (
               <Route path="/admin/orders" element={<AdminOrders />} />
               <Route path="/admin/wallet-requests" element={<AdminWalletRequests />} />
               <Route path="/admin-wallet-requests/:requestId" element={<ProtectedRoute><AdminWalletRequestDetail /></ProtectedRoute>} />
+              <Route path="/admin/seller-applications" element={<AdminSellerApplications />} />
+              <Route path="/admin/seller-application/:id" element={<AdminSellerApplicationDetail />} />
               <Route path="/admin/audit-logs" element={<AdminAuditLogs />} />
           <Route path="/checkout" element={<Checkout />} />
           <Route path="/orders" element={<Orders />} />

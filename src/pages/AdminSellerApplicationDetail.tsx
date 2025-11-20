@@ -62,9 +62,15 @@ export default function AdminSellerApplicationDetail() {
         .from('seller_applications')
         .select('*')
         .eq('id', id)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
+      
+      if (!data) {
+        toast.error('Application not found');
+        navigate('/admin/seller-applications');
+        return;
+      }
       
       // Ensure store_name exists, fallback to business_name
       const appData: Application = {
@@ -85,9 +91,10 @@ export default function AdminSellerApplicationDetail() {
       };
       
       setApplication(appData);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading application:', error);
-      toast.error('Failed to load application');
+      toast.error(error.message || 'Failed to load application');
+      navigate('/admin/seller-applications');
     } finally {
       setLoading(false);
     }
@@ -98,20 +105,28 @@ export default function AdminSellerApplicationDetail() {
     setProcessing(true);
 
     try {
-      const { error } = await supabase.functions.invoke('approve-seller', {
+      console.log('Approving application:', application.id);
+      
+      const { data, error } = await supabase.functions.invoke('approve-seller', {
         body: { applicationId: application.id }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Edge function error:', error);
+        throw error;
+      }
 
+      console.log('Approval response:', data);
       toast.success('Application approved successfully!');
-      navigate('/admin/seller-applications');
+      
+      // Reload application to show updated status
+      await loadApplication();
+      setShowApproveDialog(false);
     } catch (error: any) {
       console.error('Error approving application:', error);
-      toast.error(error.message || 'Failed to approve application');
+      toast.error(error.message || 'Failed to approve application. Please try again.');
     } finally {
       setProcessing(false);
-      setShowApproveDialog(false);
     }
   };
 
@@ -120,23 +135,31 @@ export default function AdminSellerApplicationDetail() {
     setProcessing(true);
 
     try {
-      const { error } = await supabase.functions.invoke('reject-seller', {
+      console.log('Rejecting application:', application.id);
+      
+      const { data, error } = await supabase.functions.invoke('reject-seller', {
         body: { 
           applicationId: application.id,
           reason: 'Application does not meet requirements'
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Edge function error:', error);
+        throw error;
+      }
 
+      console.log('Rejection response:', data);
       toast.success('Application rejected');
-      navigate('/admin/seller-applications');
+      
+      // Reload application to show updated status
+      await loadApplication();
+      setShowRejectDialog(false);
     } catch (error: any) {
       console.error('Error rejecting application:', error);
-      toast.error(error.message || 'Failed to reject application');
+      toast.error(error.message || 'Failed to reject application. Please try again.');
     } finally {
       setProcessing(false);
-      setShowRejectDialog(false);
     }
   };
 
