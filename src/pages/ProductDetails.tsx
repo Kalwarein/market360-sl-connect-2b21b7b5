@@ -208,22 +208,31 @@ const ProductDetails = () => {
     }
   };
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     if (!product) return;
     
-    addToCart({
-      id: product.id,
-      title: product.title,
-      price: product.price,
-      image: product.images[0] || '',
-      store_name: product.stores.store_name,
-      product_code: product.product_code,
-    });
-    
-    toast({
-      title: 'Added to cart',
-      description: `${product.title} has been added to your cart`,
-    });
+    try {
+      await addToCart({
+        id: product.id,
+        title: product.title,
+        price: product.price,
+        image: product.images[0] || '',
+        store_name: product.stores.store_name,
+        product_code: product.product_code,
+      });
+      
+      toast({
+        title: 'Added to cart',
+        description: `${product.title} has been added to your cart`,
+      });
+    } catch (error) {
+      console.error('Failed to add to cart:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to add item to cart',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleShare = async () => {
