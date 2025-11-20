@@ -11,14 +11,36 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const { user, loading } = useAuth();
   const [checkingModeration, setCheckingModeration] = useState(true);
   const [hasActiveModeration, setHasActiveModeration] = useState(false);
+  const [checkingOnboarding, setCheckingOnboarding] = useState(true);
+  const [onboardingCompleted, setOnboardingCompleted] = useState(true);
 
   useEffect(() => {
     if (user) {
       checkModeration();
+      checkOnboardingStatus();
     } else {
       setCheckingModeration(false);
+      setCheckingOnboarding(false);
     }
   }, [user]);
+
+  const checkOnboardingStatus = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('onboarding_completed')
+        .eq('id', user!.id)
+        .single();
+
+      if (error) throw error;
+
+      setOnboardingCompleted(data?.onboarding_completed || false);
+    } catch (error) {
+      console.error('Error checking onboarding status:', error);
+    } finally {
+      setCheckingOnboarding(false);
+    }
+  };
 
   const checkModeration = async () => {
     try {
@@ -59,7 +81,7 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     }
   };
 
-  if (loading || checkingModeration) {
+  if (loading || checkingModeration || checkingOnboarding) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
@@ -73,6 +95,12 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
 
   if (hasActiveModeration) {
     return <Navigate to="/moderation" replace />;
+  }
+
+  // Check onboarding completion (allow access to onboarding page itself)
+  const currentPath = window.location.pathname;
+  if (!onboardingCompleted && currentPath !== '/onboarding') {
+    return <Navigate to="/onboarding" replace />;
   }
 
   return <>{children}</>;

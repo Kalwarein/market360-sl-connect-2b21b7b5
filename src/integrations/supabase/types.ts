@@ -521,56 +521,86 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          bio: string | null
           city: string | null
           country: string | null
           created_at: string
+          date_of_birth: string | null
           email: string
+          full_name: string | null
+          gender: string | null
           id: string
+          interests: string[] | null
           language: string | null
           name: string | null
           notification_preferences: Json | null
+          occupation: string | null
+          onboarding_completed: boolean | null
           phone: string | null
           phone_verification_code: string | null
           phone_verification_expires_at: string | null
           phone_verified: boolean | null
           region: string | null
           role: Database["public"]["Enums"]["user_role"]
+          school_name: string | null
+          street_address: string | null
+          university_name: string | null
           updated_at: string
         }
         Insert: {
           avatar_url?: string | null
+          bio?: string | null
           city?: string | null
           country?: string | null
           created_at?: string
+          date_of_birth?: string | null
           email: string
+          full_name?: string | null
+          gender?: string | null
           id: string
+          interests?: string[] | null
           language?: string | null
           name?: string | null
           notification_preferences?: Json | null
+          occupation?: string | null
+          onboarding_completed?: boolean | null
           phone?: string | null
           phone_verification_code?: string | null
           phone_verification_expires_at?: string | null
           phone_verified?: boolean | null
           region?: string | null
           role?: Database["public"]["Enums"]["user_role"]
+          school_name?: string | null
+          street_address?: string | null
+          university_name?: string | null
           updated_at?: string
         }
         Update: {
           avatar_url?: string | null
+          bio?: string | null
           city?: string | null
           country?: string | null
           created_at?: string
+          date_of_birth?: string | null
           email?: string
+          full_name?: string | null
+          gender?: string | null
           id?: string
+          interests?: string[] | null
           language?: string | null
           name?: string | null
           notification_preferences?: Json | null
+          occupation?: string | null
+          onboarding_completed?: boolean | null
           phone?: string | null
           phone_verification_code?: string | null
           phone_verification_expires_at?: string | null
           phone_verified?: boolean | null
           region?: string | null
           role?: Database["public"]["Enums"]["user_role"]
+          school_name?: string | null
+          street_address?: string | null
+          university_name?: string | null
           updated_at?: string
         }
         Relationships: []

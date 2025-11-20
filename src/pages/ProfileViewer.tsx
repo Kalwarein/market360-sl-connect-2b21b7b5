@@ -3,18 +3,27 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, MapPin, Phone, Mail } from 'lucide-react';
+import { ArrowLeft, MapPin, Phone, Mail, Briefcase, GraduationCap } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface Profile {
   id: string;
-  name: string;
+  name: string | null;
+  full_name: string | null;
   email: string;
   avatar_url: string | null;
   phone: string | null;
   city: string | null;
   region: string | null;
   country: string | null;
+  date_of_birth: string | null;
+  gender: string | null;
+  street_address: string | null;
+  school_name: string | null;
+  university_name: string | null;
+  occupation: string | null;
+  bio: string | null;
+  interests: string[] | null;
 }
 
 const ProfileViewer = () => {
@@ -96,14 +105,52 @@ const ProfileViewer = () => {
           >
             <AvatarImage src={profile.avatar_url || undefined} />
             <AvatarFallback className="bg-primary/10 text-primary text-4xl font-semibold">
-              {profile.name?.[0]?.toUpperCase() || 'U'}
+              {profile.full_name?.[0]?.toUpperCase() || profile.name?.[0]?.toUpperCase() || 'U'}
             </AvatarFallback>
           </Avatar>
-          <h2 className="text-2xl font-bold mt-4">{profile.name || 'Unknown User'}</h2>
+          <h2 className="text-2xl font-bold mt-4">{profile.full_name || profile.name || 'Unknown User'}</h2>
           <p className="text-sm text-muted-foreground mt-1">{profile.email}</p>
         </div>
 
+        {/* Bio Section */}
+        {profile.bio && (
+          <div className="mb-6 p-4 bg-muted/30 rounded-xl">
+            <h3 className="font-semibold text-sm text-foreground/70 mb-2">About</h3>
+            <p className="text-sm text-foreground/90">{profile.bio}</p>
+          </div>
+        )}
+
         <div className="space-y-4">
+          {profile.occupation && (
+            <div className="flex items-center gap-3 p-4 bg-white rounded-xl border">
+              <Briefcase className="h-5 w-5 text-muted-foreground" />
+              <div>
+                <p className="text-xs text-muted-foreground">Occupation</p>
+                <p className="font-medium">{profile.occupation}</p>
+              </div>
+            </div>
+          )}
+
+          {profile.school_name && (
+            <div className="flex items-center gap-3 p-4 bg-white rounded-xl border">
+              <GraduationCap className="h-5 w-5 text-muted-foreground" />
+              <div>
+                <p className="text-xs text-muted-foreground">School</p>
+                <p className="font-medium">{profile.school_name}</p>
+              </div>
+            </div>
+          )}
+
+          {profile.university_name && (
+            <div className="flex items-center gap-3 p-4 bg-white rounded-xl border">
+              <GraduationCap className="h-5 w-5 text-muted-foreground" />
+              <div>
+                <p className="text-xs text-muted-foreground">University</p>
+                <p className="font-medium">{profile.university_name}</p>
+              </div>
+            </div>
+          )}
+
           {profile.phone && (
             <div className="flex items-center gap-3 p-4 bg-white rounded-xl border">
               <Phone className="h-5 w-5 text-muted-foreground" />
@@ -124,16 +171,35 @@ const ProfileViewer = () => {
             </div>
           )}
 
-          {location && (
+          {(profile.street_address || location) && (
             <div className="flex items-center gap-3 p-4 bg-white rounded-xl border">
               <MapPin className="h-5 w-5 text-muted-foreground" />
               <div>
-                <p className="text-xs text-muted-foreground">Location</p>
-                <p className="font-medium">{location}</p>
+                <p className="text-xs text-muted-foreground">Address</p>
+                <p className="font-medium">
+                  {[profile.street_address, location].filter(Boolean).join(', ')}
+                </p>
               </div>
             </div>
           )}
         </div>
+
+        {/* Interests */}
+        {profile.interests && profile.interests.length > 0 && (
+          <div className="mt-6">
+            <h3 className="font-semibold text-sm text-foreground/70 mb-3">Interests</h3>
+            <div className="flex flex-wrap gap-2">
+              {profile.interests.map((interest, index) => (
+                <span
+                  key={index}
+                  className="px-3 py-1 bg-primary/10 text-primary text-xs rounded-full border border-primary/20"
+                >
+                  {interest}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

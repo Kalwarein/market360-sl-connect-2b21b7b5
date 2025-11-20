@@ -6,7 +6,8 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, Bell, Lock, Globe, User, Shield, Loader2 } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { ArrowLeft, Bell, Lock, Globe, User, Shield, Loader2, GraduationCap, Briefcase, MapPin, Heart, Calendar } from 'lucide-react';
 import BottomNav from '@/components/BottomNav';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -42,9 +43,20 @@ const Settings = () => {
 
   const [profile, setProfile] = useState({
     name: '',
+    full_name: '',
     email: '',
     phone: '',
     phone_verified: false,
+    date_of_birth: '',
+    gender: '',
+    street_address: '',
+    city: '',
+    region: '',
+    school_name: '',
+    university_name: '',
+    occupation: '',
+    bio: '',
+    interests: '',
   });
 
   const [notifications, setNotifications] = useState({
@@ -78,11 +90,27 @@ const Settings = () => {
         // Format phone number for display (remove +232 prefix)
         const displayPhone = data.phone ? data.phone.replace('+232', '') : '';
         
+        // Convert interests array to comma-separated string
+        const interestsString = Array.isArray(data.interests) 
+          ? data.interests.join(', ') 
+          : '';
+        
         setProfile({
           name: data.name || '',
+          full_name: data.full_name || '',
           email: data.email || '',
           phone: displayPhone,
           phone_verified: data.phone_verified || false,
+          date_of_birth: data.date_of_birth || '',
+          gender: data.gender || '',
+          street_address: data.street_address || '',
+          city: data.city || '',
+          region: data.region || '',
+          school_name: data.school_name || '',
+          university_name: data.university_name || '',
+          occupation: data.occupation || '',
+          bio: data.bio || '',
+          interests: interestsString,
         });
         
         const notifPrefs = data.notification_preferences as any;
@@ -132,10 +160,27 @@ const Settings = () => {
         return;
       }
 
+      // Convert comma-separated interests to array
+      const interestsArray = profile.interests
+        .split(',')
+        .map(i => i.trim())
+        .filter(i => i.length > 0);
+
       const { error } = await supabase
         .from('profiles')
         .update({
           name: profile.name,
+          full_name: profile.full_name,
+          date_of_birth: profile.date_of_birth || null,
+          gender: profile.gender,
+          street_address: profile.street_address,
+          city: profile.city,
+          region: profile.region,
+          school_name: profile.school_name,
+          university_name: profile.university_name,
+          occupation: profile.occupation,
+          bio: profile.bio,
+          interests: interestsArray,
           notification_preferences: notifications,
           language: language,
           updated_at: new Date().toISOString(),
@@ -274,6 +319,15 @@ const Settings = () => {
               />
             </div>
             <div>
+              <Label>Full Name</Label>
+              <Input
+                placeholder="Your complete name"
+                className="mt-2"
+                value={profile.full_name}
+                onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
+              />
+            </div>
+            <div>
               <Label>Email</Label>
               <Input
                 placeholder="your@email.com"
@@ -283,6 +337,33 @@ const Settings = () => {
                 disabled
               />
               <p className="text-xs text-muted-foreground mt-1">Email cannot be changed</p>
+            </div>
+            <div>
+              <Label htmlFor="date_of_birth" className="flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-primary" />
+                Date of Birth
+              </Label>
+              <Input
+                id="date_of_birth"
+                type="date"
+                className="mt-2"
+                value={profile.date_of_birth}
+                onChange={(e) => setProfile({ ...profile, date_of_birth: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label>Gender</Label>
+              <select
+                value={profile.gender}
+                onChange={(e) => setProfile({ ...profile, gender: e.target.value })}
+                className="w-full p-3 border border-border rounded-xl bg-background text-foreground focus:ring-2 focus:ring-primary mt-2"
+              >
+                <option value="">Select gender</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="other">Other</option>
+                <option value="prefer_not_to_say">Prefer not to say</option>
+              </select>
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
@@ -310,20 +391,129 @@ const Settings = () => {
                   disabled={profile.phone_verified}
                 />
               </div>
-              {!profile.phone_verified && profile.phone && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => navigate('/verify-phone')}
-                  className="w-full mt-2"
-                >
-                  Verify Phone Number
-                </Button>
-              )}
               <p className="text-xs text-muted-foreground">
                 {profile.phone_verified 
-                  ? 'Your phone number is verified and cannot be changed'
+                  ? 'Your phone number is verified'
                   : 'Enter your number without the leading zero (e.g., 76123456)'}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Location Settings */}
+        <Card className="rounded-2xl shadow-sm border-border/50 hover:shadow-md transition-all">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <MapPin className="h-5 w-5 text-primary" />
+              Location
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label>Street Address</Label>
+              <Input
+                placeholder="House number, street name"
+                className="mt-2"
+                value={profile.street_address}
+                onChange={(e) => setProfile({ ...profile, street_address: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label>City/Town</Label>
+              <Input
+                placeholder="Enter your city"
+                className="mt-2"
+                value={profile.city}
+                onChange={(e) => setProfile({ ...profile, city: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label>Region/District</Label>
+              <Input
+                placeholder="Enter your region"
+                className="mt-2"
+                value={profile.region}
+                onChange={(e) => setProfile({ ...profile, region: e.target.value })}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Education & Career */}
+        <Card className="rounded-2xl shadow-sm border-border/50 hover:shadow-md transition-all">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <GraduationCap className="h-5 w-5 text-primary" />
+              Education & Career
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label>School(s) Attended</Label>
+              <Input
+                placeholder="High school, secondary school"
+                className="mt-2"
+                value={profile.school_name}
+                onChange={(e) => setProfile({ ...profile, school_name: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label>University/College</Label>
+              <Input
+                placeholder="University or college name"
+                className="mt-2"
+                value={profile.university_name}
+                onChange={(e) => setProfile({ ...profile, university_name: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label htmlFor="occupation" className="flex items-center gap-2">
+                <Briefcase className="h-4 w-4 text-primary" />
+                Occupation/Profession
+              </Label>
+              <Input
+                id="occupation"
+                placeholder="What do you do?"
+                className="mt-2"
+                value={profile.occupation}
+                onChange={(e) => setProfile({ ...profile, occupation: e.target.value })}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* About & Interests */}
+        <Card className="rounded-2xl shadow-sm border-border/50 hover:shadow-md transition-all">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Heart className="h-5 w-5 text-primary" />
+              About & Interests
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label>Bio</Label>
+              <Textarea
+                placeholder="Tell us about yourself..."
+                className="mt-2 min-h-[120px]"
+                value={profile.bio}
+                onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
+                maxLength={500}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                {profile.bio.length}/500 characters
+              </p>
+            </div>
+            <div>
+              <Label>Interests & Hobbies</Label>
+              <Input
+                placeholder="Sports, Music, Reading, etc. (comma-separated)"
+                className="mt-2"
+                value={profile.interests}
+                onChange={(e) => setProfile({ ...profile, interests: e.target.value })}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Separate interests with commas
               </p>
             </div>
           </CardContent>

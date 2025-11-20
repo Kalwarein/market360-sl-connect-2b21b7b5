@@ -66,7 +66,7 @@ import ModerationScreen from "./pages/ModerationScreen";
 import AdminUserDetail from "./pages/AdminUserDetail";
 import AdminAppeals from "./pages/AdminAppeals";
 import AdminAppealDetail from "./pages/AdminAppealDetail";
-import PhoneVerification from "./pages/PhoneVerification";
+import Onboarding from "./pages/Onboarding";
 
 const queryClient = new QueryClient();
 
@@ -80,7 +80,7 @@ const App = () => (
           <CartProvider>
             <Routes>
               <Route path="/auth" element={<Auth />} />
-              <Route path="/verify-phone" element={<ProtectedRoute><PhoneVerification /></ProtectedRoute>} />
+              <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
               <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
               <Route path="/perks" element={<ProtectedRoute><Perks /></ProtectedRoute>} />
               <Route path="/search" element={<ProtectedRoute><Search /></ProtectedRoute>} />
