@@ -100,6 +100,18 @@ export default function Checkout() {
       return;
     }
 
+    // Validate MOQ for all items
+    for (const item of items) {
+      if (item.quantity < (item.moq || 1)) {
+        toast({
+          title: "Minimum order not met",
+          description: `${item.title} requires a minimum order of ${item.moq || 1} units`,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     // Check wallet balance
     if (walletBalance < totalPrice) {
       setShowInsufficientModal(true);

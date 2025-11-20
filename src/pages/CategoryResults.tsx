@@ -19,6 +19,7 @@ interface Product {
   images: string[];
   category: string;
   product_code: string;
+  moq: number;
   stores?: {
     store_name: string;
     owner_id: string;
@@ -66,11 +67,12 @@ const CategoryResults = () => {
       image: product.images[0] || '',
       store_name: product.stores?.store_name || 'Unknown Store',
       product_code: product.product_code,
+      moq: product.moq || 1,
     });
 
     toast({
       title: 'Added to cart',
-      description: `${product.title} has been added to your cart`,
+      description: `${product.moq || 1} unit(s) of ${product.title} added to your cart (MOQ: ${product.moq || 1})`,
     });
   };
 

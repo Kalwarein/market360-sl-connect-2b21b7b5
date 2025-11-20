@@ -72,9 +72,15 @@ const Cart = () => {
                   <p className="text-xs text-muted-foreground mb-1">
                     {item.store_name}
                   </p>
-                  <p className="text-xs text-muted-foreground mb-2">
-                    {item.product_code}
-                  </p>
+              <div className="flex items-center gap-2">
+                <p className="text-xs text-muted-foreground">
+                  MOQ: {item.moq || 1} units
+                </p>
+                <p className="text-xs text-muted-foreground">|</p>
+                <p className="text-xs text-muted-foreground">
+                  Qty: {item.quantity}
+                </p>
+              </div>
                   <p className="text-primary font-bold">
                     Le {item.price.toLocaleString()}
                   </p>

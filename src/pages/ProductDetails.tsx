@@ -219,11 +219,12 @@ const ProductDetails = () => {
         image: product.images[0] || '',
         store_name: product.stores.store_name,
         product_code: product.product_code,
+        moq: product.moq || 1,
       });
       
       toast({
         title: 'Added to cart',
-        description: `${product.title} has been added to your cart`,
+        description: `${product.moq || 1} unit(s) of ${product.title} added to your cart (MOQ: ${product.moq || 1})`,
       });
     } catch (error) {
       console.error('Failed to add to cart:', error);

@@ -10,6 +10,7 @@ interface CartItem {
   quantity: number;
   store_name: string;
   product_code: string;
+  moq: number; // Minimum order quantity
 }
 
 interface CartContextType {
@@ -54,7 +55,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
         const productIds = rows.map((r) => r.product_id);
         const { data: products, error: pErr } = await supabase
           .from('products')
-          .select('id, title, price, images, product_code, store_id, stores(store_name)')
+          .select('id, title, price, images, product_code, moq, store_id, stores(store_name)')
           .in('id', productIds);
 
         if (pErr) {
@@ -72,6 +73,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
           quantity: qtyMap.get(p.id as string) || 1,
           store_name: (p as any).stores?.store_name || '',
           product_code: (p as any).product_code || '',
+          moq: Number((p as any).moq || 1),
         }));
 
         // Keep original order based on rows
@@ -125,8 +127,8 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       const existing = items.find((i) => i.id === item.id);
       
       if (existing) {
-        // Update quantity
-        const newQuantity = existing.quantity + 1;
+        // Update quantity - ensure it meets MOQ
+        const newQuantity = Math.max(existing.quantity + item.moq, item.moq);
         const { error } = await supabase
           .from('cart_items')
           .update({ quantity: newQuantity })
@@ -143,11 +145,12 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
           )
         );
       } else {
-        // Insert new item
+        // Insert new item with MOQ as initial quantity
+        const initialQuantity = item.moq || 1;
         const { error } = await supabase.from('cart_items').insert({
           user_id: user.id,
           product_id: item.id,
-          quantity: 1,
+          quantity: initialQuantity,
         });
 
         if (error) {
@@ -155,7 +158,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
           return;
         }
 
-        setItems((prev) => [...prev, { ...item, quantity: 1 }]);
+        setItems((prev) => [...prev, { ...item, quantity: initialQuantity }]);
       }
       return;
     }
@@ -163,10 +166,12 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     // Guest cart
     setItems((prev) => {
       const existing = prev.find((i) => i.id === item.id);
+      const initialQuantity = item.moq || 1;
       if (existing) {
-        return prev.map((i) => (i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i));
+        const newQuantity = Math.max(existing.quantity + initialQuantity, item.moq);
+        return prev.map((i) => (i.id === item.id ? { ...i, quantity: newQuantity } : i));
       }
-      return [...prev, { ...item, quantity: 1 }];
+      return [...prev, { ...item, quantity: initialQuantity }];
     });
   };
 
@@ -179,7 +184,11 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const updateQuantity = async (id: string, quantity: number) => {
-    if (quantity < 1) {
+    const item = items.find(i => i.id === id);
+    if (!item) return;
+
+    // Enforce MOQ - if quantity is less than MOQ, remove the item
+    if (quantity < item.moq) {
       await removeFromCart(id);
       return;
     }
