@@ -161,29 +161,54 @@ const SellerOrderDetail = () => {
 
       const orderNumber = `#360-${orderId?.substring(0, 8).toUpperCase()}`;
 
-      // For delivered status, create rich notification with product details
-      if (newStatus === 'delivered') {
-        try {
-          await supabase.functions.invoke('create-order-notification', {
-            body: {
-              user_id: order?.buyer_id,
-              type: 'order',
-              title: '📦 Order Delivered!',
-              body: `Your order for "${order?.products.title}" has been delivered. Please confirm receipt to complete the transaction.`,
-              link_url: `/order-arrival/${orderId}`,
-              image_url: order?.products.images[0],
-              metadata: { 
-                order_id: orderId, 
-                status: newStatus,
-                product_title: order?.products.title,
-                amount: order?.total_amount,
-                delivered_at: new Date().toISOString()
-              }
-            }
-          });
-        } catch (notifError) {
-          console.error('Failed to send notification:', notifError);
+      // Send rich notifications for all status changes
+      const notificationConfig = {
+        processing: {
+          emoji: '⚙️',
+          title: 'Order Processing',
+          body: `Your order for "${order?.products.title}" is being prepared!`
+        },
+        packed: {
+          emoji: '📦',
+          title: 'Order Packed',
+          body: `Your order for "${order?.products.title}" has been packed and is ready for shipping!`
+        },
+        shipped: {
+          emoji: '🚚',
+          title: 'Order Shipped!',
+          body: `Your order for "${order?.products.title}" is on the way to you!`
+        },
+        delivered: {
+          emoji: '✅',
+          title: 'Order Delivered!',
+          body: `Your order for "${order?.products.title}" has been delivered. Please confirm receipt to complete the transaction.`
         }
+      };
+
+      const config = notificationConfig[newStatus];
+
+      try {
+        await supabase.functions.invoke('create-order-notification', {
+          body: {
+            user_id: order?.buyer_id,
+            type: 'order',
+            title: `${config.emoji} ${config.title}`,
+            body: config.body,
+            link_url: newStatus === 'delivered' ? `/order-arrival/${orderId}` : `/order/${orderId}`,
+            image_url: order?.products.images[0],
+            icon: '/pwa-192x192.png',
+            requireInteraction: newStatus === 'delivered',
+            metadata: { 
+              order_id: orderId, 
+              status: newStatus,
+              product_title: order?.products.title,
+              amount: order?.total_amount,
+              updated_at: new Date().toISOString()
+            }
+          }
+        });
+      } catch (notifError) {
+        console.error('Failed to send notification:', notifError);
       }
 
       // Send system message to chat
