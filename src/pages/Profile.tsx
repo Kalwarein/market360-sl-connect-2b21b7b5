@@ -440,27 +440,27 @@ const Profile = () => {
         }
       `}</style>
 
-      <div className="min-h-screen bg-white pb-20 flex flex-col">
+      <div className="min-h-screen bg-background dark:bg-background pb-20 flex flex-col">
         {/* Header Section */}
-        <div className="p-6 bg-white border-b border-gray-100">
-          <div className="flex items-start justify-between mb-4">
+        <div className="p-6 bg-card dark:bg-card border-b border-border shadow-sm">
+          <div className="flex items-start justify-between mb-6">
             <div className="flex items-center gap-4 flex-1">
               <div className="relative">
-                <Avatar className="h-20 w-20 rounded-full border-2 border-gray-200">
+                <Avatar className="h-24 w-24 rounded-full border-4 border-primary/20 shadow-lg ring-2 ring-background">
                   <AvatarImage src={profile?.avatar_url || "https://i.imghippo.com/files/mJWJ8998ds.jpg"} />
-                  <AvatarFallback className="text-xl font-semibold">
+                  <AvatarFallback className="text-2xl font-semibold bg-primary/10 text-primary">
                     {profile?.name?.charAt(0) || (user?.user_metadata?.name?.charAt(0)) || (user?.email?.charAt(0)?.toUpperCase()) || 'U'}
                   </AvatarFallback>
                 </Avatar>
                 <button
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploading}
-                  className="absolute bottom-0 right-0 h-8 w-8 rounded-full bg-primary text-white shadow-lg flex items-center justify-center hover:bg-primary/90 transition-colors disabled:opacity-50"
+                  className="absolute bottom-0 right-0 h-10 w-10 rounded-full bg-primary text-primary-foreground shadow-xl flex items-center justify-center hover:bg-primary-hover transition-smooth disabled:opacity-50 border-2 border-background"
                 >
                   {uploading ? (
-                    <div className="h-3 w-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                   ) : (
-                    <Camera className="h-4 w-4" />
+                    <Camera className="h-5 w-5" />
                   )}
                 </button>
                 <input
@@ -473,67 +473,71 @@ const Profile = () => {
               </div>
               
               <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <h1 className="text-2xl font-bold text-gray-900">{profile?.name || (user?.user_metadata?.name as string) || user?.email}</h1>
+                <div className="flex items-center gap-2 mb-2">
+                  <h1 className="text-2xl font-bold text-foreground dark:text-foreground">
+                    {profile?.name || (user?.user_metadata?.name as string) || user?.email}
+                  </h1>
                   <button
                     onClick={() => navigate('/settings')}
-                    className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                    className="p-2 hover:bg-muted rounded-xl transition-smooth"
                   >
-                    <Edit2 className="h-5 w-5 text-gray-500" />
+                    <Edit2 className="h-5 w-5 text-muted-foreground hover:text-foreground transition-colors" />
                   </button>
                 </div>
-                <p className="text-sm text-gray-600">{profile?.email || user?.email}</p>
-                {profile?.phone && <p className="text-sm text-gray-600">{profile?.phone}</p>}
+                <p className="text-sm text-muted-foreground dark:text-muted-foreground">{profile?.email || user?.email}</p>
+                {profile?.phone && <p className="text-sm text-muted-foreground dark:text-muted-foreground mt-0.5">{profile?.phone}</p>}
               </div>
             </div>
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-4">
             <Card 
-              className="cursor-pointer hover:shadow-md transition-all bg-blue-50 border-blue-100"
+              className="cursor-pointer hover:shadow-elevated transition-smooth bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20 hover:border-primary/40 rounded-2xl group"
               onClick={() => navigate('/wallet')}
             >
-              <CardContent className="p-4 text-center">
-                <p className="text-xs text-gray-600 mb-1">Wallet</p>
+              <CardContent className="p-5 text-center">
+                <p className="text-xs font-semibold text-muted-foreground dark:text-muted-foreground mb-2 uppercase tracking-wide">Wallet</p>
                 {walletLoading ? (
-                  <Skeleton className="h-8 w-20 mx-auto" />
+                  <Skeleton className="h-10 w-24 mx-auto rounded-lg" />
                 ) : (
-                  <p className="text-2xl font-bold text-blue-600">SLL {walletBalance?.toLocaleString() || 0}</p>
+                  <p className="text-3xl font-bold text-primary dark:text-primary group-hover:scale-105 transition-transform">
+                    SLL {walletBalance?.toLocaleString() || 0}
+                  </p>
                 )}
               </CardContent>
             </Card>
             
             <Card 
-              className="cursor-pointer hover:shadow-md transition-all bg-blue-50 border-blue-100"
+              className="cursor-pointer hover:shadow-elevated transition-smooth bg-gradient-to-br from-secondary/5 to-secondary/10 border-secondary/20 hover:border-secondary/40 rounded-2xl group"
               onClick={() => navigate('/orders')}
             >
-              <CardContent className="p-4 text-center">
-                <p className="text-xs text-gray-600 mb-1">Orders</p>
-                <p className="text-2xl font-bold text-blue-600">{buyerOrdersCount}</p>
+              <CardContent className="p-5 text-center">
+                <p className="text-xs font-semibold text-muted-foreground dark:text-muted-foreground mb-2 uppercase tracking-wide">Orders</p>
+                <p className="text-3xl font-bold text-secondary dark:text-secondary group-hover:scale-105 transition-transform">{buyerOrdersCount}</p>
               </CardContent>
             </Card>
           </div>
 
           {isSeller && (
-            <div className="grid grid-cols-2 gap-3 mt-3">
+            <div className="grid grid-cols-2 gap-4 mt-4">
               <Card 
-                className="bg-amber-50 border-amber-100 cursor-pointer hover:shadow-md transition-all"
+                className="bg-gradient-to-br from-warning/10 to-warning/20 border-warning/30 hover:border-warning/50 cursor-pointer hover:shadow-elevated transition-smooth rounded-2xl group"
                 onClick={() => navigate('/seller-dashboard')}
               >
-                <CardContent className="p-4 text-center">
-                  <p className="text-xs text-gray-600 mb-1">Products</p>
-                  <p className="text-2xl font-bold text-amber-600">{productsCount}</p>
+                <CardContent className="p-5 text-center">
+                  <p className="text-xs font-semibold text-muted-foreground dark:text-muted-foreground mb-2 uppercase tracking-wide">Products</p>
+                  <p className="text-3xl font-bold text-warning dark:text-warning group-hover:scale-105 transition-transform">{productsCount}</p>
                 </CardContent>
               </Card>
               
               <Card 
-                className="bg-amber-50 border-amber-100 cursor-pointer hover:shadow-md transition-all"
+                className="bg-gradient-to-br from-warning/10 to-warning/20 border-warning/30 hover:border-warning/50 cursor-pointer hover:shadow-elevated transition-smooth rounded-2xl group"
                 onClick={() => navigate('/seller-dashboard')}
               >
-                <CardContent className="p-4 text-center">
-                  <p className="text-xs text-gray-600 mb-1">Store Orders</p>
-                  <p className="text-2xl font-bold text-amber-600">{storeOrdersCount}</p>
+                <CardContent className="p-5 text-center">
+                  <p className="text-xs font-semibold text-muted-foreground dark:text-muted-foreground mb-2 uppercase tracking-wide">Store Orders</p>
+                  <p className="text-3xl font-bold text-warning dark:text-warning group-hover:scale-105 transition-transform">{storeOrdersCount}</p>
                 </CardContent>
               </Card>
             </div>
@@ -545,7 +549,7 @@ const Profile = () => {
           
           {/* 🔥 PERKS CARD WITH NEW IMAGE */}
           <div 
-            className="perks-card group p-4 flex items-center justify-between gap-4 rounded-2xl transition-all duration-300"
+            className="perks-card group p-5 flex items-center justify-between gap-4 rounded-2xl transition-smooth shadow-card hover:shadow-elevated"
             onClick={() => navigate('/perks')}
           >
             <div className="flex items-center gap-4 flex-1">
@@ -559,75 +563,79 @@ const Profile = () => {
                 <div className="perks-image-shimmer"></div>
               </div>
 
-              <div className="text-green-900 flex-1">
+              <div className="text-green-900 dark:text-green-100 flex-1">
                 <h3 className="text-lg font-bold mb-1">Unlock Premium</h3>
-                <p className="text-sm text-green-700">Get exclusive perks & benefits</p>
+                <p className="text-sm text-green-700 dark:text-green-300">Get exclusive perks & benefits</p>
               </div>
             </div>
-            <ChevronRight className="perks-arrow text-green-600 flex-shrink-0" size={24} />
+            <ChevronRight className="perks-arrow text-green-600 dark:text-green-400 flex-shrink-0" size={24} />
           </div>
 
           {/* Wallet */}
-          <Card onClick={() => navigate('/wallet')} className="cursor-pointer hover:shadow-md transition-shadow">
-            <CardContent className="p-4 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
-                  <Wallet className="h-5 w-5 text-blue-600" />
+          <Card onClick={() => navigate('/wallet')} className="cursor-pointer hover:shadow-elevated transition-smooth rounded-2xl border-border/50 hover:border-primary/30">
+            <CardContent className="p-5 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="h-12 w-12 rounded-2xl bg-primary/10 dark:bg-primary/20 flex items-center justify-center">
+                  <Wallet className="h-6 w-6 text-primary dark:text-primary" />
                 </div>
-                <span className="font-medium text-gray-900">My Wallet</span>
+                <span className="font-semibold text-foreground dark:text-foreground text-lg">My Wallet</span>
               </div>
+              <ChevronRight className="h-5 w-5 text-muted-foreground" />
             </CardContent>
           </Card>
 
           {/* Orders */}
-          <Card onClick={() => navigate('/orders')} className="cursor-pointer hover:shadow-md transition-shadow">
-            <CardContent className="p-4 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
-                  <ShoppingBag className="h-5 w-5 text-green-600" />
+          <Card onClick={() => navigate('/orders')} className="cursor-pointer hover:shadow-elevated transition-smooth rounded-2xl border-border/50 hover:border-secondary/30">
+            <CardContent className="p-5 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="h-12 w-12 rounded-2xl bg-secondary/10 dark:bg-secondary/20 flex items-center justify-center">
+                  <ShoppingBag className="h-6 w-6 text-secondary dark:text-secondary" />
                 </div>
-                <span className="font-medium text-gray-900">My Orders</span>
+                <span className="font-semibold text-foreground dark:text-foreground text-lg">My Orders</span>
               </div>
+              <ChevronRight className="h-5 w-5 text-muted-foreground" />
             </CardContent>
           </Card>
 
           {/* Notifications */}
-          <Card onClick={() => { setHasUnreadNotif(false); navigate('/notifications'); }} className="cursor-pointer hover:shadow-md transition-shadow">
-            <CardContent className="p-4 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-cyan-100 flex items-center justify-center relative">
-                  <Bell className="h-5 w-5 text-cyan-600" />
+          <Card onClick={() => { setHasUnreadNotif(false); navigate('/notifications'); }} className="cursor-pointer hover:shadow-elevated transition-smooth rounded-2xl border-border/50 hover:border-accent/30">
+            <CardContent className="p-5 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="h-12 w-12 rounded-2xl bg-accent/10 dark:bg-accent/20 flex items-center justify-center relative">
+                  <Bell className="h-6 w-6 text-accent dark:text-accent" />
                   {hasUnreadNotif && (
-                    <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-red-500" />
+                    <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive animate-pulse" />
                   )}
                 </div>
-                <span className="font-medium text-gray-900">Notifications</span>
+                <span className="font-semibold text-foreground dark:text-foreground text-lg">Notifications</span>
               </div>
-              {hasUnreadNotif && <Badge variant="destructive">New</Badge>}
+              {hasUnreadNotif && <Badge variant="destructive" className="rounded-lg">New</Badge>}
             </CardContent>
           </Card>
 
           {/* Promotions */}
-          <Card onClick={() => navigate('/admin-auth')} className="cursor-pointer hover:shadow-md transition-shadow">
-            <CardContent className="p-4 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-yellow-100 flex items-center justify-center">
-                  <Gift className="h-5 w-5 text-yellow-600" />
+          <Card onClick={() => navigate('/admin-auth')} className="cursor-pointer hover:shadow-elevated transition-smooth rounded-2xl border-border/50 hover:border-warning/30">
+            <CardContent className="p-5 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="h-12 w-12 rounded-2xl bg-warning/10 dark:bg-warning/20 flex items-center justify-center">
+                  <Gift className="h-6 w-6 text-warning dark:text-warning" />
                 </div>
-                <span className="font-medium text-gray-900">Gifts </span>
+                <span className="font-semibold text-foreground dark:text-foreground text-lg">Gifts</span>
               </div>
+              <ChevronRight className="h-5 w-5 text-muted-foreground" />
             </CardContent>
           </Card>
 
           {/* Settings */}
-          <Card onClick={() => navigate('/settings')} className="cursor-pointer hover:shadow-md transition-shadow">
-            <CardContent className="p-4 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
-                  <Settings className="h-5 w-5 text-gray-600" />
+          <Card onClick={() => navigate('/settings')} className="cursor-pointer hover:shadow-elevated transition-smooth rounded-2xl border-border/50 hover:border-muted/50">
+            <CardContent className="p-5 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="h-12 w-12 rounded-2xl bg-muted dark:bg-muted flex items-center justify-center">
+                  <Settings className="h-6 w-6 text-muted-foreground dark:text-muted-foreground" />
                 </div>
-                <span className="font-medium text-gray-900">Settings</span>
+                <span className="font-semibold text-foreground dark:text-foreground text-lg">Settings</span>
               </div>
+              <ChevronRight className="h-5 w-5 text-muted-foreground" />
             </CardContent>
           </Card>
 
@@ -705,7 +713,7 @@ const Profile = () => {
           {/* Logout Button */}
           <Button 
             variant="destructive" 
-            className="w-full mt-6 h-12 text-base font-semibold" 
+            className="w-full mt-6 h-14 text-base font-semibold rounded-2xl shadow-lg hover:shadow-xl transition-smooth" 
             onClick={signOut}
           >
             <LogOut className="h-5 w-5 mr-2" />
@@ -714,30 +722,36 @@ const Profile = () => {
         </div>
 
         {/* Footer */}
-        <div className="border-t border-gray-200 bg-gray-50 p-6">
-          <div className="flex items-center justify-center gap-6">
+        <div className="border-t border-border bg-muted/30 dark:bg-muted/10 p-6">
+          <div className="flex items-center justify-center gap-8">
             <button
               onClick={() => navigate('/privacy')}
-              className="flex flex-col items-center gap-1 hover:opacity-70 transition-opacity"
+              className="flex flex-col items-center gap-2 hover:opacity-80 transition-smooth group"
             >
-              <Lock className="h-6 w-6 text-gray-600" />
-              <span className="text-xs text-gray-600 font-medium">Privacy</span>
+              <div className="p-3 bg-background dark:bg-card rounded-2xl group-hover:bg-primary/10 dark:group-hover:bg-primary/20 transition-smooth">
+                <Lock className="h-6 w-6 text-muted-foreground dark:text-muted-foreground group-hover:text-primary transition-colors" />
+              </div>
+              <span className="text-xs text-muted-foreground dark:text-muted-foreground font-medium">Privacy</span>
             </button>
             
             <button
               onClick={() => navigate('/terms')}
-              className="flex flex-col items-center gap-1 hover:opacity-70 transition-opacity"
+              className="flex flex-col items-center gap-2 hover:opacity-80 transition-smooth group"
             >
-              <FileText className="h-6 w-6 text-gray-600" />
-              <span className="text-xs text-gray-600 font-medium">Terms</span>
+              <div className="p-3 bg-background dark:bg-card rounded-2xl group-hover:bg-secondary/10 dark:group-hover:bg-secondary/20 transition-smooth">
+                <FileText className="h-6 w-6 text-muted-foreground dark:text-muted-foreground group-hover:text-secondary transition-colors" />
+              </div>
+              <span className="text-xs text-muted-foreground dark:text-muted-foreground font-medium">Terms</span>
             </button>
             
             <button
               onClick={() => navigate('/contact')}
-              className="flex flex-col items-center gap-1 hover:opacity-70 transition-opacity"
+              className="flex flex-col items-center gap-2 hover:opacity-80 transition-smooth group"
             >
-              <Mail className="h-6 w-6 text-gray-600" />
-              <span className="text-xs text-gray-600 font-medium">Contact</span>
+              <div className="p-3 bg-background dark:bg-card rounded-2xl group-hover:bg-accent/10 dark:group-hover:bg-accent/20 transition-smooth">
+                <Mail className="h-6 w-6 text-muted-foreground dark:text-muted-foreground group-hover:text-accent transition-colors" />
+              </div>
+              <span className="text-xs text-muted-foreground dark:text-muted-foreground font-medium">Contact</span>
             </button>
           </div>
         </div>

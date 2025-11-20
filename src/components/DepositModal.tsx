@@ -94,7 +94,7 @@ export const DepositModal = ({ open, onOpenChange, onSuccess }: DepositModalProp
               size="sm"
               onClick={() => {
                 onOpenChange(false);
-                navigate('/how-to-topup');
+                navigate('/how-to-top-up');
               }}
               className="text-primary hover:text-primary-hover"
             >
@@ -113,7 +113,7 @@ export const DepositModal = ({ open, onOpenChange, onSuccess }: DepositModalProp
               <div className="text-sm text-gray-700 space-y-2">
                 <p className="font-semibold text-gray-900">Orange Money Payment</p>
                 <ol className="space-y-2 leading-relaxed list-decimal list-inside">
-                  <li>Send money to: <strong className="text-orange-700">03347104747</strong></li>
+                  <li>Send money to: <strong className="text-orange-700">078444807</strong></li>
                   <li>Save the Orange Money reference number from SMS</li>
                   <li>Enter details below and paste the reference number</li>
                   <li>Upload screenshot of SMS (optional but recommended)</li>
