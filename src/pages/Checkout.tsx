@@ -159,12 +159,17 @@ export default function Checkout() {
             body: {
               user_id: store.owner_id,
               type: 'order',
-              title: 'New Order Received',
-              body: `You have a new order for ${item.title}`,
+              title: '🛒 New Order Received!',
+              body: `${buyerProfile?.name || 'A customer'} placed an order for ${item.title}`,
               link_url: newOrder?.id ? `/seller/order/${newOrder.id}` : '/seller-dashboard',
+              image_url: productImage,
+              icon: '/pwa-192x192.png',
+              requireInteraction: true,
               metadata: {
                 order_id: newOrder?.id || null,
-                product_title: item.title
+                product_title: item.title,
+                buyer_name: buyerProfile?.name,
+                amount: item.price * item.quantity
               }
             }
           });

@@ -280,6 +280,37 @@ const Chat = () => {
         .update({ last_message_at: new Date().toISOString() })
         .eq('id', conversationId);
 
+      // Send notification to recipient
+      const recipientId = conversation?.buyer_id === user?.id 
+        ? conversation?.seller_id 
+        : conversation?.buyer_id;
+      
+      if (recipientId) {
+        const { data: recipientProfile } = await supabase
+          .from('profiles')
+          .select('name, notification_preferences')
+          .eq('id', recipientId)
+          .single();
+
+        const notifPrefs = recipientProfile?.notification_preferences as any;
+        if (!notifPrefs || notifPrefs?.messages !== false) {
+          const senderName = currentUserName || 'Someone';
+          const messagePreview = newMessage.trim() || (attachedProduct ? `Shared ${attachedProduct.title}` : 'New message');
+          
+          await supabase.functions.invoke('create-order-notification', {
+            body: {
+              user_id: recipientId,
+              type: 'message',
+              title: `💬 ${senderName}`,
+              body: messagePreview.length > 50 ? messagePreview.substring(0, 50) + '...' : messagePreview,
+              link_url: `/chat/${conversationId}`,
+              image_url: attachedProduct?.images?.[0] || currentUserAvatar,
+              metadata: { conversation_id: conversationId, sender_id: user?.id }
+            }
+          });
+        }
+      }
+
       setNewMessage('');
       setAttachedProduct(null);
       setIsTyping(false);

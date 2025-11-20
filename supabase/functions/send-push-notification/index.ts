@@ -17,7 +17,7 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { userId, title, body, url, tag } = await req.json();
+    const { userId, title, body, url, tag, image, icon, actions, requireInteraction } = await req.json();
 
     if (!userId || !title || !body) {
       return new Response(
@@ -75,8 +75,14 @@ serve(async (req) => {
           body,
           url: url || '/',
           tag: tag || 'market360-notification',
-          icon: '/pwa-192x192.png',
-          badge: '/pwa-192x192.png'
+          icon: icon || '/pwa-192x192.png',
+          image: image || null,
+          badge: '/pwa-192x192.png',
+          actions: actions || [
+            { action: 'view', title: 'View' },
+            { action: 'dismiss', title: 'Dismiss' }
+          ],
+          requireInteraction: requireInteraction || false
         });
 
         // Use web-push library to send notification
