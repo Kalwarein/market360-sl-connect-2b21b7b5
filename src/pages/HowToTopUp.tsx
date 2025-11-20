@@ -8,7 +8,7 @@ import { useState } from 'react';
 const HowToTopUp = () => {
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
-  const orangeMoneyNumber = '03347104747';
+  const orangeMoneyNumber = '078444807';
 
   const copyNumber = () => {
     navigator.clipboard.writeText(orangeMoneyNumber);
