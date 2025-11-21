@@ -329,7 +329,7 @@ const Profile = () => {
           position: relative;
           cursor: pointer;
           overflow: hidden;
-          background: linear-gradient(135deg, #ffffff 0%, #d1fae5 50%, #10b981 100%);
+          background: linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--primary) / 0.2) 50%, hsl(var(--primary)) 100%);
           animation: pulse-glow 3s ease-in-out infinite;
         }
 
