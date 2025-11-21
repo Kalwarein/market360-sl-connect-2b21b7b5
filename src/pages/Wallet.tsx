@@ -104,7 +104,7 @@ const Wallet = () => {
 
   return (
     <div className="min-h-screen bg-background pb-8">
-      <div className="bg-white border-b shadow-sm sticky top-0 z-10">
+      <div className="bg-background border-b shadow-sm sticky top-0 z-10">
         <div className="p-4 flex items-center gap-3">
           <Button
             variant="ghost"
@@ -173,26 +173,26 @@ const Wallet = () => {
           <CardContent>
             <div className="space-y-3">
               {loading ? (
-                <div className="text-center py-8 text-gray-500">Loading...</div>
+                <div className="text-center py-8 text-muted-foreground">Loading...</div>
               ) : transactions.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
+                <div className="text-center py-8 text-muted-foreground">
                   No transactions yet
                 </div>
               ) : (
                 transactions.map((trans) => (
                   <div
                     key={trans.id}
-                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors"
+                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
                   >
                     <div className="flex items-center gap-3">
                       {getTransactionIcon(trans.type)}
                       <div>
                         <p className="font-medium capitalize">{trans.type}</p>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-sm text-muted-foreground">
                           {format(new Date(trans.created_at), 'MMM dd, yyyy - HH:mm')}
                         </p>
                         {trans.reference && (
-                          <p className="text-xs text-gray-400">{trans.reference}</p>
+                          <p className="text-xs text-muted-foreground/70">{trans.reference}</p>
                         )}
                       </div>
                     </div>
