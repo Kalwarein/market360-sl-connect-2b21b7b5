@@ -743,6 +743,53 @@ export type Database = {
         }
         Relationships: []
       }
+      store_perks: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          metadata: Json | null
+          perk_name: string
+          perk_type: string
+          price_paid: number
+          purchased_at: string
+          store_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          metadata?: Json | null
+          perk_name: string
+          perk_type: string
+          price_paid: number
+          purchased_at?: string
+          store_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          metadata?: Json | null
+          perk_name?: string
+          perk_type?: string
+          price_paid?: number
+          purchased_at?: string
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_perks_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stores: {
         Row: {
           banner_url: string | null
