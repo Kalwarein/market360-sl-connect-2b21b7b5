@@ -3,7 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Package, MapPin, TrendingUp, Crown, Sparkles } from 'lucide-react';
 import { useStorePerks } from '@/hooks/useStorePerks';
-import verifiedBadge from '@/assets/verified-badge.jpg';
+import verifiedBadge from '@/assets/verified-badge.png';
 
 interface StoreCardProps {
   id: string;

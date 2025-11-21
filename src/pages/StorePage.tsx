@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ArrowLeft, MapPin, MessageCircle, Star, Package, TrendingUp, Sparkles, Crown } from 'lucide-react';
 import { useStorePerks } from '@/hooks/useStorePerks';
-import verifiedBadge from '@/assets/verified-badge.jpg';
+import verifiedBadge from '@/assets/verified-badge.png';
 
 interface Store {
   id: string;
