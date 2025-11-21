@@ -1,5 +1,3 @@
-'use client';
-
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -8,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import BottomNav from '@/components/BottomNav';
 import { Input } from '@/components/ui/input';
+import { StoreCard } from '@/components/StoreCard';
 
 const animationStyles = `
   @keyframes shimmer {
@@ -285,85 +284,18 @@ const Stores = () => {
               </CardContent>
             </Card>
           ) : (
-            <div className="grid grid-cols-1 gap-5 md:gap-6 lg:gap-7">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6 lg:gap-7">
               {filteredStores.map((store: any, index: number) => (
-                <Card
+                <StoreCard
                   key={store.id}
-                  className="animated-card card-hover-float cursor-pointer rounded-2xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-300 border-0"
-                  onClick={() => navigate(`/store/${store.id}`)}
-                  style={{
-                    animationDelay: cardDelays[store.id] || '0s',
-                  }}
-                >
-                  <div className="h-32 md:h-36 relative overflow-hidden bg-gradient-to-br from-primary/10 to-accent/10">
-                    {store.banner_url ? (
-                      <>
-                        <img
-                          src={store.banner_url || "/placeholder.svg"}
-                          alt={store.store_name}
-                          className="banner-image w-full h-full object-cover"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-background/20 to-transparent" />
-                      </>
-                    ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-primary/20 via-accent/20 to-secondary/20" />
-                    )}
-                    <div className="absolute inset-0 shimmer-overlay" />
-                  </div>
-
-                  <CardContent className="p-5 md:p-6">
-                    <div className="flex gap-4">
-                      <div className="h-20 w-20 md:h-24 md:w-24 rounded-2xl border-2 border-background bg-card flex-shrink-0 overflow-hidden -mt-10 relative z-10 shadow-lg">
-                        {store.logo_url ? (
-                          <img
-                            src={store.logo_url || "/placeholder.svg"}
-                            alt={store.store_name}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/10 to-accent/10">
-                            <svg className="h-8 w-8 text-primary/60" fill="currentColor" viewBox="0 0 24 24">
-                              <path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-0.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l0.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-0.9-2-2-2z"/>
-                            </svg>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="flex-1 min-w-0 pt-1">
-                        <h3 className="font-bold text-lg md:text-xl line-clamp-1 text-foreground">
-                          {store.store_name}
-                        </h3>
-                        {(store.city || store.region) && (
-                          <div className="flex items-center gap-1 text-sm text-muted-foreground mb-3">
-                            <svg className="h-4 w-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                            </svg>
-                            <span className="line-clamp-1">
-                              {[store.city, store.region].filter(Boolean).join(', ')}
-                            </span>
-                          </div>
-                        )}
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <Badge 
-                            variant="outline"
-                            className="bg-primary/10 text-primary border-primary/30 hover:bg-primary/20 transition-colors"
-                          >
-                            <svg className="h-3 w-3 mr-1" fill="currentColor" viewBox="0 0 24 24">
-                              <path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-0.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l0.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-0.9-2-2-2z"/>
-                            </svg>
-                            {store.productCount} Products
-                          </Badge>
-                        </div>
-                      </div>
-                    </div>
-                    {store.description && (
-                      <p className="text-sm text-muted-foreground mt-4 line-clamp-2 leading-relaxed">
-                        {store.description}
-                      </p>
-                    )}
-                  </CardContent>
-                </Card>
+                  id={store.id}
+                  name={store.store_name}
+                  logo={store.logo_url}
+                  banner={store.banner_url}
+                  city={store.city}
+                  region={store.region}
+                  productCount={store.productCount || 0}
+                />
               ))}
             </div>
           )}
