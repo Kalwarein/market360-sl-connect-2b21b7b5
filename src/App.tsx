@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { CartProvider } from "./contexts/CartContext";
+import { ChatProvider } from "./contexts/ChatContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { useOneSignal } from "./hooks/useOneSignal";
 
@@ -84,8 +85,9 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <AppContent />
-          <CartProvider>
-            <Routes>
+          <ChatProvider>
+            <CartProvider>
+              <Routes>
               <Route path="/auth" element={<Auth />} />
               <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
               <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
@@ -142,8 +144,9 @@ const App = () => (
               <Route path="/how-to-top-up" element={<ProtectedRoute><HowToTopUp /></ProtectedRoute>} />
               <Route path="/product-management/:id" element={<ProtectedRoute><ProductManagement /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
-            </Routes>
-          </CartProvider>
+              </Routes>
+            </CartProvider>
+          </ChatProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
