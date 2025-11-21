@@ -80,7 +80,7 @@ const animationStyles = `
     background: linear-gradient(
       to right,
       transparent 0%,
-      rgba(16, 185, 129, 0.08) 50%,
+      hsl(var(--primary) / 0.08) 50%,
       transparent 100%
     );
     background-size: 1000px 100%;
@@ -100,8 +100,6 @@ const animationStyles = `
   
   .header-icon-btn:hover {
     transform: scale(1.1);
-    background-color: #d1fae5;
-    color: #047857;
   }
   
   .header-icon-btn:active {
@@ -111,7 +109,7 @@ const animationStyles = `
   .curved-divider {
     position: relative;
     height: 20px;
-    background: linear-gradient(to bottom, rgba(16, 185, 129, 0.08), transparent);
+    background: linear-gradient(to bottom, hsl(var(--primary) / 0.08), transparent);
     clip-path: polygon(0 0, 100% 0, 100% 100%, 0 60%);
   }
 `;
@@ -192,14 +190,12 @@ const Stores = () => {
   return (
     <>
       <style>{animationStyles}</style>
-      <div className="min-h-screen bg-white pb-20">
-        <div className="relative overflow-hidden border-t-4 border-emerald-500" style={{
-          background: 'linear-gradient(to bottom, #f8fffe 0%, #ffffff 100%)',
-        }}>
+      <div className="min-h-screen bg-background pb-20">
+        <div className="relative overflow-hidden border-t-4 border-primary bg-gradient-to-b from-primary/5 to-background">
           {particles.map((particle) => (
             <div
               key={particle.id}
-              className="particle absolute rounded-full bg-emerald-400/10 pointer-events-none"
+              className="particle absolute rounded-full bg-primary/10 pointer-events-none"
               style={{
                 width: Math.random() * 40 + 20 + 'px',
                 height: Math.random() * 40 + 20 + 'px',
@@ -213,21 +209,21 @@ const Stores = () => {
 
           <div className="absolute inset-0 shimmer-overlay" />
 
-          <div className="relative z-10 text-gray-900 p-6">
+          <div className="relative z-10 text-foreground p-6">
             <div className="animated-header flex items-start justify-between mb-6">
               <div className="flex items-center gap-3">
-                <svg className="h-8 w-8 text-emerald-600" fill="currentColor" viewBox="0 0 24 24">
+                <svg className="h-8 w-8 text-primary" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z"/>
                 </svg>
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-900">Stores</h1>
-                  <p className="text-sm text-gray-600">Explore verified sellers</p>
+                  <h1 className="text-3xl font-bold text-foreground">Stores</h1>
+                  <p className="text-sm text-muted-foreground">Explore verified sellers</p>
                 </div>
               </div>
               
               <div className="flex items-center gap-2">
                 <button
-                  className="header-icon-btn p-2.5 rounded-full border-2 border-emerald-300 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-all duration-300 flex items-center justify-center"
+                  className="header-icon-btn p-2.5 rounded-full border-2 border-primary/30 bg-primary/10 text-primary hover:bg-primary/20 transition-all duration-300 flex items-center justify-center"
                   title="Filter stores"
                 >
                   <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -235,7 +231,7 @@ const Stores = () => {
                   </svg>
                 </button>
                 <button
-                  className="header-icon-btn p-2.5 rounded-full border-2 border-teal-300 bg-teal-50 text-teal-600 hover:bg-teal-100 transition-all duration-300 flex items-center justify-center"
+                  className="header-icon-btn p-2.5 rounded-full border-2 border-accent/30 bg-accent/10 text-accent-foreground hover:bg-accent/20 transition-all duration-300 flex items-center justify-center"
                   title="Sort stores"
                 >
                   <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -243,7 +239,7 @@ const Stores = () => {
                   </svg>
                 </button>
                 <button
-                  className="header-icon-btn p-2.5 rounded-full border-2 border-blue-300 bg-blue-50 text-blue-600 hover:bg-blue-100 transition-all duration-300 flex items-center justify-center"
+                  className="header-icon-btn p-2.5 rounded-full border-2 border-secondary/50 bg-secondary/30 text-secondary-foreground hover:bg-secondary/50 transition-all duration-300 flex items-center justify-center"
                   title="Help & info"
                 >
                   <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
@@ -255,14 +251,14 @@ const Stores = () => {
 
             <div className="relative group">
               <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none">
-                <svg className="h-5 w-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="h-5 w-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
               </div>
               <input
                 type="text"
                 placeholder="Search stores..."
-                className="w-full pl-12 pr-4 py-3 rounded-2xl bg-white text-gray-900 placeholder-gray-500 border-2 border-emerald-200 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-300 transition-all duration-300 shadow-md hover:shadow-lg"
+                className="w-full pl-12 pr-4 py-3 rounded-2xl bg-card text-foreground placeholder-muted-foreground border-2 border-primary/20 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all duration-300 shadow-md hover:shadow-lg"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -299,7 +295,7 @@ const Stores = () => {
                     animationDelay: cardDelays[store.id] || '0s',
                   }}
                 >
-                  <div className="h-32 md:h-36 relative overflow-hidden bg-gradient-to-br from-emerald-50 to-teal-50">
+                  <div className="h-32 md:h-36 relative overflow-hidden bg-gradient-to-br from-primary/10 to-accent/10">
                     {store.banner_url ? (
                       <>
                         <img
@@ -307,17 +303,17 @@ const Stores = () => {
                           alt={store.store_name}
                           className="banner-image w-full h-full object-cover"
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-background/20 to-transparent" />
                       </>
                     ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-emerald-100 via-teal-100 to-blue-100" />
+                      <div className="w-full h-full bg-gradient-to-br from-primary/20 via-accent/20 to-secondary/20" />
                     )}
                     <div className="absolute inset-0 shimmer-overlay" />
                   </div>
 
                   <CardContent className="p-5 md:p-6">
                     <div className="flex gap-4">
-                      <div className="h-20 w-20 md:h-24 md:w-24 rounded-2xl border-2 border-white bg-card flex-shrink-0 overflow-hidden -mt-10 relative z-10 shadow-lg">
+                      <div className="h-20 w-20 md:h-24 md:w-24 rounded-2xl border-2 border-background bg-card flex-shrink-0 overflow-hidden -mt-10 relative z-10 shadow-lg">
                         {store.logo_url ? (
                           <img
                             src={store.logo_url || "/placeholder.svg"}
@@ -325,8 +321,8 @@ const Stores = () => {
                             className="w-full h-full object-cover"
                           />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-emerald-50 to-teal-50">
-                            <svg className="h-8 w-8 text-emerald-400" fill="currentColor" viewBox="0 0 24 24">
+                          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/10 to-accent/10">
+                            <svg className="h-8 w-8 text-primary/60" fill="currentColor" viewBox="0 0 24 24">
                               <path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-0.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l0.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-0.9-2-2-2z"/>
                             </svg>
                           </div>
@@ -351,7 +347,7 @@ const Stores = () => {
                         <div className="flex items-center gap-2 flex-wrap">
                           <Badge 
                             variant="outline"
-                            className="bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 transition-colors"
+                            className="bg-primary/10 text-primary border-primary/30 hover:bg-primary/20 transition-colors"
                           >
                             <svg className="h-3 w-3 mr-1" fill="currentColor" viewBox="0 0 24 24">
                               <path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-0.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l0.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-0.9-2-2-2z"/>
