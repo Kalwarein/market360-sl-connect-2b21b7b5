@@ -24,23 +24,30 @@ const Contact = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      <div className="bg-gradient-to-r from-primary to-secondary text-white p-6">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="text-white hover:bg-white/20 mb-4"
-          onClick={() => navigate(-1)}
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back
-        </Button>
-        <h1 className="text-2xl font-bold">Contact Us</h1>
-        <p className="text-sm opacity-90">Get in touch with Market360</p>
-      </div>
+      <header className="sticky top-0 z-40 bg-card border-b shadow-sm">
+        <div className="container mx-auto px-4 h-16 flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate(-1)}
+            className="rounded-full hover:bg-muted"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-primary/10">
+              <Mail className="h-6 w-6 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-lg font-bold">Contact Us</h1>
+              <p className="text-xs text-muted-foreground">Get in touch</p>
+            </div>
+          </div>
+        </div>
+      </header>
 
-      <div className="p-4 space-y-4">
-        {/* Contact Info */}
-        <Card>
+      <div className="container mx-auto px-4 py-6 max-w-2xl space-y-4">
+        <Card className="rounded-2xl shadow-sm border-border/50">
           <CardContent className="p-4 space-y-4">
             <div className="flex items-start gap-3">
               <MapPin className="h-5 w-5 text-primary mt-1" />
@@ -68,8 +75,7 @@ const Contact = () => {
           </CardContent>
         </Card>
 
-        {/* Contact Form */}
-        <Card>
+        <Card className="rounded-2xl shadow-sm border-border/50">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Send className="h-5 w-5" />
@@ -99,15 +105,14 @@ const Contact = () => {
                   required
                 />
               </div>
-              <Button type="submit" className="w-full" disabled={loading}>
+              <Button type="submit" className="w-full rounded-xl h-11 font-medium shadow-sm" disabled={loading}>
                 {loading ? 'Sending...' : 'Send Message'}
               </Button>
             </form>
           </CardContent>
         </Card>
 
-        {/* Business Hours */}
-        <Card>
+        <Card className="rounded-2xl shadow-sm border-border/50">
           <CardHeader>
             <CardTitle>Business Hours</CardTitle>
           </CardHeader>

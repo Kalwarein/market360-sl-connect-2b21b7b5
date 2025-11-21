@@ -25,31 +25,38 @@ const Support = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      <div className="bg-gradient-to-r from-primary to-secondary text-white p-6">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="text-white hover:bg-white/20 mb-4"
-          onClick={() => navigate(-1)}
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back
-        </Button>
-        <h1 className="text-2xl font-bold">Support Center</h1>
-        <p className="text-sm opacity-90">We're here to help</p>
-      </div>
+      <header className="sticky top-0 z-40 bg-card border-b shadow-sm">
+        <div className="container mx-auto px-4 h-16 flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate(-1)}
+            className="rounded-full hover:bg-muted"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-primary/10">
+              <HelpCircle className="h-6 w-6 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-lg font-bold">Support Center</h1>
+              <p className="text-xs text-muted-foreground">We're here to help</p>
+            </div>
+          </div>
+        </div>
+      </header>
 
-      <div className="p-4 space-y-4">
-        {/* Quick Contact */}
+      <div className="container mx-auto px-4 py-6 max-w-2xl space-y-4">
         <div className="grid grid-cols-2 gap-3">
-          <Card>
+          <Card className="rounded-2xl shadow-sm border-border/50">
             <CardContent className="p-4 text-center">
               <Phone className="h-8 w-8 mx-auto mb-2 text-primary" />
               <p className="text-sm font-medium">Call Us</p>
               <p className="text-xs text-muted-foreground">+232 XX XXX XXXX</p>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="rounded-2xl shadow-sm border-border/50">
             <CardContent className="p-4 text-center">
               <Mail className="h-8 w-8 mx-auto mb-2 text-primary" />
               <p className="text-sm font-medium">Email Us</p>
@@ -58,8 +65,7 @@ const Support = () => {
           </Card>
         </div>
 
-        {/* Support Form */}
-        <Card>
+        <Card className="rounded-2xl shadow-sm border-border/50">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <MessageCircle className="h-5 w-5" />
@@ -96,15 +102,14 @@ const Support = () => {
                   required
                 />
               </div>
-              <Button type="submit" className="w-full" disabled={loading}>
+              <Button type="submit" className="w-full rounded-xl h-11 font-medium shadow-sm" disabled={loading}>
                 {loading ? 'Submitting...' : 'Submit Request'}
               </Button>
             </form>
           </CardContent>
         </Card>
 
-        {/* FAQ */}
-        <Card>
+        <Card className="rounded-2xl shadow-sm border-border/50">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <HelpCircle className="h-5 w-5" />

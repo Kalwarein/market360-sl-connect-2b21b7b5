@@ -9,27 +9,32 @@ const About = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-primary to-secondary text-white p-6">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="text-white hover:bg-white/20 mb-4"
-          onClick={() => navigate(-1)}
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back
-        </Button>
-        <h1 className="text-2xl font-bold">About Market360</h1>
-        <p className="text-sm opacity-90">Your Trusted B2B & Consumer Marketplace</p>
-      </div>
+      <header className="sticky top-0 z-40 bg-card border-b shadow-sm">
+        <div className="container mx-auto px-4 h-16 flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate(-1)}
+            className="rounded-full hover:bg-muted"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div className="flex items-center gap-3 flex-1">
+            <div className="p-2 rounded-xl bg-primary/10">
+              <Store className="h-6 w-6 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-lg font-bold">About Market360</h1>
+              <p className="text-xs text-muted-foreground">Your Trusted Marketplace</p>
+            </div>
+          </div>
+        </div>
+      </header>
 
-      <div className="p-4 space-y-6">
-
-        {/* Mission Card */}
-        <Card className="shadow-md">
+      <div className="container mx-auto px-4 py-6 max-w-2xl space-y-6">
+        <Card className="rounded-2xl shadow-sm border-border/50">
           <CardContent className="p-6">
-            <h2 className="text-xl font-bold mb-4">Our Mission</h2>
+            <h2 className="text-xl font-bold mb-4 text-foreground">Our Mission</h2>
             <p className="text-muted-foreground leading-relaxed">
               Market360 is Sierra Leone’s all-in-one digital marketplace built to empower 
               buyers, sellers, workers, freelancers, and businesses. Our mission is to give 
@@ -39,45 +44,43 @@ const About = () => {
           </CardContent>
         </Card>
 
-        {/* Stats Row */}
         <div className="grid grid-cols-2 gap-4">
-          <Card className="shadow-md">
+          <Card className="rounded-2xl shadow-sm border-border/50">
             <CardContent className="p-4 text-center">
               <Store className="h-10 w-10 mx-auto mb-2 text-primary" />
-              <h3 className="font-semibold mb-1">1000+</h3>
+              <h3 className="font-semibold mb-1 text-foreground">1000+</h3>
               <p className="text-sm text-muted-foreground">Verified Sellers</p>
             </CardContent>
           </Card>
 
-          <Card className="shadow-md">
+          <Card className="rounded-2xl shadow-sm border-border/50">
             <CardContent className="p-4 text-center">
               <Users className="h-10 w-10 mx-auto mb-2 text-primary" />
-              <h3 className="font-semibold mb-1">50K+</h3>
+              <h3 className="font-semibold mb-1 text-foreground">50K+</h3>
               <p className="text-sm text-muted-foreground">Active Buyers</p>
             </CardContent>
           </Card>
 
-          <Card className="shadow-md">
+          <Card className="rounded-2xl shadow-sm border-border/50">
             <CardContent className="p-4 text-center">
               <Shield className="h-10 w-10 mx-auto mb-2 text-primary" />
-              <h3 className="font-semibold mb-1">100%</h3>
+              <h3 className="font-semibold mb-1 text-foreground">100%</h3>
               <p className="text-sm text-muted-foreground">Secure Platform</p>
             </CardContent>
           </Card>
 
-          <Card className="shadow-md">
+          <Card className="rounded-2xl shadow-sm border-border/50">
             <CardContent className="p-4 text-center">
               <TrendingUp className="h-10 w-10 mx-auto mb-2 text-primary" />
-              <h3 className="font-semibold mb-1">24/7</h3>
+              <h3 className="font-semibold mb-1 text-foreground">24/7</h3>
               <p className="text-sm text-muted-foreground">Support Available</p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Why Choose Us */}
-        <Card className="shadow-md">
+        <Card className="rounded-2xl shadow-sm border-border/50">
           <CardContent className="p-6">
-            <h2 className="text-xl font-bold mb-4">Why Choose Us?</h2>
+            <h2 className="text-xl font-bold mb-4 text-foreground">Why Choose Us?</h2>
             <ul className="space-y-3">
               <li className="flex items-start gap-2">
                 <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2" />
@@ -107,12 +110,11 @@ const About = () => {
           </CardContent>
         </Card>
 
-        {/* NEW CARD: Payment System & Deposit Guide */}
-        <Card className="shadow-md">
+        <Card className="rounded-2xl shadow-sm border-border/50">
           <CardContent className="p-6">
             <div className="flex items-center gap-2 mb-4">
               <CreditCard className="h-6 w-6 text-primary" />
-              <h2 className="text-xl font-bold">How Payments & Deposits Work</h2>
+              <h2 className="text-xl font-bold text-foreground">How Payments & Deposits Work</h2>
             </div>
 
             <p className="text-muted-foreground leading-relaxed mb-4">
@@ -167,8 +169,8 @@ const About = () => {
 
             <div className="mt-4">
               <Button 
-                onClick={() => navigate('/deposit-guide')}
-                className="w-full bg-primary text-white hover:bg-primary/90"
+                onClick={() => navigate('/how-to-top-up')}
+                className="w-full rounded-xl h-11 font-medium shadow-sm"
               >
                 View Full Deposit Guide
               </Button>
@@ -176,10 +178,9 @@ const About = () => {
           </CardContent>
         </Card>
 
-        {/* Contact Info */}
-        <Card className="shadow-md">
+        <Card className="rounded-2xl shadow-sm border-border/50">
           <CardContent className="p-6">
-            <h2 className="text-xl font-bold mb-4">Contact Information</h2>
+            <h2 className="text-xl font-bold mb-4 text-foreground">Contact Information</h2>
             <div className="space-y-2 text-muted-foreground">
               <p>Email: support@market360.com</p>
               <p>Phone: 030891960</p>

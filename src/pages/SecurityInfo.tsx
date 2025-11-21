@@ -41,27 +41,32 @@ const SecurityInfo = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      <div className="bg-gradient-to-r from-primary to-secondary text-white p-6">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="text-white hover:bg-white/20 mb-4"
-          onClick={() => navigate(-1)}
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back
-        </Button>
-        <div className="flex items-center gap-3 mb-2">
-          <Shield className="h-8 w-8" />
-          <h1 className="text-2xl font-bold">Market360 Secure Shopping</h1>
+      <header className="sticky top-0 z-40 bg-card border-b shadow-sm">
+        <div className="container mx-auto px-4 h-16 flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate(-1)}
+            className="rounded-full hover:bg-muted"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div className="flex items-center gap-3 flex-1">
+            <div className="p-2 rounded-xl bg-primary/10">
+              <Shield className="h-6 w-6 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-lg font-bold">Security Info</h1>
+              <p className="text-xs text-muted-foreground">Your safety is our priority</p>
+            </div>
+          </div>
         </div>
-        <p className="text-sm opacity-90">Your safety is our priority</p>
-      </div>
+      </header>
 
-      <div className="p-4 space-y-4">
-        <Card className="shadow-md">
+      <div className="container mx-auto px-4 py-6 max-w-2xl space-y-4">
+        <Card className="rounded-2xl shadow-sm border-border/50">
           <CardContent className="p-6">
-            <h2 className="text-lg font-semibold mb-3">How We Protect You</h2>
+            <h2 className="text-lg font-semibold mb-3 text-foreground">How We Protect You</h2>
             <p className="text-muted-foreground leading-relaxed">
               Market360 implements multiple layers of security to ensure safe and reliable
               transactions. From seller verification to payment protection, we've got you covered
@@ -71,15 +76,15 @@ const SecurityInfo = () => {
         </Card>
 
         {features.map((feature, index) => (
-          <Card key={index} className="shadow-sm hover:shadow-md transition-all">
+          <Card key={index} className="rounded-2xl shadow-sm border-border/50 hover:shadow-md hover:border-primary/20 transition-all">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-start gap-3 text-base">
-                <div className="p-2 rounded-lg bg-primary/10">
+                <div className="p-3 rounded-xl bg-primary/10">
                   <feature.icon className="h-5 w-5 text-primary" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-semibold">{feature.title}</h3>
-                  <p className="text-sm text-muted-foreground font-normal mt-1">
+                  <h3 className="font-semibold text-foreground">{feature.title}</h3>
+                  <p className="text-sm text-muted-foreground font-normal mt-1 leading-relaxed">
                     {feature.description}
                   </p>
                 </div>
@@ -88,13 +93,13 @@ const SecurityInfo = () => {
           </Card>
         ))}
 
-        <Card className="shadow-md bg-primary/5 border-primary/20">
+        <Card className="rounded-2xl shadow-sm bg-primary/5 border-primary/20">
           <CardContent className="p-6">
-            <h3 className="font-semibold mb-2">Need Help?</h3>
+            <h3 className="font-semibold mb-2 text-foreground">Need Help?</h3>
             <p className="text-sm text-muted-foreground mb-4">
               Our support team is available 24/7 to assist with any concerns or questions.
             </p>
-            <Button onClick={() => navigate('/support')} className="w-full">
+            <Button onClick={() => navigate('/support')} className="w-full rounded-xl h-11 font-medium shadow-sm">
               Contact Support
             </Button>
           </CardContent>
