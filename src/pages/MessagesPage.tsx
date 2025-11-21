@@ -131,18 +131,18 @@ const MessagesPage = () => {
 
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between mb-1">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                <h3 className="font-bold text-base truncate">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start gap-2 mb-1 flex-wrap">
+                                <h3 className="font-bold text-base break-words max-w-full">
                                   {conversation.other_user?.name || 'Unknown User'}
                                 </h3>
                                 {conversation.is_enquiry && (
-                                  <Badge variant="secondary" className="bg-primary/10 text-primary text-xs px-2 py-0.5">
+                                  <Badge variant="secondary" className="bg-primary/10 text-primary text-xs px-2 py-0.5 shrink-0">
                                     Enquiry
                                   </Badge>
                                 )}
                                 {conversation.is_muted && (
-                                  <Badge variant="outline" className="text-xs px-2 py-0.5">
+                                  <Badge variant="outline" className="text-xs px-2 py-0.5 shrink-0">
                                     Muted
                                   </Badge>
                                 )}
