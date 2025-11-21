@@ -14,6 +14,7 @@ import { EnquiryCard } from '@/components/EnquiryCard';
 import { SellerQuickActions } from '@/components/SellerQuickActions';
 import { ProductSpecsCard } from '@/components/ProductSpecsCard';
 import { QuotationCard } from '@/components/QuotationCard';
+import { MessageActionSheet } from '@/components/MessageActionSheet';
 
 interface Message {
   id: string;
@@ -61,6 +62,9 @@ const Chat = () => {
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
   const [isEnquiryConversation, setIsEnquiryConversation] = useState(false);
   const [isSeller, setIsSeller] = useState(false);
+  const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
+  const [messageActionSheetOpen, setMessageActionSheetOpen] = useState(false);
+  const [replyToMessage, setReplyToMessage] = useState<Message | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -431,6 +435,58 @@ const Chat = () => {
     }
   };
 
+  const handleMessageLongPress = (message: Message) => {
+    setSelectedMessage(message);
+    setMessageActionSheetOpen(true);
+  };
+
+  const handleCopyMessage = () => {
+    if (selectedMessage?.body) {
+      navigator.clipboard.writeText(selectedMessage.body);
+      toast.success('Message copied');
+    }
+  };
+
+  const handleDeleteMessage = async (forEveryone: boolean) => {
+    if (!selectedMessage) return;
+
+    try {
+      if (forEveryone) {
+        // Delete for everyone - only sender can do this
+        if (selectedMessage.sender_id !== user?.id) {
+          toast.error('You can only delete your own messages for everyone');
+          return;
+        }
+        await supabase
+          .from('messages')
+          .delete()
+          .eq('id', selectedMessage.id);
+        
+        setMessages(prev => prev.filter(m => m.id !== selectedMessage.id));
+        toast.success('Message deleted for everyone');
+      } else {
+        // Delete for me - just hide locally
+        setMessages(prev => prev.filter(m => m.id !== selectedMessage.id));
+        toast.success('Message deleted for you');
+      }
+    } catch (error) {
+      console.error('Error deleting message:', error);
+      toast.error('Failed to delete message');
+    }
+  };
+
+  const handleForwardMessage = () => {
+    if (selectedMessage) {
+      toast.info('Forward feature coming soon');
+    }
+  };
+
+  const handleReplyToMessage = () => {
+    if (selectedMessage) {
+      setReplyToMessage(selectedMessage);
+    }
+  };
+
 
   const renderMessage = (message: Message) => {
     const isOwn = message.sender_id === user?.id;
@@ -582,6 +638,20 @@ const Chat = () => {
       <div 
         className={`flex gap-3 ${isOwn ? 'flex-row-reverse' : ''} mb-4 animate-fade-in`} 
         key={message.id}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          handleMessageLongPress(message);
+        }}
+        onTouchStart={(e) => {
+          const timeout = setTimeout(() => {
+            handleMessageLongPress(message);
+          }, 500);
+          (e.currentTarget as any).dataset.timeout = timeout.toString();
+        }}
+        onTouchEnd={(e) => {
+          const timeout = (e.currentTarget as any).dataset.timeout;
+          if (timeout) clearTimeout(Number(timeout));
+        }}
       >
         <Avatar className="h-10 w-10 border-2 border-primary/20 cursor-pointer" onClick={() => {
           const otherUserId = conversation?.buyer_id === user?.id ? conversation?.seller_id : conversation?.buyer_id;
@@ -594,6 +664,12 @@ const Chat = () => {
         </Avatar>
         <div className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'} max-w-[75%]`}>
           <span className="text-xs text-muted-foreground mb-1 font-medium select-none">{senderName}</span>
+          {replyToMessage?.id === message.id && (
+            <div className="mb-1 px-3 py-1 bg-muted/50 rounded-lg text-xs text-muted-foreground select-none">
+              <p className="font-medium">Replying to {replyToMessage.sender_id === user?.id ? 'yourself' : senderName}</p>
+              <p className="truncate">{replyToMessage.body}</p>
+            </div>
+          )}
           <div
             className={`px-4 py-3 rounded-2xl shadow-sm transition-all select-none ${
               isOwn
@@ -744,6 +820,19 @@ const Chat = () => {
           setShowProductSelector(false);
         }}
       />
+
+      {selectedMessage && (
+        <MessageActionSheet
+          open={messageActionSheetOpen}
+          onOpenChange={setMessageActionSheetOpen}
+          message={selectedMessage}
+          isOwnMessage={selectedMessage.sender_id === user?.id}
+          onCopy={handleCopyMessage}
+          onDelete={handleDeleteMessage}
+          onForward={handleForwardMessage}
+          onReply={handleReplyToMessage}
+        />
+      )}
     </div>
   );
 };
