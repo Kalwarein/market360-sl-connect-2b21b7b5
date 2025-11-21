@@ -9,22 +9,25 @@ const Terms = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      <div className="bg-gradient-to-r from-primary to-secondary text-white p-6">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="text-white hover:bg-white/20 mb-4"
-          onClick={() => navigate(-1)}
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back
-        </Button>
-        <h1 className="text-2xl font-bold">Terms & Conditions</h1>
-        <p className="text-sm opacity-90">Last updated: November 2024</p>
-      </div>
+      <header className="sticky top-0 z-40 bg-card border-b shadow-sm">
+        <div className="container mx-auto px-4 h-16 flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate(-1)}
+            className="rounded-full hover:bg-muted"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div>
+            <h1 className="text-lg font-bold">Terms & Conditions</h1>
+            <p className="text-xs text-muted-foreground">Last updated: November 2024</p>
+          </div>
+        </div>
+      </header>
 
-      <div className="p-4">
-        <Card className="shadow-md">
+      <div className="container mx-auto px-4 py-6 max-w-2xl">
+        <Card className="rounded-2xl shadow-sm border-border/50">
           <CardContent className="p-6 space-y-6">
             <section>
               <h2 className="text-xl font-semibold mb-3">1. Acceptance of Terms</h2>

@@ -36,8 +36,7 @@ const HowToTopUp = () => {
       </header>
 
       <main className="container mx-auto px-4 py-6 max-w-2xl space-y-6">
-        {/* Orange Money Card */}
-        <Card className="p-6 space-y-4 bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200">
+        <Card className="p-6 space-y-4 rounded-2xl shadow-sm bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-full bg-orange-500 flex items-center justify-center text-white font-bold text-xl">
               OM
@@ -73,8 +72,7 @@ const HowToTopUp = () => {
           </div>
         </Card>
 
-        {/* Instructions */}
-        <Card className="p-6 space-y-4">
+        <Card className="p-6 space-y-4 rounded-2xl shadow-sm border-border/50">
           <h3 className="text-lg font-semibold flex items-center gap-2">
             <span className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm">
               1
@@ -90,7 +88,7 @@ const HowToTopUp = () => {
           </ul>
         </Card>
 
-        <Card className="p-6 space-y-4">
+        <Card className="p-6 space-y-4 rounded-2xl shadow-sm border-border/50">
           <h3 className="text-lg font-semibold flex items-center gap-2">
             <span className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm">
               2
@@ -149,7 +147,7 @@ const HowToTopUp = () => {
 
         <Button
           onClick={() => navigate('/wallet')}
-          className="w-full h-12 rounded-xl font-semibold shadow-lg"
+          className="w-full h-12 rounded-xl font-semibold shadow-sm"
         >
           Go to Wallet
         </Button>
