@@ -5,8 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, MapPin, MessageCircle, Star, Package, CheckCircle2, TrendingUp, Sparkles, Crown } from 'lucide-react';
+import { ArrowLeft, MapPin, MessageCircle, Star, Package, TrendingUp, Sparkles, Crown } from 'lucide-react';
 import { useStorePerks } from '@/hooks/useStorePerks';
+import verifiedBadge from '@/assets/verified-badge.jpg';
 
 interface Store {
   id: string;
@@ -171,8 +172,12 @@ const StorePage = () => {
                   </h1>
                   {hasVerifiedBadge && (
                     <div className="relative group">
-                      <CheckCircle2 className="h-6 w-6 text-blue-500 fill-blue-500 animate-pulse" />
-                      <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                      <img 
+                        src={verifiedBadge} 
+                        alt="Verified Store" 
+                        className="h-8 w-8 object-contain animate-pulse drop-shadow-lg"
+                      />
+                      <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-20">
                         Verified Store
                       </span>
                     </div>
