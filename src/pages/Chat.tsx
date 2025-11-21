@@ -593,15 +593,15 @@ const Chat = () => {
           </AvatarFallback>
         </Avatar>
         <div className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'} max-w-[75%]`}>
-          <span className="text-xs text-muted-foreground mb-1 font-medium">{senderName}</span>
+          <span className="text-xs text-muted-foreground mb-1 font-medium select-none">{senderName}</span>
           <div
-            className={`px-4 py-3 rounded-2xl shadow-sm transition-all ${
+            className={`px-4 py-3 rounded-2xl shadow-sm transition-all select-none ${
               isOwn
                 ? 'bg-primary text-primary-foreground rounded-br-sm'
                 : 'bg-muted rounded-bl-sm'
             }`}
           >
-            <p className="text-sm whitespace-pre-wrap break-words">{message.body}</p>
+            <p className="text-sm whitespace-pre-wrap break-words select-none">{message.body}</p>
           </div>
           <span className="text-xs text-muted-foreground mt-1">
             {format(new Date(message.created_at), 'HH:mm')}
