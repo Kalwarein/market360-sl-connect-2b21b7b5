@@ -247,35 +247,49 @@ const ProductManagement = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background p-6">
-        <Skeleton className="h-12 w-full mb-4" />
-        <Skeleton className="h-64 w-full" />
+      <div className="min-h-screen bg-surface">
+        <div className="bg-card border-b p-4">
+          <Skeleton className="h-8 w-48 rounded-full" />
+        </div>
+        <div className="p-4 space-y-4 max-w-3xl mx-auto">
+          <Skeleton className="h-96 w-full rounded-2xl" />
+          <Skeleton className="h-64 w-full rounded-2xl" />
+          <Skeleton className="h-32 w-full rounded-2xl" />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background pb-20">
-      <div className="bg-gradient-to-r from-primary to-secondary text-white p-6">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="text-white hover:bg-white/20 mb-4"
-          onClick={() => navigate('/seller-dashboard')}
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back
-        </Button>
-        <h1 className="text-2xl font-bold">Manage Product</h1>
-        <p className="text-sm opacity-90">Edit or delete your product</p>
+    <div className="min-h-screen bg-surface pb-20">
+      {/* Clean Header */}
+      <div className="bg-card border-b sticky top-0 z-10 shadow-sm">
+        <div className="p-4 flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate('/seller-dashboard')}
+            className="rounded-full hover:bg-muted"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div>
+            <h1 className="text-xl font-bold text-foreground">Manage Product</h1>
+            <p className="text-sm text-muted-foreground">Edit or delete your product</p>
+          </div>
+        </div>
       </div>
 
-      <div className="p-4 space-y-4 max-w-2xl mx-auto">
-        <Card>
-          <CardHeader>
-            <CardTitle>Product Information</CardTitle>
+      <div className="p-4 space-y-4 max-w-3xl mx-auto">
+        {/* Product Information */}
+        <Card className="shadow-sm hover:shadow-md transition-shadow border-border/50 rounded-2xl">
+          <CardHeader className="border-b bg-muted/30">
+            <CardTitle className="text-lg font-semibold flex items-center gap-2">
+              <div className="h-8 w-1 bg-primary rounded-full" />
+              Product Information
+            </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 pt-6">
             <div>
               <Label>Title</Label>
               <Input
@@ -458,11 +472,14 @@ const ProductManagement = () => {
         </Card>
 
         {/* Target Audience */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Target Audience</CardTitle>
+        <Card className="shadow-sm hover:shadow-md transition-shadow border-border/50 rounded-2xl">
+          <CardHeader className="border-b bg-muted/30">
+            <CardTitle className="text-lg font-semibold flex items-center gap-2">
+              <div className="h-8 w-1 bg-primary rounded-full" />
+              Target Audience
+            </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             <TargetAudienceSelector selected={targetAudience} onChange={setTargetAudience} />
           </CardContent>
         </Card>
@@ -474,11 +491,14 @@ const ProductManagement = () => {
         <TechnicalSpecsManager specs={technicalSpecs} onChange={setTechnicalSpecs} />
 
         {/* Tags & Badges */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Tags & Badges</CardTitle>
+        <Card className="shadow-sm hover:shadow-md transition-shadow border-border/50 rounded-2xl">
+          <CardHeader className="border-b bg-muted/30">
+            <CardTitle className="text-lg font-semibold flex items-center gap-2">
+              <div className="h-8 w-1 bg-primary rounded-full" />
+              Tags & Badges
+            </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 pt-6">
             <div>
               <Label>Enhancement Tags (comma-separated)</Label>
               <Input
@@ -544,17 +564,21 @@ const ProductManagement = () => {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
+        {/* Product Perks */}
+        <Card className="shadow-sm hover:shadow-md transition-shadow border-border/50 rounded-2xl">
+          <CardHeader className="border-b bg-muted/30">
             <div className="flex items-center justify-between">
-              <CardTitle>Product Perks</CardTitle>
-              <Button size="sm" variant="outline" onClick={addPerk}>
+              <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                <div className="h-8 w-1 bg-primary rounded-full" />
+                Product Perks
+              </CardTitle>
+              <Button size="sm" variant="outline" onClick={addPerk} className="rounded-full">
                 <Plus className="h-4 w-4 mr-1" />
                 Add Perk
               </Button>
             </div>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-3 pt-6">
             {perks.map((perk, index) => (
               <div key={index} className="flex gap-2 items-start">
                 <Input
@@ -593,15 +617,20 @@ const ProductManagement = () => {
           </CardContent>
         </Card>
 
-        <div className="flex gap-3">
-          <Button onClick={handleSave} disabled={saving} className="flex-1">
+        {/* Action Buttons */}
+        <div className="flex gap-3 sticky bottom-4">
+          <Button 
+            onClick={handleSave} 
+            disabled={saving} 
+            className="flex-1 h-12 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-lg hover:shadow-xl transition-all"
+          >
             <Save className="h-4 w-4 mr-2" />
-            {saving ? 'Saving...' : 'Save Changes'}
+            {saving ? 'Saving Changes...' : 'Save Changes'}
           </Button>
           <Button
             variant="destructive"
             onClick={() => setShowDeleteDialog(true)}
-            className="flex-1"
+            className="flex-1 h-12 rounded-full font-semibold shadow-lg hover:shadow-xl transition-all"
           >
             <Trash2 className="h-4 w-4 mr-2" />
             Delete Product
@@ -609,19 +638,23 @@ const ProductManagement = () => {
         </div>
       </div>
 
+      {/* Delete Confirmation Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent>
+        <AlertDialogContent className="rounded-2xl">
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Product?</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogTitle className="text-xl">Delete Product?</AlertDialogTitle>
+            <AlertDialogDescription className="text-base">
               This action cannot be undone. The product will be permanently removed from
-              the platform.
+              the platform and all associated data will be deleted.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive">
-              Delete
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel className="rounded-full">Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDelete} 
+              className="bg-destructive hover:bg-destructive/90 rounded-full"
+            >
+              Delete Product
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
