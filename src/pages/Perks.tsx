@@ -1,302 +1,493 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { ArrowLeft, Crown, Zap, Star, Gift, Sparkles, ChevronRight } from 'lucide-react';
-import BottomNav from '@/components/BottomNav';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { 
+  ArrowLeft, 
+  Crown, 
+  Zap, 
+  TrendingUp, 
+  Star, 
+  Sparkles, 
+  Megaphone,
+  CheckCircle2,
+  Wallet as WalletIcon,
+  Award,
+  Flame
+} from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
+interface Perk {
+  id: string;
+  icon: any;
+  title: string;
+  description: string;
+  price: number;
+  features: string[];
+  gradient: string;
+  iconBg: string;
+  iconColor: string;
+  duration: string;
+  perkType: string;
+}
 
 const Perks = () => {
   const navigate = useNavigate();
-  const [hoveredCard, setHoveredCard] = useState<number | null>(null);
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [walletBalance, setWalletBalance] = useState(0);
+  const [storeId, setStoreId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [selectedPerk, setSelectedPerk] = useState<Perk | null>(null);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [purchasing, setPurchasing] = useState(false);
+  const [activatedPerks, setActivatedPerks] = useState<string[]>([]);
 
-  const perks = [
+  const perks: Perk[] = [
     {
-      id: 1,
-      icon: Crown,
-      title: 'Premium Membership',
-      subtitle: 'Unlock all exclusive features',
-      price: '$9.99/month',
-      features: ['Ad-free experience', 'Priority support', 'Early access to new features'],
-      gradient: 'from-purple-500 to-purple-700',
-      iconBg: 'bg-purple-100',
-      iconColor: 'text-purple-600'
+      id: '1',
+      icon: Award,
+      title: 'Verified Badge',
+      description: 'Display a verified checkmark next to your store name',
+      price: 45,
+      features: ['Verified checkmark badge', 'Increased buyer trust', 'Priority in search', 'Visible everywhere'],
+      gradient: 'from-blue-500 to-blue-600',
+      iconBg: 'bg-blue-100 dark:bg-blue-900/30',
+      iconColor: 'text-blue-600 dark:text-blue-400',
+      duration: '30 days',
+      perkType: 'verified_badge'
     },
     {
-      id: 2,
+      id: '2',
       icon: Zap,
-      title: 'Boost Your Store',
-      subtitle: 'Get featured on homepage',
-      price: '$14.99/week',
-      features: ['10x more visibility', 'Featured badge', 'Analytics dashboard'],
-      gradient: 'from-blue-500 to-blue-700',
-      iconBg: 'bg-blue-100',
-      iconColor: 'text-blue-600'
+      title: 'Boosted Visibility',
+      description: 'Get 3x more views with boosted store visibility',
+      price: 60,
+      features: ['3x visibility boost', 'Higher in search results', 'Featured in recommendations', 'Analytics tracking'],
+      gradient: 'from-purple-500 to-purple-600',
+      iconBg: 'bg-purple-100 dark:bg-purple-900/30',
+      iconColor: 'text-purple-600 dark:text-purple-400',
+      duration: '14 days',
+      perkType: 'boosted_visibility'
     },
     {
-      id: 3,
+      id: '3',
       icon: Star,
-      title: 'VIP Access',
-      subtitle: 'Join the elite circle',
-      price: '$29.99/month',
-      features: ['Exclusive deals', 'VIP badge', 'Private community access'],
-      gradient: 'from-amber-500 to-amber-700',
-      iconBg: 'bg-amber-100',
-      iconColor: 'text-amber-600'
+      title: 'Top of Category',
+      description: 'Pin your store at the top of your category',
+      price: 75,
+      features: ['Always at top', 'Category dominance', 'Maximum exposure', 'Premium placement'],
+      gradient: 'from-amber-500 to-amber-600',
+      iconBg: 'bg-amber-100 dark:bg-amber-900/30',
+      iconColor: 'text-amber-600 dark:text-amber-400',
+      duration: '7 days',
+      perkType: 'top_of_category'
     },
     {
-      id: 4,
-      icon: Gift,
-      title: 'Rewards Bundle',
-      subtitle: 'Earn points with every purchase',
-      price: '$4.99/month',
-      features: ['5% cashback', 'Birthday rewards', 'Referral bonuses'],
-      gradient: 'from-pink-500 to-pink-700',
-      iconBg: 'bg-pink-100',
-      iconColor: 'text-pink-600'
+      id: '4',
+      icon: TrendingUp,
+      title: 'Trending Placement',
+      description: 'Feature your store in the Trending section',
+      price: 85,
+      features: ['Trending badge', 'Homepage feature', 'Hot seller status', 'Impulse buyer traffic'],
+      gradient: 'from-rose-500 to-rose-600',
+      iconBg: 'bg-rose-100 dark:bg-rose-900/30',
+      iconColor: 'text-rose-600 dark:text-rose-400',
+      duration: '7 days',
+      perkType: 'trending_placement'
+    },
+    {
+      id: '5',
+      icon: Sparkles,
+      title: 'Product Highlights',
+      description: 'Add glowing frames around your product listings',
+      price: 55,
+      features: ['Glowing product frames', 'Eye-catching design', 'Stand out from competition', 'All products highlighted'],
+      gradient: 'from-emerald-500 to-emerald-600',
+      iconBg: 'bg-emerald-100 dark:bg-emerald-900/30',
+      iconColor: 'text-emerald-600 dark:text-emerald-400',
+      duration: '14 days',
+      perkType: 'product_highlights'
+    },
+    {
+      id: '6',
+      icon: Crown,
+      title: 'Premium Theme',
+      description: 'Unlock exclusive premium store theme designs',
+      price: 65,
+      features: ['Premium UI theme', 'Luxury appearance', 'Custom colors', 'Professional look'],
+      gradient: 'from-violet-500 to-violet-600',
+      iconBg: 'bg-violet-100 dark:bg-violet-900/30',
+      iconColor: 'text-violet-600 dark:text-violet-400',
+      duration: '30 days',
+      perkType: 'premium_theme'
+    },
+    {
+      id: '7',
+      icon: Megaphone,
+      title: 'Featured Spotlight',
+      description: 'Get featured as a pop-up banner across the marketplace',
+      price: 100,
+      features: ['Full-screen banner', 'Maximum visibility', 'Homepage takeover', 'Ultimate promotion'],
+      gradient: 'from-red-500 to-red-600',
+      iconBg: 'bg-red-100 dark:bg-red-900/30',
+      iconColor: 'text-red-600 dark:text-red-400',
+      duration: '3 days',
+      perkType: 'featured_spotlight'
     }
   ];
 
+  useEffect(() => {
+    loadData();
+  }, [user]);
+
+  const loadData = async () => {
+    if (!user) return;
+    
+    try {
+      // Load wallet balance
+      const { data: walletData } = await supabase
+        .from('wallets')
+        .select('balance_leones')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (walletData) {
+        setWalletBalance(walletData.balance_leones);
+      }
+
+      // Check if user has a store
+      const { data: storeData } = await supabase
+        .from('stores')
+        .select('id')
+        .eq('owner_id', user.id)
+        .maybeSingle();
+      
+      if (storeData) {
+        setStoreId(storeData.id);
+        
+        // Load active perks
+        const { data: perksData } = await supabase
+          .from('store_perks')
+          .select('perk_type')
+          .eq('store_id', storeData.id)
+          .eq('is_active', true)
+          .gte('expires_at', new Date().toISOString());
+        
+        if (perksData) {
+          setActivatedPerks(perksData.map(p => p.perk_type));
+        }
+      }
+    } catch (error) {
+      console.error('Error loading data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePurchaseClick = (perk: Perk) => {
+    if (!storeId) {
+      toast({
+        title: "No Store Found",
+        description: "You need to be a seller to purchase perks. Apply to become a seller first.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (walletBalance < perk.price) {
+      toast({
+        title: "Insufficient Balance",
+        description: "Please top up your wallet to purchase this perk.",
+        variant: "destructive"
+      });
+      navigate('/wallet');
+      return;
+    }
+
+    setSelectedPerk(perk);
+    setShowConfirmDialog(true);
+  };
+
+  const confirmPurchase = async () => {
+    if (!selectedPerk || !storeId || !user) return;
+    
+    setPurchasing(true);
+    
+    try {
+      // Calculate expiry date
+      const daysToAdd = selectedPerk.duration.includes('30') ? 30 : 
+                       selectedPerk.duration.includes('14') ? 14 : 
+                       selectedPerk.duration.includes('7') ? 7 : 3;
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + daysToAdd);
+
+      // Deduct from wallet
+      const { data: walletData, error: walletError } = await supabase
+        .from('wallets')
+        .select('id, balance_leones')
+        .eq('user_id', user.id)
+        .single();
+
+      if (walletError) throw walletError;
+
+      const newBalance = walletData.balance_leones - selectedPerk.price;
+
+      const { error: updateError } = await supabase
+        .from('wallets')
+        .update({ balance_leones: newBalance })
+        .eq('id', walletData.id);
+
+      if (updateError) throw updateError;
+
+      // Create transaction record
+      await supabase
+        .from('transactions')
+        .insert({
+          wallet_id: walletData.id,
+          amount: -selectedPerk.price,
+          type: 'withdrawal',
+          reference: `Perk: ${selectedPerk.title}`,
+          status: 'completed',
+          metadata: {
+            perk_type: selectedPerk.perkType,
+            perk_name: selectedPerk.title
+          }
+        });
+
+      // Add perk to store_perks
+      const { error: perkError } = await supabase
+        .from('store_perks')
+        .insert({
+          store_id: storeId,
+          perk_type: selectedPerk.perkType,
+          perk_name: selectedPerk.title,
+          price_paid: selectedPerk.price,
+          expires_at: expiresAt.toISOString(),
+          is_active: true,
+          metadata: {
+            duration: selectedPerk.duration,
+            features: selectedPerk.features
+          }
+        });
+
+      if (perkError) throw perkError;
+
+      toast({
+        title: "✨ Perk Activated!",
+        description: `${selectedPerk.title} is now active for ${selectedPerk.duration}.`
+      });
+
+      // Reload data
+      await loadData();
+      
+    } catch (error) {
+      console.error('Purchase error:', error);
+      toast({
+        title: "Purchase Failed",
+        description: "There was an error processing your purchase. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setPurchasing(false);
+      setShowConfirmDialog(false);
+      setSelectedPerk(null);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
   return (
-    <>
-      <style>{`
-        @keyframes shimmer-light {
-          0% {
-            background-position: -200% center;
-          }
-          100% {
-            background-position: 200% center;
-          }
-        }
+    <div className="min-h-screen bg-background pb-8">
+      {/* Header */}
+      <div className="bg-background border-b shadow-sm sticky top-0 z-10">
+        <div className="p-4 flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate(-1)}
+            className="rounded-full"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div className="flex-1">
+            <h1 className="text-lg font-bold">Premium Upgrades</h1>
+            <p className="text-sm text-muted-foreground">Boost your store with premium perks</p>
+          </div>
+          <Flame className="h-6 w-6 text-primary" />
+        </div>
+      </div>
 
-        @keyframes float-subtle {
-          0%, 100% {
-            transform: translateY(0px);
-          }
-          50% {
-            transform: translateY(-3px);
-          }
-        }
-
-        @keyframes glow-pulse {
-          0%, 100% {
-            box-shadow: 0 4px 20px rgba(124, 58, 237, 0.2);
-          }
-          50% {
-            box-shadow: 0 8px 30px rgba(124, 58, 237, 0.4);
-          }
-        }
-
-        .perk-card {
-          position: relative;
-          cursor: pointer;
-          overflow: hidden;
-          background: white;
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .perk-card::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: 
-            repeating-linear-gradient(
-              45deg,
-              transparent,
-              transparent 2px,
-              rgba(124, 58, 237, 0.02) 2px,
-              rgba(124, 58, 237, 0.02) 4px
-            );
-          pointer-events: none;
-        }
-
-        .perk-card::after {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: linear-gradient(
-            90deg,
-            transparent 0%,
-            rgba(255, 255, 255, 0.3) 50%,
-            transparent 100%
-          );
-          background-size: 200% 100%;
-          animation: shimmer-light 3s linear infinite;
-          pointer-events: none;
-          opacity: 0;
-          transition: opacity 0.3s ease;
-        }
-
-        .perk-card:hover::after {
-          opacity: 1;
-        }
-
-        .perk-card:hover {
-          transform: translateY(-8px) scale(1.02);
-          box-shadow: 0 20px 40px rgba(124, 58, 237, 0.3);
-        }
-
-        .perk-icon-wrapper {
-          transition: all 0.3s ease;
-        }
-
-        .perk-card:hover .perk-icon-wrapper {
-          animation: float-subtle 2s ease-in-out infinite;
-          transform: scale(1.1);
-        }
-
-        .perk-image {
-          position: relative;
-          overflow: hidden;
-        }
-
-        .perk-image::before {
-          content: '';
-          position: absolute;
-          top: -50%;
-          left: -50%;
-          width: 200%;
-          height: 200%;
-          background: linear-gradient(
-            45deg,
-            transparent 30%,
-            rgba(255, 255, 255, 0.6) 50%,
-            transparent 70%
-          );
-          transform: rotate(45deg);
-          animation: shimmer-light 3s linear infinite;
-        }
-
-        .buy-button {
-          position: relative;
-          overflow: hidden;
-          transition: all 0.3s ease;
-        }
-
-        .buy-button::before {
-          content: '';
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          width: 0;
-          height: 0;
-          border-radius: 50%;
-          background: rgba(255, 255, 255, 0.3);
-          transform: translate(-50%, -50%);
-          transition: width 0.6s, height 0.6s;
-        }
-
-        .buy-button:hover::before {
-          width: 300px;
-          height: 300px;
-        }
-
-        .feature-badge {
-          background: linear-gradient(135deg, rgba(124, 58, 237, 0.1) 0%, rgba(168, 85, 247, 0.1) 100%);
-          border: 1px solid rgba(124, 58, 237, 0.2);
-        }
-      `}</style>
-
-      <div className="min-h-screen bg-white pb-20">
-        {/* Header */}
-        <div className="sticky top-0 z-10 bg-white border-b border-gray-100">
-          <div className="flex items-center gap-4 p-4">
-            <button
-              onClick={() => navigate(-1)}
-              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-            >
-              <ArrowLeft className="h-6 w-6 text-gray-700" />
-            </button>
-            <div className="flex-1">
-              <h1 className="text-2xl font-bold text-gray-900">Premium Features</h1>
-              <p className="text-sm text-gray-600">Unlock exclusive perks & benefits</p>
+      {/* Wallet Balance Card */}
+      <div className="p-6">
+        <Card className="bg-gradient-to-br from-primary to-primary-hover text-white shadow-lg">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="h-12 w-12 rounded-full bg-white/20 flex items-center justify-center">
+                  <WalletIcon className="h-6 w-6" />
+                </div>
+                <div>
+                  <p className="text-sm opacity-90">Wallet Balance</p>
+                  <p className="text-2xl font-bold">SLL {walletBalance.toLocaleString()}</p>
+                </div>
+              </div>
+              <Button 
+                variant="secondary" 
+                size="sm"
+                onClick={() => navigate('/wallet')}
+                className="bg-white/20 hover:bg-white/30 text-white border-0"
+              >
+                Top Up
+              </Button>
             </div>
-            <Sparkles className="h-8 w-8 text-purple-600" />
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Info Banner */}
+      {!storeId && (
+        <div className="mx-6 mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
+          <div className="flex items-start gap-3">
+            <Star className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
+                Seller Account Required
+              </p>
+              <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
+                You need to be a seller to purchase premium perks. Apply to become a seller first.
+              </p>
+            </div>
           </div>
         </div>
+      )}
 
-        {/* Hero Section */}
-        <div className="p-6 bg-gradient-to-br from-purple-50 via-white to-purple-50">
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-purple-100 mb-4">
-              <Crown className="h-10 w-10 text-purple-600" />
-            </div>
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">Choose Your Perk</h2>
-            <p className="text-gray-600">Select the perfect plan to enhance your experience</p>
-          </div>
-        </div>
-
-        {/* Perks Grid */}
-        <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-          {perks.map((perk) => (
-            <Card
-              key={perk.id}
-              className="perk-card border-gray-200"
-              onMouseEnter={() => setHoveredCard(perk.id)}
-              onMouseLeave={() => setHoveredCard(null)}
+      {/* Perks Grid */}
+      <div className="px-6 space-y-4">
+        {perks.map((perk) => {
+          const isActivated = activatedPerks.includes(perk.perkType);
+          
+          return (
+            <Card 
+              key={perk.id} 
+              className={`overflow-hidden transition-all hover:shadow-lg ${
+                isActivated ? 'border-2 border-primary' : ''
+              }`}
             >
-              <CardContent className="p-6">
-                {/* Icon and Image Section */}
-                <div className="perk-image mb-4 flex items-center justify-center">
-                  <div className={`perk-icon-wrapper h-16 w-16 rounded-full ${perk.iconBg} flex items-center justify-center`}>
-                    <perk.icon className={`h-8 w-8 ${perk.iconColor}`} />
+              <CardHeader className="pb-4">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-start gap-3">
+                    <div className={`h-12 w-12 rounded-xl ${perk.iconBg} flex items-center justify-center flex-shrink-0`}>
+                      <perk.icon className={`h-6 w-6 ${perk.iconColor}`} />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <CardTitle className="text-lg">{perk.title}</CardTitle>
+                        {isActivated && (
+                          <Badge variant="default" className="bg-primary">
+                            <CheckCircle2 className="h-3 w-3 mr-1" />
+                            Active
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-1">{perk.description}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className={`text-2xl font-bold bg-gradient-to-r ${perk.gradient} bg-clip-text text-transparent`}>
+                      SLL {perk.price}
+                    </p>
+                    <p className="text-xs text-muted-foreground">{perk.duration}</p>
                   </div>
                 </div>
-
-                {/* Title and Subtitle */}
-                <div className="text-center mb-4">
-                  <h3 className="text-xl font-bold text-gray-900 mb-1">{perk.title}</h3>
-                  <p className="text-sm text-gray-600">{perk.subtitle}</p>
-                </div>
-
-                {/* Price */}
-                <div className="text-center mb-4">
-                  <p className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-purple-800 bg-clip-text text-transparent">
-                    {perk.price}
-                  </p>
-                </div>
-
-                {/* Features */}
-                <div className="space-y-2 mb-6">
+              </CardHeader>
+              
+              <CardContent className="pt-0">
+                <div className="grid grid-cols-2 gap-2 mb-4">
                   {perk.features.map((feature, index) => (
-                    <div key={index} className="feature-badge rounded-lg px-3 py-2 flex items-center gap-2">
-                      <ChevronRight className="h-4 w-4 text-purple-600 flex-shrink-0" />
-                      <span className="text-sm text-gray-700">{feature}</span>
+                    <div key={index} className="flex items-center gap-2 text-sm">
+                      <CheckCircle2 className="h-4 w-4 text-primary flex-shrink-0" />
+                      <span className="text-muted-foreground">{feature}</span>
                     </div>
                   ))}
                 </div>
-
-                {/* Buy Button */}
+                
                 <Button
-                  className={`buy-button w-full bg-gradient-to-r ${perk.gradient} text-white font-semibold py-6 text-base hover:opacity-90 transition-all relative z-10`}
-                  onClick={() => {
-                    // Handle purchase logic here
-                    console.log(`Purchasing ${perk.title}`);
-                  }}
+                  className={`w-full bg-gradient-to-r ${perk.gradient} text-white hover:opacity-90`}
+                  onClick={() => handlePurchaseClick(perk)}
+                  disabled={!storeId || isActivated}
                 >
-                  Buy Now
-                  <ChevronRight className={`ml-2 h-5 w-5 transition-transform ${hoveredCard === perk.id ? 'translate-x-1' : ''}`} />
+                  {isActivated ? 'Already Active' : 'Purchase Now'}
                 </Button>
               </CardContent>
             </Card>
-          ))}
-        </div>
-
-        {/* Footer Note */}
-        <div className="p-6 text-center text-sm text-gray-500">
-          <p>All purchases are secure and can be cancelled anytime</p>
-        </div>
-
-        <BottomNav />
+          );
+        })}
       </div>
-    </>
+
+      {/* Confirmation Dialog */}
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Purchase</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              <p>
+                You are about to purchase <strong>{selectedPerk?.title}</strong>
+              </p>
+              <div className="bg-muted p-3 rounded-lg space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>Price:</span>
+                  <span className="font-bold">SLL {selectedPerk?.price}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>Duration:</span>
+                  <span className="font-bold">{selectedPerk?.duration}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>New Balance:</span>
+                  <span className="font-bold">
+                    SLL {((walletBalance || 0) - (selectedPerk?.price || 0)).toLocaleString()}
+                  </span>
+                </div>
+              </div>
+              <p className="text-sm">
+                This perk will activate immediately and enhance your store for {selectedPerk?.duration}.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={purchasing}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmPurchase}
+              disabled={purchasing}
+              className="bg-primary hover:bg-primary/90"
+            >
+              {purchasing ? 'Processing...' : 'Confirm Purchase'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
   );
 };
 
 export default Perks;
-                
