@@ -15,14 +15,37 @@ interface NotificationPayload {
 
 export const sendNotification = async (payload: NotificationPayload) => {
   try {
-    // Call create-order-notification edge function which handles both in-app and push
-    const { error } = await supabase.functions.invoke('create-order-notification', {
-      body: payload
+    // Create in-app notification
+    const { error: dbError } = await supabase
+      .from('notifications')
+      .insert({
+        user_id: payload.user_id,
+        type: payload.type,
+        title: payload.title,
+        body: payload.body,
+        link_url: payload.link_url,
+        image_url: payload.image_url,
+        metadata: payload.metadata
+      });
+
+    if (dbError) {
+      console.error('Failed to create in-app notification:', dbError);
+    }
+
+    // Send OneSignal push notification
+    const { error: pushError } = await supabase.functions.invoke('send-onesignal-notification', {
+      body: {
+        user_id: payload.user_id,
+        title: payload.title,
+        body: payload.body,
+        link_url: payload.link_url,
+        image_url: payload.image_url,
+        data: payload.metadata
+      }
     });
 
-    if (error) {
-      console.error('Failed to send notification:', error);
-      return false;
+    if (pushError) {
+      console.error('Failed to send push notification:', pushError);
     }
 
     return true;

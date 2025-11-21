@@ -11,6 +11,10 @@ const config: CapacitorConfig = {
   plugins: {
     PushNotifications: {
       presentationOptions: ['badge', 'sound', 'alert']
+    },
+    OneSignal: {
+      appId: 'bcb717ee-7c1e-4d51-b64e-cd7e5c323a29',
+      googleProjectNumber: 'YOUR_FIREBASE_SENDER_ID'
     }
   }
 };

@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { CartProvider } from "./contexts/CartContext";
 import ProtectedRoute from "./components/ProtectedRoute";
+import { useOneSignal } from "./hooks/useOneSignal";
 
 // Pages
 import Auth from "./pages/Auth";
@@ -70,6 +71,11 @@ import Onboarding from "./pages/Onboarding";
 
 const queryClient = new QueryClient();
 
+const AppContent = () => {
+  useOneSignal(); // Initialize OneSignal
+  return null;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -77,6 +83,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
+          <AppContent />
           <CartProvider>
             <Routes>
               <Route path="/auth" element={<Auth />} />
