@@ -12,7 +12,6 @@ import { toast } from 'sonner';
 import { z } from 'zod';
 import { MultiStepForm } from '@/components/MultiStepForm';
 import { LocationPicker } from '@/components/LocationPicker';
-import ImageCropModal from '@/components/ImageCropModal';
 import { CategorySelector } from '@/components/CategorySelector';
 
 const applicationSchema = z.object({
@@ -53,13 +52,6 @@ export default function BecomeSellerMultiStep() {
     bankAccountName: '',
   });
 
-  const [logoFile, setLogoFile] = useState<File | null>(null);
-  const [bannerFile, setBannerFile] = useState<File | null>(null);
-  const [showLogoCrop, setShowLogoCrop] = useState(false);
-  const [showBannerCrop, setShowBannerCrop] = useState(false);
-  const [logoPreview, setLogoPreview] = useState<string>('');
-  const [bannerPreview, setBannerPreview] = useState<string>('');
-
   const uploadImage = async (file: File, bucket: string, folder: string): Promise<string> => {
     const fileExt = file.name.split('.').pop();
     const fileName = `${folder}/${user!.id}-${Date.now()}.${fileExt}`;
@@ -77,38 +69,6 @@ export default function BecomeSellerMultiStep() {
     return publicUrl;
   };
 
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setLogoFile(file);
-      setLogoPreview(URL.createObjectURL(file));
-      setShowLogoCrop(true);
-    }
-  };
-
-  const handleBannerUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setBannerFile(file);
-      setBannerPreview(URL.createObjectURL(file));
-      setShowBannerCrop(true);
-    }
-  };
-
-  const handleLogoCropComplete = async (croppedBlob: Blob) => {
-    const croppedFile = new File([croppedBlob], logoFile!.name, { type: 'image/png' });
-    setLogoFile(croppedFile);
-    setLogoPreview(URL.createObjectURL(croppedBlob));
-    setShowLogoCrop(false);
-  };
-
-  const handleBannerCropComplete = async (croppedBlob: Blob) => {
-    const croppedFile = new File([croppedBlob], bannerFile!.name, { type: 'image/png' });
-    setBannerFile(croppedFile);
-    setBannerPreview(URL.createObjectURL(croppedBlob));
-    setShowBannerCrop(false);
-  };
-
   const handleSubmit = async () => {
     if (!user) {
       toast.error('You must be logged in to submit an application');
@@ -120,35 +80,6 @@ export default function BecomeSellerMultiStep() {
       console.log('Starting application submission...');
       const validated = applicationSchema.parse(formData);
       console.log('Form validation passed');
-
-      let logoUrl = '';
-      let bannerUrl = '';
-
-      // Upload logo
-      if (logoFile) {
-        console.log('Uploading logo...');
-        try {
-          logoUrl = await uploadImage(logoFile, 'product-images', 'logos');
-          console.log('Logo uploaded:', logoUrl);
-        } catch (uploadError) {
-          console.error('Logo upload failed:', uploadError);
-          toast.error('Failed to upload logo. Please try again.');
-          return;
-        }
-      }
-
-      // Upload banner
-      if (bannerFile) {
-        console.log('Uploading banner...');
-        try {
-          bannerUrl = await uploadImage(bannerFile, 'product-images', 'banners');
-          console.log('Banner uploaded:', bannerUrl);
-        } catch (uploadError) {
-          console.error('Banner upload failed:', uploadError);
-          toast.error('Failed to upload banner. Please try again.');
-          return;
-        }
-      }
 
       console.log('Inserting application to database...');
       const { data, error } = await supabase
@@ -165,8 +96,8 @@ export default function BecomeSellerMultiStep() {
           store_region: validated.storeRegion,
           store_city: validated.storeCity,
           store_name: validated.storeName,
-          store_logo_url: logoUrl || '',
-          store_banner_url: bannerUrl || '',
+          store_logo_url: '',
+          store_banner_url: '',
           store_description: validated.storeDescription || '',
           bank_name: validated.bankName || '',
           bank_account_number: validated.bankAccountNumber || '',
@@ -430,46 +361,6 @@ export default function BecomeSellerMultiStep() {
               rows={3}
             />
           </div>
-
-          <div className="space-y-2">
-            <Label className="flex items-center gap-2">
-              <Store className="h-4 w-4 text-primary" />
-              Store Logo (Optional)
-            </Label>
-            <div className="flex flex-col gap-2">
-              <Input
-                type="file"
-                accept="image/*"
-                onChange={handleLogoUpload}
-                className="cursor-pointer"
-              />
-              {logoPreview && (
-                <div className="relative w-32 h-32 rounded-lg overflow-hidden border-2 border-border">
-                  <img src={logoPreview} alt="Logo preview" className="w-full h-full object-cover" />
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label className="flex items-center gap-2">
-              <Store className="h-4 w-4 text-primary" />
-              Store Banner (Optional)
-            </Label>
-            <div className="flex flex-col gap-2">
-              <Input
-                type="file"
-                accept="image/*"
-                onChange={handleBannerUpload}
-                className="cursor-pointer"
-              />
-              {bannerPreview && (
-                <div className="relative w-full h-32 rounded-lg overflow-hidden border-2 border-border">
-                  <img src={bannerPreview} alt="Banner preview" className="w-full h-full object-cover" />
-                </div>
-              )}
-            </div>
-          </div>
         </div>
       ),
       validate: async () => {
@@ -580,8 +471,6 @@ export default function BecomeSellerMultiStep() {
                 {formData.storeDescription && (
                   <p><span className="font-medium">Description:</span> {formData.storeDescription}</p>
                 )}
-                {logoPreview && <p className="text-primary">✓ Logo uploaded</p>}
-                {bannerPreview && <p className="text-primary">✓ Banner uploaded</p>}
               </div>
             </div>
 
@@ -611,50 +500,30 @@ export default function BecomeSellerMultiStep() {
   ];
 
   return (
-    <>
-      <div className="min-h-screen bg-background pb-20">
-        <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b">
-          <div className="flex items-center gap-3 p-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate(-1)}
-              className="rounded-full"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <h1 className="text-xl font-bold">Become a Seller</h1>
-          </div>
-        </div>
-
-        <div className="container max-w-2xl mx-auto p-4">
-          <MultiStepForm
-            steps={steps}
-            onComplete={handleSubmit}
-            onBack={() => navigate(-1)}
-            submitText="Submit Application"
-            backText="Cancel"
-          />
+    <div className="min-h-screen bg-background pb-20">
+      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b">
+        <div className="flex items-center gap-3 p-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate(-1)}
+            className="rounded-full"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <h1 className="text-xl font-bold">Become a Seller</h1>
         </div>
       </div>
 
-      {showLogoCrop && logoPreview && (
-        <ImageCropModal
-          open={showLogoCrop}
-          imageUrl={logoPreview}
-          onClose={() => setShowLogoCrop(false)}
-          onCropComplete={handleLogoCropComplete}
+      <div className="container max-w-2xl mx-auto p-4">
+        <MultiStepForm
+          steps={steps}
+          onComplete={handleSubmit}
+          onBack={() => navigate(-1)}
+          submitText="Submit Application"
+          backText="Cancel"
         />
-      )}
-
-      {showBannerCrop && bannerPreview && (
-        <ImageCropModal
-          open={showBannerCrop}
-          imageUrl={bannerPreview}
-          onClose={() => setShowBannerCrop(false)}
-          onCropComplete={handleBannerCropComplete}
-        />
-      )}
-    </>
+      </div>
+    </div>
   );
 }

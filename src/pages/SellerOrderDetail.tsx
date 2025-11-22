@@ -80,6 +80,7 @@ const SellerOrderDetail = () => {
   const [order, setOrder] = useState<SellerOrderDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [showDeliveryWarning, setShowDeliveryWarning] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
     if (orderId && user) {
@@ -145,6 +146,7 @@ const SellerOrderDetail = () => {
   };
 
   const updateOrderStatus = async (newStatus: 'processing' | 'packed' | 'shipped' | 'delivered') => {
+    setActionLoading(true);
     try {
       await supabase
         .from('orders')
@@ -283,6 +285,8 @@ const SellerOrderDetail = () => {
         description: 'Failed to update order',
         variant: 'destructive'
       });
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -296,6 +300,7 @@ const SellerOrderDetail = () => {
       return;
     }
 
+    setActionLoading(true);
     try {
       const { error } = await supabase.functions.invoke('process-order-refund', {
         body: {
@@ -321,6 +326,8 @@ const SellerOrderDetail = () => {
         description: 'Failed to decline order. Please try again.',
         variant: 'destructive'
       });
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -556,17 +563,19 @@ const SellerOrderDetail = () => {
                 <Button
                   onClick={() => updateOrderStatus('processing')}
                   className="w-full"
+                  disabled={actionLoading}
                 >
                   <CheckCircle2 className="h-4 w-4 mr-2" />
-                  Accept Order
+                  {actionLoading ? 'Processing...' : 'Accept Order'}
                 </Button>
                 <Button
                   variant="destructive"
                   onClick={handleDeclineOrder}
                   className="w-full"
+                  disabled={actionLoading}
                 >
                   <XCircle className="h-4 w-4 mr-2" />
-                  Decline Order
+                  {actionLoading ? 'Declining...' : 'Decline Order'}
                 </Button>
               </div>
             )}
@@ -575,9 +584,10 @@ const SellerOrderDetail = () => {
               <Button
                 onClick={() => updateOrderStatus('packed')}
                 className="w-full"
+                disabled={actionLoading}
               >
                 <Package className="h-4 w-4 mr-2" />
-                Mark as Packed
+                {actionLoading ? 'Updating...' : 'Mark as Packed'}
               </Button>
             )}
 
@@ -585,9 +595,10 @@ const SellerOrderDetail = () => {
               <Button
                 onClick={() => updateOrderStatus('shipped')}
                 className="w-full"
+                disabled={actionLoading}
               >
                 <Truck className="h-4 w-4 mr-2" />
-                Mark as Shipped
+                {actionLoading ? 'Updating...' : 'Mark as Shipped'}
               </Button>
             )}
 
@@ -595,9 +606,10 @@ const SellerOrderDetail = () => {
               <Button
                 onClick={() => handleStatusChange('delivered')}
                 className="w-full"
+                disabled={actionLoading}
               >
                 <CheckCircle2 className="h-4 w-4 mr-2" />
-                Mark as Delivered
+                {actionLoading ? 'Updating...' : 'Mark as Delivered'}
               </Button>
             )}
 
