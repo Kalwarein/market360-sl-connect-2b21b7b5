@@ -26,6 +26,8 @@ interface Conversation {
     id: string;
     name: string;
     avatar_url: string | null;
+    is_online?: boolean;
+    last_seen?: string;
   };
   last_message?: {
     body: string;
@@ -110,7 +112,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
 
           const { data: profile } = await supabase
             .from('profiles')
-            .select('name, avatar_url')
+            .select('name, avatar_url, is_online, last_seen')
             .eq('id', otherUserId)
             .maybeSingle();
 
@@ -163,7 +165,9 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
             other_user: { 
               id: otherUserId,
               name: profile?.name || 'Unknown', 
-              avatar_url: profile?.avatar_url || null 
+              avatar_url: profile?.avatar_url || null,
+              is_online: profile?.is_online || false,
+              last_seen: profile?.last_seen || null
             },
             products: product,
             last_message: lastMessage,

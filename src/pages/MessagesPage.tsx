@@ -130,12 +130,18 @@ const MessagesPage = () => {
                         </Avatar>
 
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between mb-1">
+                         <div className="flex items-start justify-between mb-1">
                             <div className="flex-1 min-w-0">
                               <div className="flex items-start gap-2 mb-1 flex-wrap">
-                                <h3 className="font-bold text-base break-words max-w-full">
-                                  {conversation.other_user?.name || 'Unknown User'}
-                                </h3>
+                                <div className="flex items-center gap-2">
+                                  <h3 className="font-bold text-base break-words max-w-full">
+                                    {conversation.other_user?.name || 'Unknown User'}
+                                  </h3>
+                                  {/* Online Indicator */}
+                                  {conversation.other_user?.is_online && (
+                                    <div className="h-2 w-2 bg-green-500 rounded-full animate-pulse"></div>
+                                  )}
+                                </div>
                                 {conversation.is_enquiry && (
                                   <Badge variant="secondary" className="bg-primary/10 text-primary text-xs px-2 py-0.5 shrink-0">
                                     Enquiry
@@ -149,6 +155,11 @@ const MessagesPage = () => {
                               </div>
                               <p className="text-xs text-muted-foreground">
                                 {isBuyer ? 'Seller' : 'Buyer'}
+                                {conversation.other_user?.is_online 
+                                  ? ' • online' 
+                                  : conversation.other_user?.last_seen 
+                                    ? ` • last seen ${format(new Date(conversation.other_user.last_seen), 'HH:mm')}` 
+                                    : ' • offline'}
                                 {conversation.products?.title && ` • ${conversation.products.title}`}
                               </p>
                             </div>
