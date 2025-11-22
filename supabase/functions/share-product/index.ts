@@ -30,10 +30,15 @@ Deno.serve(async (req) => {
       return new Response('Product ID required', { status: 400, headers: corsHeaders })
     }
 
-    // Detect if request is from a social media crawler
+    // Detect if request is from a social media crawler (for link previews only)
     const userAgent = req.headers.get('user-agent') || ''
-    const isCrawler = /bot|crawler|spider|crawling|whatsapp|facebook|twitter|telegram|pinterest|linkedin|slack/i.test(userAgent)
+    const secFetchUser = req.headers.get('sec-fetch-user') || ''
+    const isNavigationRequest = secFetchUser === '?1'
+    const isCrawlerUserAgent = /bot|crawler|spider|crawling|whatsapp|facebook|twitter|telegram|pinterest|linkedin|slack/i.test(userAgent)
+    const isCrawler = isCrawlerUserAgent && !isNavigationRequest
     console.log('User Agent:', userAgent)
+    console.log('Sec-Fetch-User:', secFetchUser)
+    console.log('Is Navigation Request:', isNavigationRequest)
     console.log('Is Crawler:', isCrawler)
 
     const supabaseClient = createClient(
