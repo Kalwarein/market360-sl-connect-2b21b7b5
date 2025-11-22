@@ -377,153 +377,331 @@ Deno.serve(async (req) => {
       box-sizing: border-box;
     }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-      background: linear-gradient(135deg, #0FA86C 0%, #0B8A6D 100%);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: linear-gradient(135deg, #0B2B22 0%, #0FA86C 50%, #0B8A6D 100%);
+      background-size: 400% 400%;
+      animation: gradientShift 15s ease infinite;
       min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
       padding: 20px;
     }
-    .container {
-      max-width: 600px;
-      width: 100%;
-      background: white;
-      border-radius: 24px;
-      overflow: hidden;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-      animation: fadeIn 0.5s ease-out;
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
     }
-    @keyframes fadeIn {
+    .container {
+      max-width: 700px;
+      width: 100%;
+      background: linear-gradient(to bottom, #ffffff 0%, #f9fafb 100%);
+      border-radius: 32px;
+      overflow: hidden;
+      box-shadow: 0 30px 90px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+      animation: fadeInUp 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+    }
+    @keyframes fadeInUp {
       from {
         opacity: 0;
-        transform: translateY(20px);
+        transform: translateY(40px) scale(0.95);
       }
       to {
         opacity: 1;
-        transform: translateY(0);
+        transform: translateY(0) scale(1);
       }
+    }
+    .premium-badge {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 6px;
+      background: linear-gradient(90deg, #0FA86C 0%, #0B8A6D 50%, #0FA86C 100%);
+      background-size: 200% 100%;
+      animation: shimmer 3s ease infinite;
+      z-index: 10;
+    }
+    @keyframes shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
     }
     .image-container {
       width: 100%;
-      height: 400px;
-      background: #f5f5f5;
+      height: 450px;
+      background: linear-gradient(135deg, #f5f5f5 0%, #e5e7eb 100%);
       position: relative;
       overflow: hidden;
+    }
+    .image-container::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.15) 100%);
+      z-index: 1;
+      pointer-events: none;
     }
     .image-container img {
       width: 100%;
       height: 100%;
       object-fit: cover;
+      transition: transform 0.6s ease;
     }
-    .badge {
+    .image-container:hover img {
+      transform: scale(1.05);
+    }
+    .verified-badge {
       position: absolute;
-      top: 16px;
-      right: 16px;
-      background: #0FA86C;
-      color: white;
-      padding: 8px 16px;
-      border-radius: 12px;
-      font-weight: 600;
-      font-size: 14px;
-      box-shadow: 0 4px 12px rgba(15, 168, 108, 0.4);
-    }
-    .content {
-      padding: 32px;
-    }
-    .store-name {
+      top: 24px;
+      left: 24px;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(20px);
       color: #0FA86C;
-      font-size: 14px;
-      font-weight: 600;
+      padding: 10px 18px;
+      border-radius: 50px;
+      font-weight: 700;
+      font-size: 13px;
       text-transform: uppercase;
       letter-spacing: 0.5px;
-      margin-bottom: 12px;
+      box-shadow: 0 8px 24px rgba(15, 168, 108, 0.3);
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      animation: pulse 2s ease infinite;
     }
-    .title {
-      font-size: 28px;
-      font-weight: 700;
-      color: #0B2B22;
-      margin-bottom: 16px;
-      line-height: 1.3;
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
     }
-    .description {
-      font-size: 16px;
-      color: #6B7280;
-      line-height: 1.6;
-      margin-bottom: 24px;
+    .verified-badge::before {
+      content: '✓';
+      display: inline-block;
+      width: 18px;
+      height: 18px;
+      background: #0FA86C;
+      color: white;
+      border-radius: 50%;
+      text-align: center;
+      line-height: 18px;
+      font-size: 12px;
+      font-weight: 900;
     }
-    .price-container {
+    .price-badge {
+      position: absolute;
+      top: 24px;
+      right: 24px;
+      background: linear-gradient(135deg, #0FA86C 0%, #0B8A6D 100%);
+      color: white;
+      padding: 14px 24px;
+      border-radius: 50px;
+      font-weight: 800;
+      font-size: 24px;
+      box-shadow: 0 12px 32px rgba(15, 168, 108, 0.5);
+      z-index: 2;
+      letter-spacing: -0.5px;
+    }
+    .content {
+      padding: 40px;
+      position: relative;
+    }
+    .store-header {
       display: flex;
       align-items: center;
       gap: 12px;
-      margin-bottom: 24px;
+      margin-bottom: 20px;
+      padding-bottom: 20px;
+      border-bottom: 2px solid #f0f0f0;
     }
-    .price {
-      font-size: 32px;
-      font-weight: 700;
+    .store-icon {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, #0FA86C 0%, #0B8A6D 100%);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 900;
+      font-size: 20px;
+      box-shadow: 0 4px 12px rgba(15, 168, 108, 0.3);
+    }
+    .store-name {
       color: #0FA86C;
+      font-size: 15px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
     }
-    .moq {
-      font-size: 14px;
-      color: #6B7280;
-      padding: 6px 12px;
-      background: #F7F9FB;
-      border-radius: 8px;
+    .title {
+      font-size: 32px;
+      font-weight: 900;
+      color: #0B2B22;
+      margin-bottom: 16px;
+      line-height: 1.2;
+      letter-spacing: -0.5px;
+    }
+    .description {
+      font-size: 17px;
+      color: #4B5563;
+      line-height: 1.7;
+      margin-bottom: 28px;
+      font-weight: 500;
+    }
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+    .feature-chip {
+      background: linear-gradient(135deg, #F7F9FB 0%, #EEF2F6 100%);
+      padding: 12px 16px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #0B2B22;
+      text-align: center;
+      border: 1px solid rgba(15, 168, 108, 0.1);
+    }
+    .cta-section {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
     }
     .button {
-      display: inline-block;
+      display: block;
       width: 100%;
       background: linear-gradient(135deg, #0FA86C 0%, #0B8A6D 100%);
       color: white;
       text-align: center;
-      padding: 16px 32px;
+      padding: 20px 32px;
       border-radius: 16px;
       text-decoration: none;
-      font-weight: 600;
-      font-size: 16px;
-      transition: all 0.3s ease;
-      box-shadow: 0 4px 12px rgba(15, 168, 108, 0.3);
+      font-weight: 700;
+      font-size: 17px;
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 8px 24px rgba(15, 168, 108, 0.4);
+      position: relative;
+      overflow: hidden;
+    }
+    .button::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+      transition: left 0.5s;
+    }
+    .button:hover::before {
+      left: 100%;
     }
     .button:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 20px rgba(15, 168, 108, 0.4);
+      transform: translateY(-3px);
+      box-shadow: 0 16px 40px rgba(15, 168, 108, 0.5);
+    }
+    .trust-badges {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 20px;
+      padding: 16px;
+      background: rgba(15, 168, 108, 0.05);
+      border-radius: 12px;
+    }
+    .trust-badge-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #0B2B22;
+    }
+    .trust-badge-item::before {
+      content: '✓';
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      background: #0FA86C;
+      color: white;
+      border-radius: 50%;
+      text-align: center;
+      line-height: 16px;
+      font-size: 10px;
     }
     .footer {
       text-align: center;
-      padding: 16px;
-      background: #F7F9FB;
+      padding: 28px;
+      background: linear-gradient(to bottom, #F7F9FB 0%, #EEF2F6 100%);
       color: #6B7280;
       font-size: 14px;
+      font-weight: 600;
+      border-top: 2px solid rgba(15, 168, 108, 0.1);
+    }
+    .footer-brand {
+      color: #0FA86C;
+      font-weight: 800;
+      font-size: 16px;
+      margin-bottom: 8px;
     }
     .loader {
       text-align: center;
-      color: #6B7280;
+      color: #0FA86C;
       font-size: 14px;
       margin-top: 16px;
+      font-weight: 600;
+      animation: fadeInOut 1.5s ease infinite;
+    }
+    @keyframes fadeInOut {
+      0%, 100% { opacity: 0.5; }
+      50% { opacity: 1; }
     }
   </style>
 </head>
 <body>
   <div class="container">
+    <div class="premium-badge"></div>
     <div class="image-container">
       <img src="${productImage}" alt="${productTitle}">
-      <div class="badge">Market360</div>
+      <div class="verified-badge">Market360</div>
+      <div class="price-badge">${productPrice}</div>
     </div>
-      <div class="content">
-      <div class="store-name">${storeName}</div>
+    <div class="content">
+      <div class="store-header">
+        <div class="store-icon">${storeName.charAt(0).toUpperCase()}</div>
+        <div class="store-name">${storeName}</div>
+      </div>
       <h1 class="title">${productTitle}</h1>
       <p class="description">${ogDescription}</p>
-      <div class="price-container">
-        <div class="price">${productPrice}</div>
-        ${product.moq && product.moq > 1 ? `<div class="moq">MOQ: ${product.moq}</div>` : ''}
+      
+      <div class="features-grid">
+        ${product.moq && product.moq > 1 ? `<div class="feature-chip">MOQ: ${product.moq}</div>` : ''}
+        ${product.condition ? `<div class="feature-chip">${product.condition === 'brand_new' ? 'Brand New' : product.condition === 'like_new' ? 'Like New' : 'Quality Verified'}</div>` : ''}
+        ${product.category ? `<div class="feature-chip">${product.category}</div>` : ''}
+        <div class="feature-chip">Secure Payment</div>
       </div>
-      <a href="${productUrl}" class="button" id="viewBtn">
-        View Product on Market360
-      </a>
-      <div class="loader" id="loader">Redirecting to app...</div>
+      
+      <div class="cta-section">
+        <a href="${productUrl}" class="button" id="viewBtn">
+          🛍️ Shop Now on Market360
+        </a>
+        <div class="trust-badges">
+          <div class="trust-badge-item">Buyer Protection</div>
+          <div class="trust-badge-item">Fast Delivery</div>
+          <div class="trust-badge-item">Quality Verified</div>
+        </div>
+      </div>
+      <div class="loader" id="loader">Redirecting you now...</div>
     </div>
     <div class="footer">
-      🛍️ Shop safely with Market360 - Sierra Leone's trusted marketplace
+      <div class="footer-brand">Market360</div>
+      Sierra Leone's Premium Marketplace • Shop with Confidence
     </div>
   </div>
   
