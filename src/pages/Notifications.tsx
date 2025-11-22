@@ -118,77 +118,153 @@ const Notifications = () => {
   const unreadCount = notifications.filter(n => !n.read_at).length;
 
   return (
-    <div className="min-h-screen bg-background pb-20">
-      <div className="bg-gradient-to-r from-primary to-secondary text-white p-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Bell className="h-6 w-6" />
-            <div>
-              <h1 className="text-2xl font-bold">Notifications</h1>
-              {unreadCount > 0 && (
-                <p className="text-sm opacity-90">{unreadCount} unread</p>
-              )}
+    <div className="min-h-screen bg-surface pb-20">
+      {/* Modern Header */}
+      <div className="bg-background border-b border-border sticky top-0 z-10 backdrop-blur-lg bg-background/95">
+        <div className="p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                <Bell className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-foreground">Notifications</h1>
+                {unreadCount > 0 && (
+                  <p className="text-sm text-muted-foreground">{unreadCount} unread</p>
+                )}
+              </div>
             </div>
+            {unreadCount > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-primary hover:bg-primary/10 rounded-full"
+                onClick={markAllAsRead}
+              >
+                <CheckCheck className="h-4 w-4 mr-1" />
+                Mark all read
+              </Button>
+            )}
           </div>
-          {unreadCount > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-white hover:bg-white/20"
-              onClick={markAllAsRead}
-            >
-              <CheckCheck className="h-4 w-4 mr-1" />
-              Mark all read
-            </Button>
-          )}
         </div>
       </div>
 
-      <div className="p-4 space-y-3">
+      <div className="p-4 space-y-2">
         {loading ? (
-          <Card>
-            <CardContent className="p-8 text-center">
-              <p className="text-muted-foreground">Loading...</p>
+          <Card className="border-border/50 shadow-sm">
+            <CardContent className="p-12 text-center">
+              <div className="animate-pulse space-y-3">
+                <div className="h-4 bg-muted rounded w-1/3 mx-auto" />
+                <div className="h-3 bg-muted rounded w-1/2 mx-auto" />
+              </div>
             </CardContent>
           </Card>
         ) : notifications.length === 0 ? (
-          <Card>
-            <CardContent className="p-8 text-center">
-              <Bell className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-              <p className="text-muted-foreground">No notifications yet</p>
+          <Card className="border-border/50 shadow-sm">
+            <CardContent className="p-12 text-center">
+              <div className="h-16 w-16 rounded-full bg-muted/30 flex items-center justify-center mx-auto mb-4">
+                <Bell className="h-8 w-8 text-muted-foreground/50" />
+              </div>
+              <h3 className="font-semibold text-lg mb-1">No notifications yet</h3>
+              <p className="text-sm text-muted-foreground">
+                You'll be notified about orders, messages, and updates here
+              </p>
             </CardContent>
           </Card>
         ) : (
-          notifications.map((notification) => (
+          notifications.map((notification, index) => (
             <Card
               key={notification.id}
-              className={`cursor-pointer hover:shadow-md transition-shadow ${
-                !notification.read_at ? 'border-primary' : ''
-              }`}
+              className={`
+                cursor-pointer transition-all duration-200 animate-fade-in
+                hover:shadow-lg hover:scale-[1.01] active:scale-[0.99]
+                ${!notification.read_at 
+                  ? 'border-primary/50 bg-primary/5 shadow-md' 
+                  : 'border-border/50 shadow-sm hover:border-border'
+                }
+              `}
+              style={{ animationDelay: `${index * 50}ms` }}
               onClick={() => handleNotificationClick(notification)}
             >
               <CardContent className="p-4">
-                <div className="flex gap-3">
-                  {notification.image_url && (
-                    <img
-                      src={notification.image_url}
-                      alt=""
-                      className="h-16 w-16 rounded object-cover"
-                    />
-                  )}
-                  <div className="flex-1">
-                    <div className="flex items-start justify-between mb-1">
-                      <h3 className="font-medium">{notification.title}</h3>
+                <div className="flex gap-4">
+                  {/* Notification Icon/Image */}
+                  <div className="flex-shrink-0">
+                    {notification.image_url ? (
+                      <div className="relative">
+                        <img
+                          src={notification.image_url}
+                          alt=""
+                          className="h-14 w-14 rounded-xl object-cover ring-2 ring-border/50"
+                        />
+                        {!notification.read_at && (
+                          <div className="absolute -top-1 -right-1 h-3 w-3 bg-primary rounded-full ring-2 ring-background" />
+                        )}
+                      </div>
+                    ) : (
+                      <div className={`
+                        h-14 w-14 rounded-xl flex items-center justify-center relative
+                        ${notification.type === 'order' ? 'bg-blue-500/10' : ''}
+                        ${notification.type === 'message' ? 'bg-green-500/10' : ''}
+                        ${notification.type === 'system' ? 'bg-orange-500/10' : ''}
+                        ${notification.type === 'broadcast' ? 'bg-purple-500/10' : ''}
+                      `}>
+                        <BellRing className={`h-6 w-6 ${
+                          notification.type === 'order' ? 'text-blue-500' : ''
+                        } ${
+                          notification.type === 'message' ? 'text-green-500' : ''
+                        } ${
+                          notification.type === 'system' ? 'text-orange-500' : ''
+                        } ${
+                          notification.type === 'broadcast' ? 'text-purple-500' : ''
+                        }`} />
+                        {!notification.read_at && (
+                          <div className="absolute -top-1 -right-1 h-3 w-3 bg-primary rounded-full ring-2 ring-background" />
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Notification Content */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2 mb-1">
+                      <h3 className={`font-semibold text-sm leading-tight ${
+                        !notification.read_at ? 'text-foreground' : 'text-foreground/80'
+                      }`}>
+                        {notification.title}
+                      </h3>
                       {!notification.read_at && (
-                        <Badge variant="default" className="ml-2">New</Badge>
+                        <Badge 
+                          variant="default" 
+                          className="flex-shrink-0 h-5 text-xs bg-primary hover:bg-primary"
+                        >
+                          New
+                        </Badge>
                       )}
                     </div>
-                    <p className="text-sm text-muted-foreground mb-2">
+                    <p className={`text-sm mb-2 line-clamp-2 ${
+                      !notification.read_at ? 'text-foreground/70' : 'text-muted-foreground'
+                    }`}>
                       {notification.body}
                     </p>
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(notification.created_at).toLocaleString()}
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(notification.created_at).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </p>
+                      {notification.type && (
+                        <>
+                          <span className="text-muted-foreground">•</span>
+                          <span className="text-xs text-muted-foreground capitalize">
+                            {notification.type}
+                          </span>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
               </CardContent>
