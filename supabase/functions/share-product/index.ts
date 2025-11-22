@@ -1,4 +1,4 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.80.0'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,12 +12,16 @@ Deno.serve(async (req) => {
 
   try {
     const url = new URL(req.url)
-    console.log('Full URL:', req.url)
-    console.log('Pathname:', url.pathname)
+    console.log('Share Product Request - Full URL:', req.url)
     
-    // Extract product ID from various possible URL formats
-    const pathParts = url.pathname.split('/').filter(part => part.length > 0)
-    const productId = pathParts[pathParts.length - 1]
+    // Extract product ID from query parameter (new approach) or path (fallback)
+    let productId = url.searchParams.get('id')
+    
+    if (!productId) {
+      // Fallback: try to extract from path
+      const pathParts = url.pathname.split('/').filter(part => part.length > 0)
+      productId = pathParts[pathParts.length - 1]
+    }
     
     console.log('Product ID:', productId)
 
@@ -57,6 +61,10 @@ Deno.serve(async (req) => {
 
     const productTitle = product.title
     const productPrice = `Le ${Number(product.price).toLocaleString()}`
+    const storeName = product.stores?.store_name || 'Market360'
+    const storeLocation = product.stores?.city && product.stores?.region 
+      ? `${product.stores.city}, ${product.stores.region}`
+      : 'Sierra Leone'
     
     // Use real product image from database - handle all storage formats
     let productImage = product.images?.[0]
@@ -78,27 +86,32 @@ Deno.serve(async (req) => {
       console.log('✅ Using product image:', productImage)
     } else {
       // Fallback to Market360 default product image if no product image exists
-      productImage = `https://${req.headers.get('host')}/default-product-og.png`
+      productImage = `https://rhtqsqpdvawlfqxlagxw.supabase.co/storage/v1/object/public/product-images/default-product-og.png`
       console.log('⚠️ No product image found, using Market360 default image')
     }
     
     // Build rich metadata description with product name and key attributes
     const metaParts = []
-    if (product.brand) metaParts.push(`Brand: ${product.brand}`)
-    if (product.category) metaParts.push(`Category: ${product.category}`)
+    if (product.brand) metaParts.push(product.brand)
+    if (product.category) metaParts.push(product.category)
+    if (product.condition) {
+      const conditionMap: Record<string, string> = {
+        'brand_new': 'Brand New',
+        'like_new': 'Like New',
+        'refurbished': 'Refurbished',
+        'used_excellent': 'Used - Excellent',
+        'used_good': 'Used - Good'
+      }
+      metaParts.push(conditionMap[product.condition] || product.condition)
+    }
     if (product.moq && product.moq > 1) metaParts.push(`MOQ: ${product.moq}`)
-    if (product.origin) metaParts.push(`Origin: ${product.origin}`)
     
     const productDescription = metaParts.length > 0 
-      ? `${product.title} - ${metaParts.join(' • ')}`
-      : `${product.title} - Available on Market360`
+      ? `${metaParts.join(' • ')} | ${product.description || 'Available on Market360'}`
+      : product.description || `${product.title} - Available on Market360`
     
-    const storeName = product.stores?.store_name || 'Market360'
-    const storeLocation = product.stores?.city && product.stores?.region 
-      ? `${product.stores.city}, ${product.stores.region}`
-      : 'Sierra Leone'
-    const productUrl = `https://${req.headers.get('host')}/product/${productId}`
-    const shareUrl = `https://${req.headers.get('host')}/share/product/${productId}`
+    const productUrl = `https://4b360025-8d48-456b-9a42-694a4c244c34.lovableproject.com/product/${productId}`
+    const shareUrl = `https://rhtqsqpdvawlfqxlagxw.supabase.co/functions/v1/share-product?id=${productId}`
 
     // Generate rich HTML with OG meta tags
     const html = `<!DOCTYPE html>
@@ -123,15 +136,16 @@ Deno.serve(async (req) => {
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:image:type" content="image/jpeg">
-  <meta property="og:image:alt" content="${productTitle}">
-  <meta property="og:site_name" content="Market360 - Sierra Leone's Premier Marketplace">
+  <meta property="og:image:alt" content="${productTitle} - ${productPrice}">
+  <meta property="og:site_name" content="Market360 - Sierra Leone Marketplace">
   <meta property="og:locale" content="en_SL">
   <meta property="product:price:amount" content="${product.price}">
   <meta property="product:price:currency" content="SLL">
   <meta property="product:brand" content="${product.brand || storeName}">
   <meta property="product:availability" content="in stock">
-  <meta property="product:condition" content="new">
-  <meta property="product:retailer_item_id" content="${productId}">
+  <meta property="product:condition" content="${product.condition || 'new'}">
+  <meta property="product:retailer_item_id" content="${product.product_code || productId}">
+  <meta property="product:retailer" content="${storeName}">
   ${product.category ? `<meta property="product:category" content="${product.category}">` : ''}
   
   <!-- Twitter Card -->
@@ -148,13 +162,39 @@ Deno.serve(async (req) => {
   <meta name="twitter:label2" content="Location">
   <meta name="twitter:data2" content="${storeLocation}">
   
-  <!-- WhatsApp & Telegram Optimization -->
+  <!-- WhatsApp Optimization (uses OG tags) -->
   <meta property="og:image:type" content="image/jpeg">
   <meta property="og:image:alt" content="${productTitle} - ${productPrice}">
+  <meta property="og:determiner" content="a">
   
-  <!-- iMessage & LinkedIn -->
+  <!-- Telegram Optimization -->
+  <meta name="telegram:card" content="summary_large_image">
+  <meta name="telegram:title" content="${productTitle}">
+  <meta name="telegram:description" content="${productDescription}">
+  <meta name="telegram:image" content="${productImage}">
+  
+  <!-- iMessage & Messages -->
   <meta property="al:web:url" content="${productUrl}">
+  <meta property="al:ios:url" content="${productUrl}">
+  <meta property="al:android:url" content="${productUrl}">
   <meta name="thumbnail" content="${productImage}">
+  <meta name="apple-mobile-web-app-title" content="Market360">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  
+  <!-- Pinterest -->
+  <meta name="pinterest-rich-pin" content="true">
+  <meta property="og:price:amount" content="${product.price}">
+  <meta property="og:price:currency" content="SLL">
+  <meta name="pinterest:description" content="${productDescription}">
+  <meta name="pinterest:media" content="${productImage}">
+  
+  <!-- LinkedIn -->
+  <meta property="og:updated_time" content="${new Date().toISOString()}">
+  
+  <!-- General Social -->
+  <meta name="robots" content="index, follow">
+  <meta name="googlebot" content="index, follow">
+  <link rel="canonical" href="${productUrl}">
   
   <!-- Schema.org Product Markup -->
   <script type="application/ld+json">
@@ -359,9 +399,9 @@ Deno.serve(async (req) => {
       headers: {
         ...corsHeaders,
         'Content-Type': 'text/html; charset=utf-8',
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0',
+        // Allow caching by social media crawlers but force revalidation
+        'Cache-Control': 'public, max-age=3600, stale-while-revalidate=86400',
+        'X-Robots-Tag': 'index, follow',
       },
     })
   } catch (error) {

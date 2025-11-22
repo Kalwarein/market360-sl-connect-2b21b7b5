@@ -22,15 +22,15 @@ interface ShareDialogProps {
 
 export function ShareDialog({ open, onOpenChange, product }: ShareDialogProps) {
   const [copied, setCopied] = useState(false);
-  // Add version parameter to bypass social media caching
-  const shareUrl = `${window.location.origin}/share/product/${product.id}?v=${Date.now()}`;
+  // Use edge function URL for server-rendered OG tags
+  const shareUrl = `https://rhtqsqpdvawlfqxlagxw.supabase.co/functions/v1/share-product?id=${product.id}`;
 
   const copyToClipboard = async () => {
     try {
       await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
       toast.success('Link copied! 🎉', {
-        description: 'If previewing on WhatsApp, delete and re-paste to see the rich product card'
+        description: 'Share this link anywhere - it shows a rich preview card with product details'
       });
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
@@ -129,7 +129,7 @@ export function ShareDialog({ open, onOpenChange, product }: ShareDialogProps) {
                 Le {product.price.toLocaleString()}
               </div>
               <div className="text-xs text-muted-foreground bg-muted/50 px-3 py-2 rounded-lg border border-border/50">
-                💫 This preview will appear on WhatsApp, Facebook, Twitter, and more!
+                ✨ Rich preview with image, price, and details on all platforms
               </div>
             </div>
           </div>
