@@ -145,30 +145,36 @@ export type Database = {
           body: string | null
           conversation_id: string
           created_at: string
+          delivered_at: string | null
           id: string
           message_type: Database["public"]["Enums"]["message_type"]
           read_at: string | null
           sender_id: string
+          status: string | null
         }
         Insert: {
           attachments?: string[] | null
           body?: string | null
           conversation_id: string
           created_at?: string
+          delivered_at?: string | null
           id?: string
           message_type?: Database["public"]["Enums"]["message_type"]
           read_at?: string | null
           sender_id: string
+          status?: string | null
         }
         Update: {
           attachments?: string[] | null
           body?: string | null
           conversation_id?: string
           created_at?: string
+          delivered_at?: string | null
           id?: string
           message_type?: Database["public"]["Enums"]["message_type"]
           read_at?: string | null
           sender_id?: string
+          status?: string | null
         }
         Relationships: [
           {
@@ -531,7 +537,9 @@ export type Database = {
           gender: string | null
           id: string
           interests: string[] | null
+          is_online: boolean | null
           language: string | null
+          last_seen: string | null
           name: string | null
           notification_preferences: Json | null
           occupation: string | null
@@ -560,7 +568,9 @@ export type Database = {
           gender?: string | null
           id: string
           interests?: string[] | null
+          is_online?: boolean | null
           language?: string | null
+          last_seen?: string | null
           name?: string | null
           notification_preferences?: Json | null
           occupation?: string | null
@@ -589,7 +599,9 @@ export type Database = {
           gender?: string | null
           id?: string
           interests?: string[] | null
+          is_online?: boolean | null
           language?: string | null
+          last_seen?: string | null
           name?: string | null
           notification_preferences?: Json | null
           occupation?: string | null

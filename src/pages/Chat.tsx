@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { ArrowLeft, Send, Package, AtSign, X, User } from 'lucide-react';
+import { ArrowLeft, Send, Package, AtSign, X, User, Check, CheckCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import ProductSelectorModal from '@/components/ProductSelectorModal';
@@ -23,6 +23,9 @@ interface Message {
   message_type: string;
   created_at: string;
   attachments?: string[];
+  status?: 'sent' | 'delivered' | 'read';
+  delivered_at?: string;
+  read_at?: string;
 }
 
 interface Conversation {
@@ -65,6 +68,8 @@ const Chat = () => {
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
   const [messageActionSheetOpen, setMessageActionSheetOpen] = useState(false);
   const [replyToMessage, setReplyToMessage] = useState<Message | null>(null);
+  const [otherUserOnline, setOtherUserOnline] = useState(false);
+  const [otherUserLastSeen, setOtherUserLastSeen] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -100,8 +105,39 @@ const Chat = () => {
           filter: `conversation_id=eq.${conversationId}`,
         },
         (payload) => {
-          setMessages((prev) => [...prev, payload.new as Message]);
-          setTimeout(() => markMessagesAsRead(), 100);
+          const newMessage = payload.new as Message;
+          setMessages((prev) => [...prev, newMessage]);
+          
+          // Auto-mark as delivered if it's not our message
+          if (newMessage.sender_id !== user?.id) {
+            setTimeout(() => {
+              supabase
+                .from('messages')
+                .update({ 
+                  status: 'delivered',
+                  delivered_at: new Date().toISOString()
+                })
+                .eq('id', newMessage.id)
+                .then(() => {});
+              markMessagesAsRead();
+            }, 100);
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'messages',
+          filter: `conversation_id=eq.${conversationId}`,
+        },
+        (payload) => {
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === payload.new.id ? { ...msg, ...payload.new } as Message : msg
+            )
+          );
         }
       )
       .subscribe();
@@ -114,19 +150,60 @@ const Chat = () => {
       .on('presence', { event: 'sync' }, () => {
         const state = presenceChannel.presenceState();
         const otherUsers = Object.keys(state).filter(key => key !== user?.id);
+        
         const someoneTyping = otherUsers.some(userId => {
           const userState = state[userId] as any;
           return userState && userState[0]?.typing === true;
         });
         setOtherUserTyping(someoneTyping);
+
+        // Track online status
+        const isOnline = otherUsers.length > 0;
+        setOtherUserOnline(isOnline);
       })
-      .subscribe();
+      .on('presence', { event: 'join' }, () => {
+        setOtherUserOnline(true);
+        // Update profile online status
+        if (conversation) {
+          const otherUserId = conversation.buyer_id === user?.id 
+            ? conversation.seller_id 
+            : conversation.buyer_id;
+          supabase
+            .from('profiles')
+            .update({ is_online: true })
+            .eq('id', otherUserId)
+            .then(() => {});
+        }
+      })
+      .on('presence', { event: 'leave' }, () => {
+        setOtherUserOnline(false);
+        // Update profile last seen
+        if (conversation) {
+          const otherUserId = conversation.buyer_id === user?.id 
+            ? conversation.seller_id 
+            : conversation.buyer_id;
+          const now = new Date().toISOString();
+          setOtherUserLastSeen(now);
+          supabase
+            .from('profiles')
+            .update({ is_online: false, last_seen: now })
+            .eq('id', otherUserId)
+            .then(() => {});
+        }
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await presenceChannel.track({ user_id: user?.id, typing: false, online: true });
+        }
+      });
 
     return () => {
-      supabase.removeChannel(messagesChannel);
-      supabase.removeChannel(presenceChannel);
+      presenceChannel.untrack().then(() => {
+        supabase.removeChannel(messagesChannel);
+        supabase.removeChannel(presenceChannel);
+      });
     };
-  }, [conversationId, user]);
+  }, [conversationId, user, conversation]);
 
   useEffect(() => {
     scrollToBottom();
@@ -166,9 +243,15 @@ const Chat = () => {
       
       const { data: profile } = await supabase
         .from('profiles')
-        .select('name, avatar_url')
+        .select('name, avatar_url, is_online, last_seen')
         .eq('id', otherUserId)
         .maybeSingle();
+
+      // Set initial online status
+      if (profile) {
+        setOtherUserOnline(profile.is_online || false);
+        setOtherUserLastSeen(profile.last_seen || null);
+      }
 
       let product = null;
       if (data.product_id) {
@@ -203,10 +286,10 @@ const Chat = () => {
         .order('created_at', { ascending: true });
 
       if (error) throw error;
-      setMessages(data || []);
+      setMessages((data || []) as Message[]);
 
       // Check if this is an enquiry conversation
-      const hasEnquiryMessage = (data || []).some((msg: Message) => {
+      const hasEnquiryMessage = (data || []).some((msg: any) => {
         if (msg.attachments?.[0]) {
           try {
             const parsed = JSON.parse(msg.attachments[0]);
@@ -248,7 +331,10 @@ const Chat = () => {
     try {
       await supabase
         .from('messages')
-        .update({ read_at: new Date().toISOString() })
+        .update({ 
+          read_at: new Date().toISOString(),
+          status: 'read'
+        })
         .eq('conversation_id', conversationId)
         .neq('sender_id', user?.id)
         .is('read_at', null);
@@ -265,6 +351,7 @@ const Chat = () => {
         conversation_id: conversationId,
         sender_id: user?.id,
         body: newMessage.trim() || (attachedProduct ? 'Shared a product' : ''),
+        status: 'sent',
       };
 
       if (!attachedProduct) {
@@ -275,7 +362,27 @@ const Chat = () => {
         messageData.attachments = [JSON.stringify(attachedProduct)];
       }
 
-      const { error } = await supabase.from('messages').insert(messageData);
+      const { data: insertedMessage, error } = await supabase
+        .from('messages')
+        .insert(messageData)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Auto-update to delivered if other user is online
+      if (otherUserOnline && insertedMessage) {
+        setTimeout(() => {
+          supabase
+            .from('messages')
+            .update({ 
+              status: 'delivered',
+              delivered_at: new Date().toISOString()
+            })
+            .eq('id', insertedMessage.id)
+            .then(() => {});
+        }, 500);
+      }
 
       if (error) throw error;
 
@@ -488,6 +595,20 @@ const Chat = () => {
   };
 
 
+  const renderMessageStatus = (message: Message) => {
+    if (message.sender_id !== user?.id) return null;
+    
+    const status = message.status || (message.read_at ? 'read' : 'sent');
+    
+    if (status === 'read') {
+      return <CheckCheck className="h-3.5 w-3.5 text-blue-500" />;
+    } else if (status === 'delivered' || message.delivered_at) {
+      return <CheckCheck className="h-3.5 w-3.5 text-muted-foreground" />;
+    } else {
+      return <Check className="h-3.5 w-3.5 text-muted-foreground" />;
+    }
+  };
+
   const renderMessage = (message: Message) => {
     const isOwn = message.sender_id === user?.id;
     const senderName = isOwn ? currentUserName : conversation?.other_user?.name || 'Unknown';
@@ -636,7 +757,7 @@ const Chat = () => {
 
     return (
       <div 
-        className={`flex gap-3 ${isOwn ? 'flex-row-reverse' : ''} mb-4 animate-fade-in`} 
+        className={`flex gap-2.5 ${isOwn ? 'flex-row-reverse' : ''} mb-3 animate-fade-in group`} 
         key={message.id}
         onContextMenu={(e) => {
           e.preventDefault();
@@ -653,35 +774,37 @@ const Chat = () => {
           if (timeout) clearTimeout(Number(timeout));
         }}
       >
-        <Avatar className="h-10 w-10 border-2 border-primary/20 cursor-pointer" onClick={() => {
-          const otherUserId = conversation?.buyer_id === user?.id ? conversation?.seller_id : conversation?.buyer_id;
-          if (!isOwn && otherUserId) navigate(`/profile-viewer/${otherUserId}`);
-        }}>
-          <AvatarImage src={senderAvatar || undefined} />
-          <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-            {senderName?.charAt(0)?.toUpperCase() || <User className="h-5 w-5" />}
-          </AvatarFallback>
-        </Avatar>
+        {!isOwn && (
+          <Avatar className="h-8 w-8 border border-border/50 cursor-pointer flex-shrink-0" onClick={() => {
+            const otherUserId = conversation?.buyer_id === user?.id ? conversation?.seller_id : conversation?.buyer_id;
+            if (otherUserId) navigate(`/profile-viewer/${otherUserId}`);
+          }}>
+            <AvatarImage src={senderAvatar || undefined} />
+            <AvatarFallback className="bg-primary/10 text-primary font-semibold text-xs">
+              {senderName?.charAt(0)?.toUpperCase() || <User className="h-4 w-4" />}
+            </AvatarFallback>
+          </Avatar>
+        )}
         <div className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'} max-w-[75%]`}>
-          <span className="text-xs text-muted-foreground mb-1 font-medium select-none">{senderName}</span>
-          {replyToMessage?.id === message.id && (
-            <div className="mb-1 px-3 py-1 bg-muted/50 rounded-lg text-xs text-muted-foreground select-none">
-              <p className="font-medium">Replying to {replyToMessage.sender_id === user?.id ? 'yourself' : senderName}</p>
-              <p className="truncate">{replyToMessage.body}</p>
-            </div>
-          )}
           <div
-            className={`px-4 py-3 rounded-2xl shadow-sm transition-all select-none ${
+            className={`px-3 py-2 rounded-lg shadow-sm transition-all select-none relative ${
               isOwn
-                ? 'bg-primary text-primary-foreground rounded-br-sm'
-                : 'bg-muted rounded-bl-sm'
+                ? 'bg-primary text-primary-foreground rounded-br-md'
+                : 'bg-card border border-border/50 rounded-bl-md'
             }`}
           >
-            <p className="text-sm whitespace-pre-wrap break-words select-none">{message.body}</p>
+            <p className="text-sm whitespace-pre-wrap break-words select-none leading-relaxed">{message.body}</p>
+            <div className={`flex items-center gap-1 mt-1 ${isOwn ? 'justify-end' : 'justify-start'}`}>
+              <span className={`text-[10px] ${isOwn ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
+                {format(new Date(message.created_at), 'HH:mm')}
+              </span>
+              {isOwn && (
+                <div className="flex items-center">
+                  {renderMessageStatus(message)}
+                </div>
+              )}
+            </div>
           </div>
-          <span className="text-xs text-muted-foreground mt-1">
-            {format(new Date(message.created_at), 'HH:mm')}
-          </span>
         </div>
       </div>
     );
@@ -699,26 +822,37 @@ const Chat = () => {
     <div className="flex flex-col h-screen bg-background">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-card border-b shadow-sm">
-        <div className="flex items-center gap-3 p-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/messages')} className="rounded-full hover:bg-muted">
+        <div className="flex items-center gap-3 p-3">
+          <Button variant="ghost" size="icon" onClick={() => navigate('/messages')} className="rounded-full hover:bg-muted h-9 w-9">
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <Avatar 
-            className="h-12 w-12 border-2 border-primary/20 cursor-pointer hover:ring-2 hover:ring-primary transition-all" 
+            className="h-10 w-10 border border-border cursor-pointer hover:ring-2 hover:ring-primary/20 transition-all relative" 
             onClick={() => {
               const otherUserId = conversation?.buyer_id === user?.id ? conversation.seller_id : conversation.buyer_id;
               if (otherUserId) navigate(`/profile-viewer/${otherUserId}`);
             }}
           >
             <AvatarImage src={conversation?.other_user?.avatar_url || undefined} />
-            <AvatarFallback className="bg-primary/10 text-primary text-lg font-semibold">
-              {conversation?.other_user?.name?.charAt(0)?.toUpperCase() || <User className="h-6 w-6" />}
+            <AvatarFallback className="bg-primary/10 text-primary text-sm font-semibold">
+              {conversation?.other_user?.name?.charAt(0)?.toUpperCase() || <User className="h-5 w-5" />}
             </AvatarFallback>
+            {otherUserOnline && (
+              <div className="absolute bottom-0 right-0 h-3 w-3 bg-green-500 rounded-full border-2 border-card"></div>
+            )}
           </Avatar>
-          <div className="flex-1">
-            <h3 className="font-semibold text-lg">{conversation?.other_user?.name || 'Unknown User'}</h3>
-            {otherUserTyping && (
-              <p className="text-sm text-muted-foreground animate-pulse">typing...</p>
+          <div className="flex-1 min-w-0">
+            <h3 className="font-semibold text-base truncate">{conversation?.other_user?.name || 'Unknown User'}</h3>
+            {otherUserTyping ? (
+              <p className="text-xs text-primary animate-pulse font-medium">typing...</p>
+            ) : otherUserOnline ? (
+              <p className="text-xs text-green-600 font-medium">online</p>
+            ) : otherUserLastSeen ? (
+              <p className="text-xs text-muted-foreground">
+                last seen {format(new Date(otherUserLastSeen), 'HH:mm')}
+              </p>
+            ) : (
+              <p className="text-xs text-muted-foreground">offline</p>
             )}
           </div>
         </div>
@@ -741,6 +875,25 @@ const Chat = () => {
       <div className="flex-1 overflow-y-auto p-4 space-y-2 bg-background">
         <div className="max-w-2xl mx-auto">
           {messages.map((message) => renderMessage(message))}
+          
+          {/* Typing Indicator */}
+          {otherUserTyping && (
+            <div className="flex gap-2.5 mb-3 animate-fade-in">
+              <Avatar className="h-8 w-8 border border-border/50 flex-shrink-0">
+                <AvatarImage src={conversation?.other_user?.avatar_url || undefined} />
+                <AvatarFallback className="bg-primary/10 text-primary font-semibold text-xs">
+                  {conversation?.other_user?.name?.charAt(0)?.toUpperCase() || <User className="h-4 w-4" />}
+                </AvatarFallback>
+              </Avatar>
+              <div className="px-4 py-3 rounded-lg rounded-bl-md bg-card border border-border/50 shadow-sm">
+                <div className="flex gap-1">
+                  <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                  <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                  <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
         <div ref={messagesEndRef} />
       </div>
