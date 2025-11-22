@@ -8,6 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ArrowLeft, MapPin, MessageCircle, Star, Package, TrendingUp, Sparkles, Crown, Share2 } from 'lucide-react';
 import { useStorePerks } from '@/hooks/useStorePerks';
 import { ShareStoreDialog } from '@/components/ShareStoreDialog';
+import { toast } from 'sonner';
 import verifiedBadge from '@/assets/verified-badge.png';
 
 interface Store {
@@ -39,6 +40,7 @@ const StorePage = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [contacting, setContacting] = useState(false);
   const { 
     hasVerifiedBadge, 
     hasPremiumTheme, 
@@ -47,6 +49,51 @@ const StorePage = () => {
     hasProductHighlights,
     loading: perksLoading 
   } = useStorePerks(storeId);
+
+  const handleContactSeller = async () => {
+    if (!store) return;
+    
+    setContacting(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        navigate('/auth');
+        return;
+      }
+
+      // Check if conversation already exists
+      const { data: existingConversation } = await supabase
+        .from('conversations')
+        .select('id')
+        .or(`and(buyer_id.eq.${user.id},seller_id.eq.${store.owner_id}),and(buyer_id.eq.${store.owner_id},seller_id.eq.${user.id})`)
+        .maybeSingle();
+
+      if (existingConversation) {
+        navigate(`/chat/${existingConversation.id}`);
+        return;
+      }
+
+      // Create new conversation
+      const { data: newConversation, error } = await supabase
+        .from('conversations')
+        .insert({
+          buyer_id: user.id,
+          seller_id: store.owner_id,
+          product_id: null
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      navigate(`/chat/${newConversation.id}`);
+    } catch (error) {
+      console.error('Error creating conversation:', error);
+      toast.error('Failed to start conversation');
+    } finally {
+      setContacting(false);
+    }
+  };
 
   useEffect(() => {
     if (storeId) {
@@ -235,9 +282,14 @@ const StorePage = () => {
               </div>
             </div>
             <div className="grid grid-cols-2 gap-2 mt-4">
-              <Button className="rounded-xl shadow-md" size="lg">
+              <Button 
+                className="rounded-xl shadow-md" 
+                size="lg"
+                onClick={handleContactSeller}
+                disabled={contacting}
+              >
                 <MessageCircle className="h-4 w-4 mr-2" />
-                Contact
+                {contacting ? 'Opening...' : 'Contact Seller'}
               </Button>
               <Button 
                 variant="outline" 
