@@ -127,6 +127,7 @@ Deno.serve(async (req) => {
         headers: {
           ...corsHeaders,
           'Location': productUrl,
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
         },
       })
     }
@@ -248,8 +249,8 @@ Deno.serve(async (req) => {
   }
   </script>
   
-  <!-- Backup redirect for crawlers that process the page -->
-  <meta http-equiv="refresh" content="2;url=${productUrl}">
+  <!-- Instant redirect fallback -->
+  <meta http-equiv="refresh" content="0;url=${productUrl}">
   
   <style>
     * {
@@ -410,10 +411,8 @@ Deno.serve(async (req) => {
   
   <!-- JavaScript redirect as backup -->
   <script>
-    // Only redirect if this is a real user (not a crawler processing the page)
-    setTimeout(function() {
-      window.location.href = '${productUrl}';
-    }, 100);
+    // Instant redirect for any real user that sees this page
+    window.location.replace('${productUrl}');
   </script>
 </body>
 </html>`
@@ -425,8 +424,8 @@ Deno.serve(async (req) => {
       headers: {
         ...corsHeaders,
         'Content-Type': 'text/html; charset=utf-8',
-        // Allow caching by social media crawlers but force revalidation
-        'Cache-Control': 'public, max-age=3600, stale-while-revalidate=86400',
+        // Short cache for crawlers only
+        'Cache-Control': 'public, max-age=300, must-revalidate',
         'X-Robots-Tag': 'index, follow',
       },
     })
