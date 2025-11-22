@@ -11,6 +11,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import { useOneSignal } from "./hooks/useOneSignal";
 
 // Pages
+import Splash from "./pages/Splash";
 import Auth from "./pages/Auth";
 import Home from "./pages/Home";
 import Categories from "./pages/Categories";
@@ -88,6 +89,7 @@ const App = () => (
           <ChatProvider>
             <CartProvider>
               <Routes>
+              <Route path="/splash" element={<Splash />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
               <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
