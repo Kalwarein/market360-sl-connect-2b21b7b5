@@ -30,6 +30,12 @@ Deno.serve(async (req) => {
       return new Response('Product ID required', { status: 400, headers: corsHeaders })
     }
 
+    // Detect if request is from a social media crawler
+    const userAgent = req.headers.get('user-agent') || ''
+    const isCrawler = /bot|crawler|spider|crawling|whatsapp|facebook|twitter|telegram|pinterest|linkedin|slack/i.test(userAgent)
+    console.log('User Agent:', userAgent)
+    console.log('Is Crawler:', isCrawler)
+
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? ''
@@ -113,7 +119,19 @@ Deno.serve(async (req) => {
     const productUrl = `https://4b360025-8d48-456b-9a42-694a4c244c34.lovableproject.com/product/${productId}`
     const shareUrl = `https://rhtqsqpdvawlfqxlagxw.supabase.co/functions/v1/share-product?id=${productId}`
 
-    // Generate rich HTML with OG meta tags
+    // If not a crawler, immediately redirect to product page
+    if (!isCrawler) {
+      console.log('Real user detected - redirecting to product page')
+      return new Response(null, {
+        status: 302,
+        headers: {
+          ...corsHeaders,
+          'Location': productUrl,
+        },
+      })
+    }
+
+    // Generate rich HTML with OG meta tags for crawlers
     const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -230,8 +248,8 @@ Deno.serve(async (req) => {
   }
   </script>
   
-  <!-- Redirect to main app after 0 seconds (instant) -->
-  <meta http-equiv="refresh" content="0;url=${productUrl}">
+  <!-- Backup redirect for crawlers that process the page -->
+  <meta http-equiv="refresh" content="2;url=${productUrl}">
   
   <style>
     * {
@@ -380,15 +398,23 @@ Deno.serve(async (req) => {
         <div class="price">${productPrice}</div>
         ${product.moq && product.moq > 1 ? `<div class="moq">MOQ: ${product.moq}</div>` : ''}
       </div>
-      <a href="${productUrl}" class="button">
+      <a href="${productUrl}" class="button" id="viewBtn">
         View Product on Market360
       </a>
-      <div class="loader">Redirecting to app...</div>
+      <div class="loader" id="loader">Redirecting to app...</div>
     </div>
     <div class="footer">
       🛍️ Shop safely with Market360 - Sierra Leone's trusted marketplace
     </div>
   </div>
+  
+  <!-- JavaScript redirect as backup -->
+  <script>
+    // Only redirect if this is a real user (not a crawler processing the page)
+    setTimeout(function() {
+      window.location.href = '${productUrl}';
+    }, 100);
+  </script>
 </body>
 </html>`
 
