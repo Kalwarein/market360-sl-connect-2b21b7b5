@@ -22,8 +22,9 @@ interface ShareDialogProps {
 
 export function ShareDialog({ open, onOpenChange, product }: ShareDialogProps) {
   const [copied, setCopied] = useState(false);
+  const currentOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://market-360sl.vercel.app';
   // Use edge function URL for server-rendered OG tags
-  const shareUrl = `https://rhtqsqpdvawlfqxlagxw.supabase.co/functions/v1/share-product?id=${product.id}`;
+  const shareUrl = `https://rhtqsqpdvawlfqxlagxw.supabase.co/functions/v1/share-product?id=${product.id}&domain=${encodeURIComponent(currentOrigin)}`;
 
   const copyToClipboard = async () => {
     try {
