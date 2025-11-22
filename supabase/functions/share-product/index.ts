@@ -101,25 +101,103 @@ Deno.serve(async (req) => {
       console.log('⚠️ No product image found, using Market360 default image')
     }
     
-    // Build rich metadata description with product name and key attributes
-    const metaParts = []
-    if (product.brand) metaParts.push(product.brand)
-    if (product.category) metaParts.push(product.category)
-    if (product.condition) {
-      const conditionMap: Record<string, string> = {
-        'brand_new': 'Brand New',
-        'like_new': 'Like New',
-        'refurbished': 'Refurbished',
-        'used_excellent': 'Used - Excellent',
-        'used_good': 'Used - Good'
+    // Generate "Market 360" Style Premium Metadata
+    const generateMarket360Title = (product: any, storeName: string): string => {
+      const maxLength = 60
+      let title = product.title
+      
+      // Extract main benefit based on category and tags
+      let benefit = ''
+      const category = product.category?.toLowerCase() || ''
+      const tags = product.tags || []
+      const enhancementTags = product.enhancement_tags || []
+      
+      // Category-specific benefits
+      if (category.includes('gaming') || category.includes('e-sports')) {
+        benefit = 'Pro Precision'
+      } else if (category.includes('electronics') || category.includes('phone')) {
+        benefit = 'Premium Quality'
+      } else if (category.includes('fashion') || category.includes('clothing')) {
+        benefit = 'Designer Style'
+      } else if (category.includes('beauty') || category.includes('cosmetics')) {
+        benefit = 'Radiant Results'
+      } else if (category.includes('home') || category.includes('appliance')) {
+        benefit = 'Smart Living'
+      } else if (category.includes('sports') || category.includes('fitness')) {
+        benefit = 'Peak Performance'
+      } else if (enhancementTags.includes('Trending') || enhancementTags.includes('Hot Drop')) {
+        benefit = 'Trending Now'
+      } else if (enhancementTags.includes('Luxury') || enhancementTags.includes('Premium')) {
+        benefit = 'Luxury Grade'
+      } else if (tags.includes('Fast Shipping') || tags.includes('Same Day')) {
+        benefit = 'Fast Delivery'
+      } else {
+        benefit = 'Best Value'
       }
-      metaParts.push(conditionMap[product.condition] || product.condition)
+      
+      // Format: [Product Name] | [Main Benefit] - M360
+      const formatted = `${title} | ${benefit} - M360`
+      
+      // Truncate if needed while keeping structure
+      if (formatted.length > maxLength) {
+        const truncateLength = maxLength - benefit.length - 10 // Leave space for benefit and suffix
+        const truncatedTitle = title.substring(0, truncateLength).trim()
+        return `${truncatedTitle}... | ${benefit} - M360`
+      }
+      
+      return formatted
     }
-    if (product.moq && product.moq > 1) metaParts.push(`MOQ: ${product.moq}`)
     
-    const productDescription = metaParts.length > 0 
-      ? `${metaParts.join(' • ')} | ${product.description || 'Available on Market360'}`
-      : product.description || `${product.title} - Available on Market360`
+    const generateMarket360Description = (product: any): string => {
+      const maxLength = 155
+      
+      // Power words for premium copy
+      const powerWords = ['Pro-grade', 'Premium', 'Elite', 'Professional', 'Advanced', 'Precision-engineered']
+      const category = product.category?.toLowerCase() || ''
+      const condition = product.condition || ''
+      const tags = product.enhancement_tags || product.tags || []
+      
+      // Select power word based on product attributes
+      let powerWord = 'Premium'
+      if (condition === 'brand_new') powerWord = 'Pro-grade'
+      else if (tags.includes('Luxury')) powerWord = 'Elite'
+      else if (tags.includes('Professional')) powerWord = 'Professional'
+      else if (category.includes('gaming') || category.includes('tech')) powerWord = 'Precision-engineered'
+      
+      // Build benefit statement
+      let benefitStatement = ''
+      if (category.includes('gaming') || category.includes('e-sports')) {
+        benefitStatement = 'engineered for peak performance and competitive edge'
+      } else if (category.includes('electronics') || category.includes('phone')) {
+        benefitStatement = 'delivering exceptional quality and reliability'
+      } else if (category.includes('fashion')) {
+        benefitStatement = 'crafted for style and sophistication'
+      } else if (category.includes('beauty')) {
+        benefitStatement = 'formulated for visible results'
+      } else if (category.includes('home')) {
+        benefitStatement = 'designed for modern living'
+      } else {
+        benefitStatement = 'built for excellence'
+      }
+      
+      // Add condition qualifier if applicable
+      let conditionText = ''
+      if (condition === 'brand_new') conditionText = 'Brand new. '
+      else if (condition === 'like_new') conditionText = 'Like-new condition. '
+      
+      // Build final description with power words
+      const description = `${powerWord} ${product.title.substring(0, 30)}${product.title.length > 30 ? '...' : ''} ${benefitStatement}. ${conditionText}Shop with confidence.`
+      
+      // Ensure under character limit
+      if (description.length > maxLength) {
+        return description.substring(0, maxLength - 3) + '...'
+      }
+      
+      return description
+    }
+    
+    const ogTitle = generateMarket360Title(product, storeName)
+    const ogDescription = generateMarket360Description(product)
     
     // Prefer explicit domain passed from the frontend, then fall back to headers, then default
     const domainParam = url.searchParams.get('domain')
@@ -180,16 +258,16 @@ Deno.serve(async (req) => {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <!-- Primary Meta Tags -->
-  <title>${productTitle} | ${storeName}</title>
-  <meta name="title" content="${productTitle} | ${storeName}">
-  <meta name="description" content="${productDescription}">
+  <title>${ogTitle}</title>
+  <meta name="title" content="${ogTitle}">
+  <meta name="description" content="${ogDescription}">
   <meta name="author" content="${storeName}">
   
   <!-- Open Graph / Facebook -->
   <meta property="og:type" content="product">
   <meta property="og:url" content="${shareUrl}">
-  <meta property="og:title" content="${productTitle} - ${productPrice}">
-  <meta property="og:description" content="${productDescription}">
+  <meta property="og:title" content="${ogTitle}">
+  <meta property="og:description" content="${ogDescription}">
   <meta property="og:image" content="${productImage}">
   <meta property="og:image:secure_url" content="${productImage}">
   <meta property="og:image:width" content="1200">
@@ -212,8 +290,8 @@ Deno.serve(async (req) => {
   <meta name="twitter:site" content="@Market360">
   <meta name="twitter:creator" content="@Market360">
   <meta name="twitter:url" content="${shareUrl}">
-  <meta name="twitter:title" content="${productTitle} - ${productPrice}">
-  <meta name="twitter:description" content="${productDescription}">
+  <meta name="twitter:title" content="${ogTitle}">
+  <meta name="twitter:description" content="${ogDescription}">
   <meta name="twitter:image" content="${productImage}">
   <meta name="twitter:image:alt" content="${productTitle}">
   <meta name="twitter:label1" content="Price">
@@ -228,8 +306,8 @@ Deno.serve(async (req) => {
   
   <!-- Telegram Optimization -->
   <meta name="telegram:card" content="summary_large_image">
-  <meta name="telegram:title" content="${productTitle}">
-  <meta name="telegram:description" content="${productDescription}">
+  <meta name="telegram:title" content="${ogTitle}">
+  <meta name="telegram:description" content="${ogDescription}">
   <meta name="telegram:image" content="${productImage}">
   
   <!-- iMessage & Messages -->
@@ -244,7 +322,7 @@ Deno.serve(async (req) => {
   <meta name="pinterest-rich-pin" content="true">
   <meta property="og:price:amount" content="${product.price}">
   <meta property="og:price:currency" content="SLL">
-  <meta name="pinterest:description" content="${productDescription}">
+  <meta name="pinterest:description" content="${ogDescription}">
   <meta name="pinterest:media" content="${productImage}">
   
   <!-- LinkedIn -->
@@ -262,7 +340,7 @@ Deno.serve(async (req) => {
     "@type": "Product",
     "name": "${productTitle}",
     "image": "${productImage}",
-    "description": "${productDescription}",
+    "description": "${ogDescription}",
     "sku": "${product.product_code || productId}",
     ${product.brand ? `"brand": {
       "@type": "Brand",
@@ -434,7 +512,7 @@ Deno.serve(async (req) => {
       <div class="content">
       <div class="store-name">${storeName}</div>
       <h1 class="title">${productTitle}</h1>
-      <p class="description">${productDescription}</p>
+      <p class="description">${ogDescription}</p>
       <div class="price-container">
         <div class="price">${productPrice}</div>
         ${product.moq && product.moq > 1 ? `<div class="moq">MOQ: ${product.moq}</div>` : ''}
