@@ -31,14 +31,4 @@ export function initializeUrlBlocker() {
     }
     return originalOpen.call(window, url, ...args);
   };
-
-  // Block window.location changes
-  const originalLocationAssign = window.location.assign;
-  window.location.assign = function(url: string | URL) {
-    if (isBlockedUrl(url.toString())) {
-      console.log('Blocked location.assign to:', url);
-      return;
-    }
-    return originalLocationAssign.call(window.location, url);
-  };
 }
