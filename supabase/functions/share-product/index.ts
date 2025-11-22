@@ -121,9 +121,9 @@ Deno.serve(async (req) => {
       ? `${metaParts.join(' • ')} | ${product.description || 'Available on Market360'}`
       : product.description || `${product.title} - Available on Market360`
     
-    // Dynamically determine the base URL from request headers or environment
-    const origin = req.headers.get('origin') || req.headers.get('referer')?.split('/').slice(0, 3).join('/') || Deno.env.get('APP_URL') || 'https://4b360025-8d48-456b-9a42-694a4c244c34.lovableproject.com'
-    const productUrl = `${origin}/product/${productId}`
+    // Dynamically determine the base URL from environment (canonical frontend domain)
+    const appUrl = Deno.env.get('APP_URL') || 'https://market-360sl.vercel.app'
+    const productUrl = `${appUrl}/product/${productId}`
     const shareUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/share-product?id=${productId}`
 
     // If not a crawler, immediately redirect to product page
