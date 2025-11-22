@@ -1,0 +1,14 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "co.median.android.xldkbxz",
+      "sha256_cert_fingerprints": [
+        "29:BC:46:02:54:63:C7:28:E8:2B:19:A4:1A:91:C4:5F:0A:98:74:22:35:EB:B1:BD:5A:05:66:16:52:9E:74:C8"
+      ]
+    }
+  }
+]
