@@ -5,8 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, MapPin, MessageCircle, Star, Package, TrendingUp, Sparkles, Crown } from 'lucide-react';
+import { ArrowLeft, MapPin, MessageCircle, Star, Package, TrendingUp, Sparkles, Crown, Share2 } from 'lucide-react';
 import { useStorePerks } from '@/hooks/useStorePerks';
+import { ShareStoreDialog } from '@/components/ShareStoreDialog';
 import verifiedBadge from '@/assets/verified-badge.png';
 
 interface Store {
@@ -37,6 +38,7 @@ const StorePage = () => {
   const [store, setStore] = useState<Store | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const { 
     hasVerifiedBadge, 
     hasPremiumTheme, 
@@ -110,20 +112,20 @@ const StorePage = () => {
   }
 
   return (
-    <div className={`min-h-screen pb-8 ${hasPremiumTheme ? 'bg-gradient-to-br from-background via-background to-primary/5' : 'bg-background'}`}>
+    <div className={`min-h-screen pb-20 ${hasPremiumTheme ? 'bg-gradient-to-br from-background via-background to-primary/5' : 'bg-background'}`}>
       {/* Featured Spotlight Banner */}
       {hasFeaturedSpotlight && (
-        <div className="bg-gradient-to-r from-red-500 to-red-600 text-white py-2 px-4 text-center animate-pulse">
-          <div className="flex items-center justify-center gap-2">
+        <div className="bg-gradient-to-r from-red-500 to-red-600 text-white py-2.5 px-4 text-center shadow-lg">
+          <div className="flex items-center justify-center gap-2 animate-pulse">
             <Crown className="h-4 w-4" />
-            <span className="text-sm font-bold">✨ FEATURED STORE ✨</span>
+            <span className="text-sm font-bold tracking-wide">✨ FEATURED STORE ✨</span>
             <Crown className="h-4 w-4" />
           </div>
         </div>
       )}
       
       {/* Banner */}
-      <div className={`relative h-48 ${hasPremiumTheme ? 'ring-4 ring-primary/20' : ''}`}>
+      <div className={`relative h-52 ${hasPremiumTheme ? 'ring-2 ring-primary/30 shadow-xl' : 'shadow-md'}`}>
         {store.banner_url ? (
           <img
             src={store.banner_url}
@@ -134,25 +136,38 @@ const StorePage = () => {
           <div className={`w-full h-full ${hasPremiumTheme ? 'bg-gradient-to-r from-primary via-primary-hover to-primary' : 'bg-gradient-to-r from-primary to-secondary'}`} />
         )}
         {hasPremiumTheme && (
-          <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent pointer-events-none" />
         )}
-        <Button
-          variant="ghost"
-          size="sm"
-          className="absolute top-4 left-4 text-white bg-black/20 hover:bg-black/40"
-          onClick={() => navigate(-1)}
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back
-        </Button>
+        
+        {/* Header Actions */}
+        <div className="absolute top-4 left-4 right-4 flex items-center justify-between">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-white bg-black/30 hover:bg-black/50 backdrop-blur-sm border border-white/10 rounded-xl h-9 px-3 transition-all"
+            onClick={() => navigate(-1)}
+          >
+            <ArrowLeft className="h-4 w-4 mr-1.5" />
+            Back
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-white bg-black/30 hover:bg-black/50 backdrop-blur-sm border border-white/10 rounded-xl h-9 px-3 transition-all"
+            onClick={() => setShareDialogOpen(true)}
+          >
+            <Share2 className="h-4 w-4 mr-1.5" />
+            Share
+          </Button>
+        </div>
       </div>
 
       {/* Store Info */}
-      <div className="px-4 -mt-16 relative z-10 mb-4">
-        <Card className={`shadow-lg ${hasPremiumTheme ? 'border-2 border-primary/30 bg-gradient-to-br from-card to-primary/5' : ''}`}>
-          <CardContent className="p-4">
+      <div className="px-4 -mt-20 relative z-10 mb-6">
+        <Card className={`shadow-2xl border-border/50 backdrop-blur-sm ${hasPremiumTheme ? 'border-2 border-primary/30 bg-gradient-to-br from-card/95 to-primary/5' : 'bg-card/95'}`}>
+          <CardContent className="p-5">
             <div className="flex gap-4">
-              <div className={`h-24 w-24 rounded-lg bg-card border overflow-hidden flex-shrink-0 ${hasPremiumTheme ? 'ring-2 ring-primary' : ''}`}>
+              <div className={`h-28 w-28 rounded-2xl bg-background border-2 overflow-hidden flex-shrink-0 shadow-lg ${hasPremiumTheme ? 'ring-2 ring-primary/50' : ''}`}>
                 {store.logo_url ? (
                   <img
                     src={store.logo_url}
@@ -161,13 +176,13 @@ const StorePage = () => {
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-muted">
-                    <Package className="h-8 w-8 text-muted-foreground" />
+                    <Package className="h-10 w-10 text-muted-foreground" />
                   </div>
                 )}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <h1 className={`text-2xl font-bold ${hasPremiumTheme ? 'bg-gradient-to-r from-primary to-primary-hover bg-clip-text text-transparent' : ''}`}>
+                <div className="flex items-center gap-2 mb-1.5">
+                  <h1 className={`text-2xl font-bold leading-tight ${hasPremiumTheme ? 'bg-gradient-to-r from-primary to-primary-hover bg-clip-text text-transparent' : 'text-foreground'}`}>
                     {store.store_name}
                   </h1>
                   {hasVerifiedBadge && (
@@ -175,18 +190,18 @@ const StorePage = () => {
                       <img 
                         src={verifiedBadge} 
                         alt="Verified Store" 
-                        className="h-8 w-8 object-contain animate-pulse drop-shadow-lg"
+                        className="h-7 w-7 object-contain drop-shadow-xl animate-pulse"
                       />
-                      <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-20">
+                      <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-black/90 text-white text-xs px-2 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-20 shadow-lg">
                         Verified Store
                       </span>
                     </div>
                   )}
                 </div>
                 {(store.city || store.region) && (
-                  <div className="flex items-center gap-1 text-sm text-muted-foreground mb-2">
-                    <MapPin className="h-4 w-4" />
-                    <span>
+                  <div className="flex items-center gap-1.5 text-sm text-muted-foreground mb-2.5">
+                    <MapPin className="h-3.5 w-3.5" />
+                    <span className="font-medium">
                       {[store.city, store.region, store.country]
                         .filter(Boolean)
                         .join(', ')}
@@ -194,51 +209,65 @@ const StorePage = () => {
                   </div>
                 )}
                 <div className="flex items-center gap-2 mb-3 flex-wrap">
-                  <Badge variant="secondary">
+                  <Badge variant="secondary" className="shadow-sm">
                     <Star className="h-3 w-3 mr-1 fill-yellow-400 text-yellow-400" />
                     4.8
                   </Badge>
-                  <Badge variant="outline">{products.length} Products</Badge>
+                  <Badge variant="outline" className="shadow-sm">{products.length} Products</Badge>
                   {hasTrendingPlacement && (
-                    <Badge className="bg-rose-500 text-white animate-pulse">
+                    <Badge className="bg-rose-500 text-white shadow-md">
                       <TrendingUp className="h-3 w-3 mr-1" />
                       Trending
                     </Badge>
                   )}
                   {hasPremiumTheme && (
-                    <Badge className="bg-violet-500 text-white">
+                    <Badge className="bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow-md">
                       <Crown className="h-3 w-3 mr-1" />
                       Premium
                     </Badge>
                   )}
                 </div>
                 {store.description && (
-                  <p className="text-sm text-muted-foreground line-clamp-2">
+                  <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
                     {store.description}
                   </p>
                 )}
               </div>
             </div>
-            <Button className="w-full mt-4" size="lg">
-              <MessageCircle className="h-4 w-4 mr-2" />
-              Contact Seller
-            </Button>
+            <div className="grid grid-cols-2 gap-2 mt-4">
+              <Button className="rounded-xl shadow-md" size="lg">
+                <MessageCircle className="h-4 w-4 mr-2" />
+                Contact
+              </Button>
+              <Button 
+                variant="outline" 
+                className="rounded-xl shadow-sm hover:bg-accent" 
+                size="lg"
+                onClick={() => setShareDialogOpen(true)}
+              >
+                <Share2 className="h-4 w-4 mr-2" />
+                Share Store
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Products */}
-      <div className="p-4">
+      {/* Products Section */}
+      <div className="px-4">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">Products</h2>
-          <Badge variant="outline">{products.length} items</Badge>
+          <h2 className="text-xl font-bold text-foreground">Store Products</h2>
+          <Badge variant="secondary" className="shadow-sm">{products.length} items</Badge>
         </div>
         
         {products.length === 0 ? (
-          <Card>
-            <CardContent className="p-8 text-center text-muted-foreground">
-              <Package className="h-12 w-12 mx-auto mb-2 opacity-50" />
-              <p>No products available</p>
+          <Card className="border-border/50 shadow-sm">
+            <CardContent className="p-12 text-center">
+              <div className="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
+                <Package className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <p className="text-muted-foreground font-medium">No products available</p>
+              <p className="text-sm text-muted-foreground/60 mt-1">Check back soon for new items</p>
             </CardContent>
           </Card>
         ) : (
@@ -246,16 +275,16 @@ const StorePage = () => {
             {products.map((product) => (
               <Card
                 key={product.id}
-                className={`overflow-hidden cursor-pointer hover:shadow-lg transition-all ${
+                className={`overflow-hidden cursor-pointer hover:shadow-xl hover:scale-[1.02] transition-all duration-200 border-border/50 ${
                   hasProductHighlights 
-                    ? 'ring-2 ring-primary/50 shadow-[0_0_15px_rgba(var(--primary),0.3)] animate-pulse-slow' 
+                    ? 'ring-2 ring-primary/50 shadow-[0_0_20px_rgba(15,168,108,0.3)]' 
                     : ''
                 }`}
                 onClick={() => navigate(`/product/${product.id}`)}
               >
                 <div className="aspect-square bg-muted relative">
                   {hasProductHighlights && (
-                    <div className="absolute inset-0 bg-gradient-to-tr from-primary/10 to-transparent pointer-events-none" />
+                    <div className="absolute inset-0 bg-gradient-to-tr from-primary/10 to-transparent pointer-events-none z-10" />
                   )}
                   {product.images && product.images.length > 0 ? (
                     <img
@@ -264,28 +293,28 @@ const StorePage = () => {
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <Package className="h-12 w-12 text-muted-foreground" />
+                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/50">
+                      <Package className="h-12 w-12 text-muted-foreground/50" />
                     </div>
                   )}
-                  <Badge className="absolute top-2 right-2 bg-primary text-xs">
+                  <Badge className="absolute top-2 right-2 bg-primary/90 backdrop-blur-sm text-xs shadow-md">
                     {product.category}
                   </Badge>
                   {hasProductHighlights && (
-                    <Badge className="absolute top-2 left-2 bg-emerald-500 text-white text-xs">
+                    <Badge className="absolute top-2 left-2 bg-emerald-500 text-white text-xs shadow-md">
                       <Sparkles className="h-3 w-3 mr-1" />
                       Featured
                     </Badge>
                   )}
                 </div>
-                <CardContent className="p-3">
-                  <h3 className="font-medium text-sm line-clamp-2 mb-1">
+                <CardContent className="p-3 space-y-1">
+                  <h3 className="font-semibold text-sm line-clamp-2 leading-tight text-foreground">
                     {product.title}
                   </h3>
-                  <p className="text-xs text-muted-foreground mb-2">
+                  <p className="text-xs text-muted-foreground font-mono">
                     {product.product_code}
                   </p>
-                  <p className="text-primary font-bold text-sm">
+                  <p className="text-primary font-bold text-base pt-1">
                     Le {product.price.toLocaleString()}
                   </p>
                 </CardContent>
@@ -294,6 +323,16 @@ const StorePage = () => {
           </div>
         )}
       </div>
+
+      {/* Share Dialog */}
+      {store && (
+        <ShareStoreDialog
+          open={shareDialogOpen}
+          onOpenChange={setShareDialogOpen}
+          store={store}
+          productCount={products.length}
+        />
+      )}
     </div>
   );
 };

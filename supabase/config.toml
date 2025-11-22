@@ -3,5 +3,8 @@ project_id = "rhtqsqpdvawlfqxlagxw"
 [functions.share-product]
 verify_jwt = false
 
+[functions.share-store]
+verify_jwt = false
+
 [functions.send-onesignal-notification]
 verify_jwt = false
