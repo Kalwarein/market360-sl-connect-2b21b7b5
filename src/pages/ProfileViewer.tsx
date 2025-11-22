@@ -56,8 +56,8 @@ const ProfileViewer = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
-        <div className="bg-white border-b p-4 flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+        <div className="bg-card border-b border-border p-4 flex items-center gap-3 backdrop-blur-sm">
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="rounded-full">
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <Skeleton className="h-6 w-32" />
@@ -84,99 +84,124 @@ const ProfileViewer = () => {
     .join(', ');
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="bg-white border-b p-4 flex items-center gap-3">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => navigate(-1)}
-          className="rounded-full"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <h1 className="text-lg font-semibold">Profile</h1>
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/30">
+      {/* Header */}
+      <div className="sticky top-0 z-10 bg-card/95 backdrop-blur-lg border-b border-border shadow-sm">
+        <div className="p-4 flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate(-1)}
+            className="rounded-full hover:bg-primary/10 transition-colors"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <h1 className="text-lg font-semibold text-foreground">Profile</h1>
+        </div>
       </div>
 
-      <div className="p-6">
+      <div className="p-6 max-w-2xl mx-auto">
+        {/* Profile Header */}
         <div className="flex flex-col items-center text-center mb-8">
-          <Avatar
-            className="h-32 w-32 cursor-pointer"
-            onClick={() => profile.avatar_url && window.open(profile.avatar_url, '_blank')}
-          >
-            <AvatarImage src={profile.avatar_url || undefined} />
-            <AvatarFallback className="bg-primary/10 text-primary text-4xl font-semibold">
-              {profile.full_name?.[0]?.toUpperCase() || profile.name?.[0]?.toUpperCase() || 'U'}
-            </AvatarFallback>
-          </Avatar>
-          <h2 className="text-2xl font-bold mt-4">{profile.full_name || profile.name || 'Unknown User'}</h2>
-          <p className="text-sm text-muted-foreground mt-1">{profile.email}</p>
+          <div className="relative group">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-accent/20 rounded-full blur-xl opacity-50 group-hover:opacity-75 transition-opacity" />
+            <Avatar
+              className="h-32 w-32 cursor-pointer border-4 border-card shadow-xl relative hover:scale-105 transition-transform duration-300"
+              onClick={() => profile.avatar_url && window.open(profile.avatar_url, '_blank')}
+            >
+              <AvatarImage src={profile.avatar_url || undefined} />
+              <AvatarFallback className="bg-gradient-to-br from-primary/20 to-accent/20 text-primary text-4xl font-bold">
+                {profile.full_name?.[0]?.toUpperCase() || profile.name?.[0]?.toUpperCase() || 'U'}
+              </AvatarFallback>
+            </Avatar>
+          </div>
+          <h2 className="text-3xl font-black mt-6 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+            {profile.full_name || profile.name || 'Unknown User'}
+          </h2>
+          <p className="text-sm text-muted-foreground mt-2 font-medium">{profile.email}</p>
         </div>
 
         {/* Bio Section */}
         {profile.bio && (
-          <div className="mb-6 p-4 bg-muted/30 rounded-xl">
-            <h3 className="font-semibold text-sm text-foreground/70 mb-2">About</h3>
-            <p className="text-sm text-foreground/90">{profile.bio}</p>
+          <div className="mb-6 p-5 bg-card/50 backdrop-blur-sm rounded-2xl border border-border/50 shadow-lg hover:shadow-xl transition-shadow">
+            <h3 className="font-bold text-sm text-primary uppercase tracking-wide mb-3 flex items-center gap-2">
+              <span className="w-1 h-4 bg-primary rounded-full" />
+              About
+            </h3>
+            <p className="text-sm text-foreground/80 leading-relaxed">{profile.bio}</p>
           </div>
         )}
 
-        <div className="space-y-4">
+        {/* Info Cards Grid */}
+        <div className="space-y-3">
           {profile.occupation && (
-            <div className="flex items-center gap-3 p-4 bg-white rounded-xl border">
-              <Briefcase className="h-5 w-5 text-muted-foreground" />
-              <div>
-                <p className="text-xs text-muted-foreground">Occupation</p>
-                <p className="font-medium">{profile.occupation}</p>
+            <div className="flex items-center gap-4 p-4 bg-card/80 backdrop-blur-sm rounded-2xl border border-border/50 shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-300">
+              <div className="p-3 bg-primary/10 rounded-xl">
+                <Briefcase className="h-5 w-5 text-primary" />
+              </div>
+              <div className="flex-1">
+                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Occupation</p>
+                <p className="font-semibold text-foreground mt-0.5">{profile.occupation}</p>
               </div>
             </div>
           )}
 
           {profile.school_name && (
-            <div className="flex items-center gap-3 p-4 bg-white rounded-xl border">
-              <GraduationCap className="h-5 w-5 text-muted-foreground" />
-              <div>
-                <p className="text-xs text-muted-foreground">School</p>
-                <p className="font-medium">{profile.school_name}</p>
+            <div className="flex items-center gap-4 p-4 bg-card/80 backdrop-blur-sm rounded-2xl border border-border/50 shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-300">
+              <div className="p-3 bg-primary/10 rounded-xl">
+                <GraduationCap className="h-5 w-5 text-primary" />
+              </div>
+              <div className="flex-1">
+                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">School</p>
+                <p className="font-semibold text-foreground mt-0.5">{profile.school_name}</p>
               </div>
             </div>
           )}
 
           {profile.university_name && (
-            <div className="flex items-center gap-3 p-4 bg-white rounded-xl border">
-              <GraduationCap className="h-5 w-5 text-muted-foreground" />
-              <div>
-                <p className="text-xs text-muted-foreground">University</p>
-                <p className="font-medium">{profile.university_name}</p>
+            <div className="flex items-center gap-4 p-4 bg-card/80 backdrop-blur-sm rounded-2xl border border-border/50 shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-300">
+              <div className="p-3 bg-primary/10 rounded-xl">
+                <GraduationCap className="h-5 w-5 text-primary" />
+              </div>
+              <div className="flex-1">
+                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">University</p>
+                <p className="font-semibold text-foreground mt-0.5">{profile.university_name}</p>
               </div>
             </div>
           )}
 
           {profile.phone && (
-            <div className="flex items-center gap-3 p-4 bg-white rounded-xl border">
-              <Phone className="h-5 w-5 text-muted-foreground" />
-              <div>
-                <p className="text-xs text-muted-foreground">Phone</p>
-                <p className="font-medium">{profile.phone}</p>
+            <div className="flex items-center gap-4 p-4 bg-card/80 backdrop-blur-sm rounded-2xl border border-border/50 shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-300">
+              <div className="p-3 bg-primary/10 rounded-xl">
+                <Phone className="h-5 w-5 text-primary" />
+              </div>
+              <div className="flex-1">
+                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Phone</p>
+                <p className="font-semibold text-foreground mt-0.5">{profile.phone}</p>
               </div>
             </div>
           )}
 
           {profile.email && (
-            <div className="flex items-center gap-3 p-4 bg-white rounded-xl border">
-              <Mail className="h-5 w-5 text-muted-foreground" />
-              <div>
-                <p className="text-xs text-muted-foreground">Email</p>
-                <p className="font-medium">{profile.email}</p>
+            <div className="flex items-center gap-4 p-4 bg-card/80 backdrop-blur-sm rounded-2xl border border-border/50 shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-300">
+              <div className="p-3 bg-primary/10 rounded-xl">
+                <Mail className="h-5 w-5 text-primary" />
+              </div>
+              <div className="flex-1">
+                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Email</p>
+                <p className="font-semibold text-foreground mt-0.5">{profile.email}</p>
               </div>
             </div>
           )}
 
           {(profile.street_address || location) && (
-            <div className="flex items-center gap-3 p-4 bg-white rounded-xl border">
-              <MapPin className="h-5 w-5 text-muted-foreground" />
-              <div>
-                <p className="text-xs text-muted-foreground">Address</p>
-                <p className="font-medium">
+            <div className="flex items-center gap-4 p-4 bg-card/80 backdrop-blur-sm rounded-2xl border border-border/50 shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-300">
+              <div className="p-3 bg-primary/10 rounded-xl">
+                <MapPin className="h-5 w-5 text-primary" />
+              </div>
+              <div className="flex-1">
+                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Address</p>
+                <p className="font-semibold text-foreground mt-0.5">
                   {[profile.street_address, location].filter(Boolean).join(', ')}
                 </p>
               </div>
@@ -186,13 +211,16 @@ const ProfileViewer = () => {
 
         {/* Interests */}
         {profile.interests && profile.interests.length > 0 && (
-          <div className="mt-6">
-            <h3 className="font-semibold text-sm text-foreground/70 mb-3">Interests</h3>
+          <div className="mt-8 p-5 bg-card/50 backdrop-blur-sm rounded-2xl border border-border/50 shadow-lg">
+            <h3 className="font-bold text-sm text-primary uppercase tracking-wide mb-4 flex items-center gap-2">
+              <span className="w-1 h-4 bg-primary rounded-full" />
+              Interests
+            </h3>
             <div className="flex flex-wrap gap-2">
               {profile.interests.map((interest, index) => (
                 <span
                   key={index}
-                  className="px-3 py-1 bg-primary/10 text-primary text-xs rounded-full border border-primary/20"
+                  className="px-4 py-2 bg-gradient-to-br from-primary/10 to-accent/10 text-primary text-sm font-semibold rounded-full border border-primary/20 hover:border-primary/40 hover:scale-105 transition-all duration-200 shadow-sm"
                 >
                   {interest}
                 </span>
