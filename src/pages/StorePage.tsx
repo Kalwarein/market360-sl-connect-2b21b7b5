@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -36,6 +37,7 @@ interface Product {
 const StorePage = () => {
   const { storeId } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [store, setStore] = useState<Store | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,15 +53,10 @@ const StorePage = () => {
   } = useStorePerks(storeId);
 
   const handleContactSeller = async () => {
-    if (!store) return;
+    if (!store || !user) return;
     
     setContacting(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        navigate('/auth');
-        return;
-      }
 
       // Check if conversation already exists
       const { data: existingConversation } = await supabase
@@ -281,26 +278,51 @@ const StorePage = () => {
                 )}
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-2 mt-4">
-              <Button 
-                className="rounded-xl shadow-md" 
-                size="lg"
-                onClick={handleContactSeller}
-                disabled={contacting}
-              >
-                <MessageCircle className="h-4 w-4 mr-2" />
-                {contacting ? 'Opening...' : 'Contact Seller'}
-              </Button>
-              <Button 
-                variant="outline" 
-                className="rounded-xl shadow-sm hover:bg-accent" 
-                size="lg"
-                onClick={() => setShareDialogOpen(true)}
-              >
-                <Share2 className="h-4 w-4 mr-2" />
-                Share Store
-              </Button>
-            </div>
+            {!user ? (
+              <div className="space-y-3 mt-4">
+                <p className="text-center text-sm text-muted-foreground">
+                  Sign up to contact sellers and view more features
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button 
+                    variant="outline"
+                    className="rounded-xl shadow-sm" 
+                    size="lg"
+                    onClick={() => navigate('/auth')}
+                  >
+                    Sign In
+                  </Button>
+                  <Button 
+                    className="rounded-xl shadow-md bg-gradient-to-r from-primary to-secondary" 
+                    size="lg"
+                    onClick={() => navigate('/auth')}
+                  >
+                    Create Account
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-2 mt-4">
+                <Button 
+                  className="rounded-xl shadow-md" 
+                  size="lg"
+                  onClick={handleContactSeller}
+                  disabled={contacting}
+                >
+                  <MessageCircle className="h-4 w-4 mr-2" />
+                  {contacting ? 'Opening...' : 'Contact Seller'}
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="rounded-xl shadow-sm hover:bg-accent" 
+                  size="lg"
+                  onClick={() => setShareDialogOpen(true)}
+                >
+                  <Share2 className="h-4 w-4 mr-2" />
+                  Share Store
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

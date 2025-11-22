@@ -278,17 +278,19 @@ const ProductDetails = () => {
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <div className="flex items-center gap-2">
-            <Button 
-              variant="default" 
-              size="sm"
-              onClick={handleShare}
-              className="gap-2 bg-gradient-to-r from-primary to-secondary hover:opacity-90 transition-all shadow-sm"
-            >
-              <Share2 className="h-4 w-4" />
-              <span className="hidden sm:inline">Share</span>
-            </Button>
-          </div>
+          {user && (
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="default" 
+                size="sm"
+                onClick={handleShare}
+                className="gap-2 bg-gradient-to-r from-primary to-secondary hover:opacity-90 transition-all shadow-sm"
+              >
+                <Share2 className="h-4 w-4" />
+                <span className="hidden sm:inline">Share</span>
+              </Button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -591,29 +593,54 @@ const ProductDetails = () => {
         </Card>
       </div>
 
-      {!product.inquiry_only && (
-        <div className="fixed bottom-0 left-0 right-0 bg-background border-t p-4 flex gap-3 z-20">
-          <Button variant="outline" className="flex-1" onClick={() => handleChat(false)}>
-            <MessageSquare className="h-4 w-4 mr-2" />
-            Chat
-          </Button>
-          <Button variant="outline" className="flex-1" onClick={() => handleChat(true)}>
-            Enquiry
-          </Button>
-          <Button className="flex-1" onClick={handleAddToCart}>
-            <ShoppingCart className="h-4 w-4 mr-2" />
-            Add
-          </Button>
+      {!user ? (
+        <div className="fixed bottom-0 left-0 right-0 bg-background border-t p-4 space-y-3 z-20">
+          <p className="text-center text-sm text-muted-foreground mb-2">
+            Sign up to chat with sellers and make purchases
+          </p>
+          <div className="flex gap-3">
+            <Button 
+              variant="outline" 
+              className="flex-1 rounded-xl shadow-sm" 
+              onClick={() => navigate('/auth')}
+            >
+              Sign In
+            </Button>
+            <Button 
+              className="flex-1 rounded-xl shadow-md bg-gradient-to-r from-primary to-secondary" 
+              onClick={() => navigate('/auth')}
+            >
+              Create Account
+            </Button>
+          </div>
         </div>
-      )}
-      
-      {product.inquiry_only && (
-        <div className="fixed bottom-0 left-0 right-0 bg-background border-t p-4 z-20">
-          <Button className="w-full" onClick={() => handleChat(true)}>
-            <MessageSquare className="h-4 w-4 mr-2" />
-            Enquire Now
-          </Button>
-        </div>
+      ) : (
+        <>
+          {!product.inquiry_only && (
+            <div className="fixed bottom-0 left-0 right-0 bg-background border-t p-4 flex gap-3 z-20">
+              <Button variant="outline" className="flex-1" onClick={() => handleChat(false)}>
+                <MessageSquare className="h-4 w-4 mr-2" />
+                Chat
+              </Button>
+              <Button variant="outline" className="flex-1" onClick={() => handleChat(true)}>
+                Enquiry
+              </Button>
+              <Button className="flex-1" onClick={handleAddToCart}>
+                <ShoppingCart className="h-4 w-4 mr-2" />
+                Add
+              </Button>
+            </div>
+          )}
+          
+          {product.inquiry_only && (
+            <div className="fixed bottom-0 left-0 right-0 bg-background border-t p-4 z-20">
+              <Button className="w-full" onClick={() => handleChat(true)}>
+                <MessageSquare className="h-4 w-4 mr-2" />
+                Enquire Now
+              </Button>
+            </div>
+          )}
+        </>
       )}
 
       {product && (
