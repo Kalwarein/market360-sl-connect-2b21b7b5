@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, MapPin, MessageCircle, Star, Package, TrendingUp, Sparkles, Crown, Share2 } from 'lucide-react';
+import { ArrowLeft, MapPin, MessageCircle, Star, Package, TrendingUp, Sparkles, Crown, Share2, Shield, Zap, Award, CheckCircle } from 'lucide-react';
 import { useStorePerks } from '@/hooks/useStorePerks';
 import { ShareStoreDialog } from '@/components/ShareStoreDialog';
 import { toast } from 'sonner';
@@ -155,21 +155,370 @@ const StorePage = () => {
     );
   }
 
-  return (
-    <div className={`min-h-screen pb-20 ${hasPremiumTheme ? 'bg-gradient-to-br from-background via-background to-primary/5' : 'bg-background'}`}>
-      {/* Featured Spotlight Banner */}
-      {hasFeaturedSpotlight && (
-        <div className="bg-gradient-to-r from-red-500 to-red-600 text-white py-2.5 px-4 text-center shadow-lg">
-          <div className="flex items-center justify-center gap-2 animate-pulse">
-            <Crown className="h-4 w-4" />
-            <span className="text-sm font-bold tracking-wide">✨ FEATURED STORE ✨</span>
-            <Crown className="h-4 w-4" />
-          </div>
+  const isPremiumStore = hasFeaturedSpotlight || hasPremiumTheme;
+
+  // Premium Featured Store Layout
+  if (isPremiumStore) {
+    return (
+      <div className="min-h-screen pb-20 relative overflow-hidden">
+        {/* Animated Golden Background */}
+        <div className="fixed inset-0 bg-gradient-to-br from-black via-zinc-900 to-black" />
+        <div 
+          className="fixed inset-0 opacity-30"
+          style={{
+            background: 'radial-gradient(circle at 50% 50%, rgba(255, 215, 0, 0.15) 0%, transparent 70%)',
+            animation: 'pulse 4s ease-in-out infinite'
+          }}
+        />
+        
+        {/* Header Actions */}
+        <div className="relative z-20 px-4 pt-4 flex items-center justify-between">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-amber-200 bg-black/50 hover:bg-black/70 backdrop-blur-md border border-amber-500/30 rounded-xl h-9 px-3 transition-all shadow-lg"
+            onClick={() => navigate(-1)}
+          >
+            <ArrowLeft className="h-4 w-4 mr-1.5" />
+            Back
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-amber-200 bg-black/50 hover:bg-black/70 backdrop-blur-md border border-amber-500/30 rounded-xl h-9 px-3 transition-all shadow-lg"
+            onClick={() => setShareDialogOpen(true)}
+          >
+            <Share2 className="h-4 w-4 mr-1.5" />
+            Share
+          </Button>
         </div>
-      )}
-      
+
+        {/* Premium Hero Section */}
+        <div className="relative z-10 px-4 pt-6">
+          {/* Premium Crown Banner */}
+          <div className="flex items-center justify-center mb-6 animate-fade-in">
+            <div className="bg-gradient-to-r from-amber-500 to-yellow-400 text-black px-6 py-2 rounded-full shadow-2xl border-2 border-yellow-300 animate-pulse">
+              <div className="flex items-center gap-2 font-bold">
+                <Crown className="h-5 w-5 fill-current" />
+                <span className="text-sm tracking-wider">PREMIUM FEATURED STORE</span>
+                <Crown className="h-5 w-5 fill-current" />
+              </div>
+            </div>
+          </div>
+
+          {/* Store Hero Card */}
+          <Card 
+            className="relative overflow-hidden border-2 shadow-2xl"
+            style={{
+              background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 50%, #1a1a1a 100%)',
+              borderImage: 'linear-gradient(135deg, #ffd700, #ffed4e, #ffd700, #ffb700) 1',
+              boxShadow: '0 0 60px rgba(255, 215, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+            }}
+          >
+            {/* Shimmer Effect */}
+            <div 
+              className="absolute inset-0 opacity-40 pointer-events-none"
+              style={{
+                background: 'linear-gradient(90deg, transparent 0%, rgba(255, 215, 0, 0.5) 50%, transparent 100%)',
+                backgroundSize: '200% 100%',
+                animation: 'shimmer 3s infinite'
+              }}
+            />
+
+            {/* Store Banner */}
+            <div className="relative h-48 overflow-hidden">
+              {store.banner_url ? (
+                <img 
+                  src={store.banner_url} 
+                  alt={store.store_name}
+                  className="w-full h-full object-cover"
+                  style={{ filter: 'brightness(0.85) contrast(1.1)' }}
+                />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-amber-900 via-yellow-700 to-amber-900" />
+              )}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+              
+              {/* Sparkle Effects */}
+              <Star className="absolute top-6 left-6 h-6 w-6 text-yellow-300 fill-yellow-300 animate-pulse" style={{ animationDelay: '0s' }} />
+              <Star className="absolute top-10 right-10 h-5 w-5 text-yellow-400 fill-yellow-400 animate-pulse" style={{ animationDelay: '0.5s' }} />
+              <Star className="absolute bottom-8 left-1/3 h-4 w-4 text-amber-300 fill-amber-300 animate-pulse" style={{ animationDelay: '1s' }} />
+            </div>
+
+            <CardContent className="relative p-6">
+              {/* Golden Logo Frame */}
+              <div className="absolute -top-16 left-6">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-gradient-to-br from-amber-400 to-yellow-600 rounded-2xl blur-lg opacity-75 animate-pulse" />
+                  <div 
+                    className="relative h-32 w-32 rounded-2xl overflow-hidden"
+                    style={{
+                      border: '4px solid',
+                      borderImage: 'linear-gradient(135deg, #ffd700, #ffed4e, #ffd700, #ffb700) 1',
+                      boxShadow: '0 8px 32px rgba(255, 215, 0, 0.6), inset 0 2px 4px rgba(255, 255, 255, 0.3)'
+                    }}
+                  >
+                    {store.logo_url ? (
+                      <img src={store.logo_url} alt={store.store_name} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-amber-800 to-yellow-900">
+                        <Crown className="h-16 w-16 text-yellow-300 fill-yellow-300" />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Store Info */}
+              <div className="pl-40 min-h-[100px]">
+                <div className="flex items-center gap-3 mb-3">
+                  {/* Typewriter Store Name */}
+                  <h1 
+                    className="text-3xl font-black"
+                    style={{
+                      background: 'linear-gradient(135deg, #ffd700 0%, #ffed4e 50%, #ffd700 100%)',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                      backgroundClip: 'text',
+                      filter: 'drop-shadow(0 2px 8px rgba(255, 215, 0, 0.6))',
+                      animation: 'typewriter 3s steps(40) 1s 1 normal both'
+                    }}
+                  >
+                    {store.store_name}
+                  </h1>
+                  
+                  {/* Verified Badge */}
+                  {hasVerifiedBadge && (
+                    <div className="relative animate-pulse">
+                      <div className="absolute inset-0 bg-amber-500/50 blur-xl rounded-full" />
+                      <img 
+                        src={verifiedBadge} 
+                        alt="Verified" 
+                        className="h-12 w-12 object-contain drop-shadow-2xl relative z-10"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Location */}
+                {(store.city || store.region) && (
+                  <div className="flex items-center gap-2 text-amber-200/90 mb-4">
+                    <MapPin className="h-4 w-4 text-amber-400" />
+                    <span className="font-medium text-sm">
+                      {[store.city, store.region, store.country].filter(Boolean).join(', ')}
+                    </span>
+                  </div>
+                )}
+
+                {/* Trust Badges */}
+                <div className="flex items-center gap-2 flex-wrap mb-4">
+                  <Badge className="bg-gradient-to-r from-amber-600 to-yellow-500 text-black font-bold border-2 border-yellow-300 shadow-lg">
+                    <Shield className="h-3 w-3 mr-1" />
+                    Trusted Seller
+                  </Badge>
+                  <Badge className="bg-gradient-to-r from-emerald-600 to-green-500 text-white font-bold border border-emerald-400/50 shadow-lg">
+                    <CheckCircle className="h-3 w-3 mr-1" />
+                    Verified
+                  </Badge>
+                  <Badge className="bg-gradient-to-r from-violet-600 to-purple-500 text-white font-bold border border-violet-400/50 shadow-lg">
+                    <Zap className="h-3 w-3 mr-1" />
+                    Fast Response
+                  </Badge>
+                  <Badge className="bg-gradient-to-r from-rose-600 to-pink-500 text-white font-bold border border-rose-400/50 shadow-lg">
+                    <Award className="h-3 w-3 mr-1" />
+                    Top Rated
+                  </Badge>
+                </div>
+
+                {/* Store Stats */}
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="flex items-center gap-1 text-amber-300">
+                    <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                    <span className="font-bold text-lg">4.9</span>
+                  </div>
+                  <div className="h-5 w-px bg-amber-500/30" />
+                  <span className="text-amber-200 font-semibold">{products.length} Products</span>
+                  <div className="h-5 w-px bg-amber-500/30" />
+                  <span className="text-amber-200 font-semibold">500+ Sales</span>
+                </div>
+
+                {/* Description */}
+                {store.description && (
+                  <p className="text-amber-100/80 text-sm leading-relaxed line-clamp-2">
+                    {store.description}
+                  </p>
+                )}
+              </div>
+
+              {/* Action Buttons */}
+              {!user ? (
+                <div className="grid grid-cols-2 gap-3 mt-6">
+                  <Button 
+                    variant="outline"
+                    className="rounded-xl border-2 border-amber-500/50 text-amber-300 hover:bg-amber-500/20 shadow-lg" 
+                    size="lg"
+                    onClick={() => navigate('/auth')}
+                  >
+                    Sign In
+                  </Button>
+                  <Button 
+                    className="rounded-xl shadow-2xl font-bold relative overflow-hidden"
+                    style={{
+                      background: 'linear-gradient(135deg, #ffd700, #ffed4e)',
+                      color: '#000',
+                      border: '2px solid #ffb700'
+                    }}
+                    size="lg"
+                    onClick={() => navigate('/auth')}
+                  >
+                    <span className="relative z-10">Create Account</span>
+                  </Button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-3 mt-6">
+                  <Button 
+                    className="rounded-xl shadow-2xl font-bold border-2"
+                    style={{
+                      background: 'linear-gradient(135deg, #0FA86C, #0B8A6D)',
+                      borderColor: '#0FA86C'
+                    }}
+                    size="lg"
+                    onClick={handleContactSeller}
+                    disabled={contacting}
+                  >
+                    <MessageCircle className="h-4 w-4 mr-2" />
+                    {contacting ? 'Opening...' : 'Contact Seller'}
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="rounded-xl border-2 border-amber-500/50 text-amber-300 hover:bg-amber-500/20 shadow-lg" 
+                    size="lg"
+                    onClick={() => setShareDialogOpen(true)}
+                  >
+                    <Share2 className="h-4 w-4 mr-2" />
+                    Share Store
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+
+            {/* Bottom Golden Accent */}
+            <div 
+              className="h-2 w-full"
+              style={{
+                background: 'linear-gradient(90deg, transparent 0%, #ffd700 50%, transparent 100%)'
+              }}
+            />
+          </Card>
+        </div>
+
+        {/* Products Section */}
+        <div className="relative z-10 px-4 mt-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 
+              className="text-2xl font-bold"
+              style={{
+                background: 'linear-gradient(135deg, #ffd700 0%, #ffed4e 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text'
+              }}
+            >
+              Store Products
+            </h2>
+            <Badge 
+              className="bg-gradient-to-r from-amber-600 to-yellow-500 text-black font-bold border-2 border-yellow-300"
+            >
+              {products.length} items
+            </Badge>
+          </div>
+          
+          {products.length === 0 ? (
+            <Card className="border-2 border-amber-500/30 bg-black/40 backdrop-blur-sm">
+              <CardContent className="p-12 text-center">
+                <div className="mx-auto w-16 h-16 bg-amber-500/20 rounded-full flex items-center justify-center mb-4">
+                  <Package className="h-8 w-8 text-amber-400" />
+                </div>
+                <p className="text-amber-200 font-medium">No products available</p>
+                <p className="text-sm text-amber-300/60 mt-1">Check back soon for new items</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {products.map((product) => (
+                <Card
+                  key={product.id}
+                  className="overflow-hidden cursor-pointer transition-all duration-300 border-2 bg-black/40 backdrop-blur-sm hover:scale-105"
+                  style={{
+                    borderImage: 'linear-gradient(135deg, #ffd700, #ffed4e) 1',
+                    boxShadow: '0 4px 20px rgba(255, 215, 0, 0.3)'
+                  }}
+                  onClick={() => navigate(`/product/${product.id}`)}
+                >
+                  <div className="aspect-square bg-zinc-900 relative">
+                    <div className="absolute inset-0 bg-gradient-to-tr from-amber-500/10 to-transparent pointer-events-none z-10" />
+                    {product.images && product.images.length > 0 ? (
+                      <img
+                        src={product.images[0]}
+                        alt={product.title}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Package className="h-12 w-12 text-amber-500/50" />
+                      </div>
+                    )}
+                    <Badge className="absolute top-2 right-2 bg-amber-500 text-black font-bold text-xs shadow-xl">
+                      {product.category}
+                    </Badge>
+                    <Badge className="absolute top-2 left-2 bg-gradient-to-r from-emerald-500 to-green-500 text-white font-bold text-xs shadow-xl">
+                      <Sparkles className="h-3 w-3 mr-1" />
+                      Featured
+                    </Badge>
+                  </div>
+                  <CardContent className="p-3 space-y-1 bg-black/60">
+                    <h3 className="font-semibold text-sm line-clamp-2 leading-tight text-amber-100">
+                      {product.title}
+                    </h3>
+                    <p className="text-xs text-amber-300/70 font-mono">
+                      {product.product_code}
+                    </p>
+                    <p 
+                      className="font-bold text-lg pt-1"
+                      style={{
+                        background: 'linear-gradient(135deg, #ffd700, #ffed4e)',
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent',
+                        backgroundClip: 'text'
+                      }}
+                    >
+                      Le {product.price.toLocaleString()}
+                    </p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Share Dialog */}
+        {store && (
+          <ShareStoreDialog
+            open={shareDialogOpen}
+            onOpenChange={setShareDialogOpen}
+            store={store}
+            productCount={products.length}
+          />
+        )}
+      </div>
+    );
+  }
+
+  // Standard Store Layout
+  return (
+    <div className="min-h-screen pb-20 bg-background">
       {/* Banner */}
-      <div className={`relative h-52 ${hasPremiumTheme ? 'ring-2 ring-primary/30 shadow-xl' : 'shadow-md'}`}>
+      <div className="relative h-52 shadow-md">
         {store.banner_url ? (
           <img
             src={store.banner_url}
@@ -177,10 +526,7 @@ const StorePage = () => {
             className="w-full h-full object-cover"
           />
         ) : (
-          <div className={`w-full h-full ${hasPremiumTheme ? 'bg-gradient-to-r from-primary via-primary-hover to-primary' : 'bg-gradient-to-r from-primary to-secondary'}`} />
-        )}
-        {hasPremiumTheme && (
-          <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent pointer-events-none" />
+          <div className="w-full h-full bg-gradient-to-r from-primary to-secondary" />
         )}
         
         {/* Header Actions */}
@@ -208,10 +554,10 @@ const StorePage = () => {
 
       {/* Store Info */}
       <div className="px-4 -mt-20 relative z-10 mb-6">
-        <Card className={`shadow-2xl border-border/50 backdrop-blur-sm ${hasPremiumTheme ? 'border-2 border-primary/30 bg-gradient-to-br from-card/95 to-primary/5' : 'bg-card/95'}`}>
+        <Card className="shadow-2xl border-border/50 backdrop-blur-sm bg-card/95">
           <CardContent className="p-5">
             <div className="flex gap-4">
-              <div className={`h-28 w-28 rounded-2xl bg-background border-2 overflow-hidden flex-shrink-0 shadow-lg ${hasPremiumTheme ? 'ring-2 ring-primary/50' : ''}`}>
+              <div className="h-28 w-28 rounded-2xl bg-background border-2 overflow-hidden flex-shrink-0 shadow-lg">
                 {store.logo_url ? (
                   <img
                     src={store.logo_url}
@@ -226,7 +572,7 @@ const StorePage = () => {
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1.5">
-                  <h1 className={`text-2xl font-bold leading-tight ${hasPremiumTheme ? 'bg-gradient-to-r from-primary to-primary-hover bg-clip-text text-transparent' : 'text-foreground'}`}>
+                  <h1 className="text-2xl font-bold leading-tight text-foreground">
                     {store.store_name}
                   </h1>
                   {hasVerifiedBadge && (
@@ -234,7 +580,7 @@ const StorePage = () => {
                       <img 
                         src={verifiedBadge} 
                         alt="Verified Store" 
-                        className="h-7 w-7 object-contain drop-shadow-xl animate-pulse"
+                        className="h-7 w-7 object-contain drop-shadow-xl"
                       />
                       <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-black/90 text-white text-xs px-2 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-20 shadow-lg">
                         Verified Store
@@ -262,12 +608,6 @@ const StorePage = () => {
                     <Badge className="bg-rose-500 text-white shadow-md">
                       <TrendingUp className="h-3 w-3 mr-1" />
                       Trending
-                    </Badge>
-                  )}
-                  {hasPremiumTheme && (
-                    <Badge className="bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow-md">
-                      <Crown className="h-3 w-3 mr-1" />
-                      Premium
                     </Badge>
                   )}
                 </div>
@@ -349,17 +689,10 @@ const StorePage = () => {
             {products.map((product) => (
               <Card
                 key={product.id}
-                className={`overflow-hidden cursor-pointer hover:shadow-xl hover:scale-[1.02] transition-all duration-200 border-border/50 ${
-                  hasProductHighlights 
-                    ? 'ring-2 ring-primary/50 shadow-[0_0_20px_rgba(15,168,108,0.3)]' 
-                    : ''
-                }`}
+                className="overflow-hidden cursor-pointer hover:shadow-xl hover:scale-[1.02] transition-all duration-200 border-border/50"
                 onClick={() => navigate(`/product/${product.id}`)}
               >
                 <div className="aspect-square bg-muted relative">
-                  {hasProductHighlights && (
-                    <div className="absolute inset-0 bg-gradient-to-tr from-primary/10 to-transparent pointer-events-none z-10" />
-                  )}
                   {product.images && product.images.length > 0 ? (
                     <img
                       src={product.images[0]}
@@ -374,12 +707,6 @@ const StorePage = () => {
                   <Badge className="absolute top-2 right-2 bg-primary/90 backdrop-blur-sm text-xs shadow-md">
                     {product.category}
                   </Badge>
-                  {hasProductHighlights && (
-                    <Badge className="absolute top-2 left-2 bg-emerald-500 text-white text-xs shadow-md">
-                      <Sparkles className="h-3 w-3 mr-1" />
-                      Featured
-                    </Badge>
-                  )}
                 </div>
                 <CardContent className="p-3 space-y-1">
                   <h3 className="font-semibold text-sm line-clamp-2 leading-tight text-foreground">
