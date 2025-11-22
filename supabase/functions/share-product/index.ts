@@ -121,8 +121,31 @@ Deno.serve(async (req) => {
       ? `${metaParts.join(' • ')} | ${product.description || 'Available on Market360'}`
       : product.description || `${product.title} - Available on Market360`
     
-    // Dynamically determine the base URL from environment (canonical frontend domain)
-    const appUrl = Deno.env.get('APP_URL') || 'https://market-360sl.vercel.app'
+    // Dynamically detect the domain from request headers
+    const referer = req.headers.get('referer')
+    const origin = req.headers.get('origin')
+    
+    let appUrl = 'https://market-360sl.vercel.app' // Fallback
+    
+    // Try to extract domain from referer or origin
+    if (referer) {
+      try {
+        const refererUrl = new URL(referer)
+        appUrl = `${refererUrl.protocol}//${refererUrl.host}`
+        console.log('Using referer domain:', appUrl)
+      } catch (e) {
+        console.error('Failed to parse referer:', e)
+      }
+    } else if (origin) {
+      try {
+        const originUrl = new URL(origin)
+        appUrl = `${originUrl.protocol}//${originUrl.host}`
+        console.log('Using origin domain:', appUrl)
+      } catch (e) {
+        console.error('Failed to parse origin:', e)
+      }
+    }
+    
     const productUrl = `${appUrl}/product/${productId}`
     const shareUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/share-product?id=${productId}`
 
