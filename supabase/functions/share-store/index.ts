@@ -98,14 +98,23 @@ Deno.serve(async (req) => {
       console.log('⚠️ No store image found, using Market360 default image')
     }
     
-    // Dynamically detect the domain from request headers
+    // Prefer explicit domain passed from the frontend, then fall back to headers, then default
+    const domainParam = url.searchParams.get('domain')
     const referer = req.headers.get('referer')
     const origin = req.headers.get('origin')
+
     
-    let appUrl = 'https://market-360sl.vercel.app' // Fallback
+    let appUrl = 'https://market-360sl.vercel.app' // Fallback to production domain
     
-    // Try to extract domain from referer or origin
-    if (referer) {
+    if (domainParam) {
+      try {
+        const domainUrl = new URL(domainParam)
+        appUrl = `${domainUrl.protocol}//${domainUrl.host}`
+        console.log('Using domain query param:', appUrl)
+      } catch (e) {
+        console.error('Failed to parse domain query param:', e)
+      }
+    } else if (referer) {
       try {
         const refererUrl = new URL(referer)
         appUrl = `${refererUrl.protocol}//${refererUrl.host}`
@@ -122,6 +131,7 @@ Deno.serve(async (req) => {
         console.error('Failed to parse origin:', e)
       }
     }
+
     
     const storeUrl = `${appUrl}/store/${storeId}`
     const shareUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/share-store?id=${storeId}`
