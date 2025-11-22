@@ -98,9 +98,9 @@ Deno.serve(async (req) => {
       console.log('⚠️ No store image found, using Market360 default image')
     }
     
-    // Dynamically determine the base URL from request headers or environment
-    const origin = req.headers.get('origin') || req.headers.get('referer')?.split('/').slice(0, 3).join('/') || Deno.env.get('APP_URL') || 'https://4b360025-8d48-456b-9a42-694a4c244c34.lovableproject.com'
-    const storeUrl = `${origin}/store/${storeId}`
+    // Dynamically determine the base URL from environment (canonical frontend domain)
+    const appUrl = Deno.env.get('APP_URL') || 'https://market-360sl.vercel.app'
+    const storeUrl = `${appUrl}/store/${storeId}`
     const shareUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/share-store?id=${storeId}`
 
     // If not a crawler, immediately redirect to store page
