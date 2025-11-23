@@ -10,6 +10,7 @@ import BottomNav from '@/components/BottomNav';
 import Sidebar from '@/components/Sidebar';
 import { PremiumSearchBar } from '@/components/PremiumSearchBar';
 import { MarketplaceProductCard } from '@/components/MarketplaceProductCard';
+import { StoreCard } from '@/components/StoreCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { GuidedTour } from '@/components/GuidedTour';
 
@@ -22,10 +23,24 @@ interface Product {
   moq?: number;
 }
 
+interface Store {
+  id: string;
+  store_name: string;
+  logo_url: string | null;
+  banner_url: string | null;
+  city: string | null;
+  region: string | null;
+  productCount?: number;
+}
+
+interface CategorySection {
+  category: string;
+  products: Product[];
+}
+
 const Home = () => {
-  const [topDeals, setTopDeals] = useState<Product[]>([]);
-  const [topRanking, setTopRanking] = useState<Product[]>([]);
-  const [newArrivals, setNewArrivals] = useState<Product[]>([]);
+  const [categorySections, setCategorySections] = useState<CategorySection[]>([]);
+  const [featuredStores, setFeaturedStores] = useState<Store[]>([]);
   const [availableCategories, setAvailableCategories] = useState<string[]>(['All']);
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [categorySearch, setCategorySearch] = useState('');
@@ -107,138 +122,118 @@ const Home = () => {
   const loadData = async () => {
     setLoading(true);
     await Promise.all([
-      loadTopDeals(),
-      loadTopRanking(),
-      loadNewArrivals(),
+      loadCategorySections(),
+      loadFeaturedStores(),
     ]);
     setLoading(false);
   };
 
-  const loadTopDeals = async () => {
+  const loadCategorySections = async () => {
     try {
-      let query = supabase
+      // Get top 8 categories with most products
+      const { data: allProducts, error } = await supabase
         .from('products')
-        .select('*')
+        .select('category')
         .eq('published', true);
 
-      if (activeTab === 'manufacturers') {
-        query = query.eq('product_type', 'manufacturer');
-      } else if (activeTab === 'worldwide') {
-        query = query.eq('product_type', 'worldwide');
-      }
-
-      if (selectedCategory !== 'All') {
-        query = query.eq('category', selectedCategory);
-      }
-
-      const { data, error } = await query
-        .order('price', { ascending: true })
-        .limit(10);
-
       if (error) throw error;
-      setTopDeals(data || []);
-    } catch (error) {
-      console.error('Error loading top deals:', error);
-    }
-  };
 
-  const loadTopRanking = async () => {
-    try {
-      const sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-
-      const { data: viewData, error: viewError } = await supabase
-        .from('product_views')
-        .select('product_id')
-        .gte('viewed_at', sevenDaysAgo.toISOString());
-
-      if (viewError) throw viewError;
-
-      const viewCounts = viewData.reduce((acc: { [key: string]: number }, view) => {
-        acc[view.product_id] = (acc[view.product_id] || 0) + 1;
+      const categoryCounts = allProducts.reduce((acc: { [key: string]: number }, product) => {
+        if (product.category) {
+          acc[product.category] = (acc[product.category] || 0) + 1;
+        }
         return acc;
       }, {});
 
-      const topProductIds = Object.entries(viewCounts)
+      const topCategories = Object.entries(categoryCounts)
         .sort(([, a], [, b]) => (b as number) - (a as number))
-        .slice(0, 10)
-        .map(([id]) => id);
+        .slice(0, 8)
+        .map(([cat]) => cat);
 
-      if (topProductIds.length === 0) {
-        let query = supabase
-          .from('products')
-          .select('*')
-          .eq('published', true);
+      // Load products for each category
+      const sections = await Promise.all(
+        topCategories.map(async (category) => {
+          let query = supabase
+            .from('products')
+            .select('*')
+            .eq('published', true)
+            .eq('category', category);
 
-        if (activeTab === 'manufacturers') {
-          query = query.eq('product_type', 'manufacturer');
-        } else if (activeTab === 'worldwide') {
-          query = query.eq('product_type', 'worldwide');
-        }
+          if (activeTab === 'manufacturers') {
+            query = query.eq('product_type', 'manufacturer');
+          } else if (activeTab === 'worldwide') {
+            query = query.eq('product_type', 'worldwide');
+          }
 
-        if (selectedCategory !== 'All') {
-          query = query.eq('category', selectedCategory);
-        }
+          if (selectedCategory !== 'All') {
+            query = query.eq('category', selectedCategory);
+          }
 
-        const { data, error } = await query
-          .order('created_at', { ascending: false })
-          .limit(10);
+          const { data, error } = await query
+            .order('created_at', { ascending: false })
+            .limit(10);
 
-        if (error) throw error;
-        setTopRanking(data || []);
-        return;
-      }
+          if (error) throw error;
 
-      let query = supabase
-        .from('products')
-        .select('*')
-        .in('id', topProductIds)
-        .eq('published', true);
+          return {
+            category,
+            products: data || [],
+          };
+        })
+      );
 
-      if (activeTab === 'manufacturers') {
-        query = query.eq('product_type', 'manufacturer');
-      } else if (activeTab === 'worldwide') {
-        query = query.eq('product_type', 'worldwide');
-      }
-
-      if (selectedCategory !== 'All') {
-        query = query.eq('category', selectedCategory);
-      }
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-      setTopRanking(data || []);
+      setCategorySections(sections.filter(s => s.products.length > 0));
     } catch (error) {
-      console.error('Error loading top ranking:', error);
+      console.error('Error loading category sections:', error);
     }
   };
 
-  const loadNewArrivals = async () => {
+  const loadFeaturedStores = async () => {
     try {
-      let query = supabase
-        .from('products')
+      // Get stores with active featured_spotlight perk
+      const { data: perks, error: perksError } = await supabase
+        .from('store_perks')
+        .select('store_id')
+        .eq('is_active', true)
+        .eq('perk_type', 'featured_spotlight')
+        .gte('expires_at', new Date().toISOString());
+
+      if (perksError) throw perksError;
+
+      if (!perks || perks.length === 0) {
+        setFeaturedStores([]);
+        return;
+      }
+
+      const storeIds = perks.map(p => p.store_id);
+
+      // Get store details
+      const { data: stores, error: storesError } = await supabase
+        .from('stores')
         .select('*')
-        .eq('published', true);
+        .in('id', storeIds);
 
-      if (activeTab === 'manufacturers') {
-        query = query.eq('product_type', 'manufacturer');
-      } else if (activeTab === 'worldwide') {
-        query = query.eq('product_type', 'worldwide');
-      }
+      if (storesError) throw storesError;
 
-      if (selectedCategory !== 'All') {
-        query = query.eq('category', selectedCategory);
-      }
+      // Get product counts for each store
+      const storesWithCounts = await Promise.all(
+        (stores || []).map(async (store) => {
+          const { count } = await supabase
+            .from('products')
+            .select('*', { count: 'exact', head: true })
+            .eq('store_id', store.id)
+            .eq('published', true);
 
-      const { data, error } = await query
-        .order('created_at', { ascending: false })
-        .limit(10);
+          return {
+            ...store,
+            productCount: count || 0,
+          };
+        })
+      );
 
-      if (error) throw error;
-      setNewArrivals(data || []);
+      setFeaturedStores(storesWithCounts);
     } catch (error) {
-      console.error('Error loading new arrivals:', error);
+      console.error('Error loading featured stores:', error);
     }
   };
 
@@ -303,43 +298,88 @@ const Home = () => {
     cat.toLowerCase().includes(categorySearch.toLowerCase())
   );
 
-  const renderProductSection = (title: string, products: Product[], viewAllPath: string) => (
-    <div className="px-4 py-3">
-      <div className="flex justify-between items-center mb-3">
-        <h2 className="text-lg font-bold text-foreground">{title}</h2>
-        <Button
-          variant="link"
-          className="text-primary hover:text-primary/80 p-0 h-auto"
-          onClick={() => navigate(viewAllPath)}
-        >
-          View All →
-        </Button>
-      </div>
-      {products.length === 0 ? (
-        <div className="text-center py-12 px-4">
-          <p className="text-muted-foreground text-sm">
-            {selectedCategory === 'All'
-              ? 'No products available'
-              : `No products found in "${selectedCategory}" category`}
-          </p>
+  const renderCategorySection = (section: CategorySection, index: number) => {
+    const isEven = index % 2 === 0;
+    
+    return (
+      <div key={section.category} className="px-4 py-3">
+        <div className="flex justify-between items-center mb-3">
+          <h2 className="text-lg font-bold text-foreground">{section.category}</h2>
+          <Button
+            variant="link"
+            className="text-primary hover:text-primary/80 p-0 h-auto text-sm"
+            onClick={() => navigate(`/search?q=${encodeURIComponent(section.category)}`)}
+          >
+            View All →
+          </Button>
         </div>
-      ) : (
-        <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-          {products.map((product, index) => (
-            <div key={product.id} data-tour={index === 0 ? 'product-card' : undefined}>
+        
+        {isEven ? (
+          // Horizontal scrollable layout
+          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+            {section.products.map((product, idx) => (
+              <div key={product.id} data-tour={index === 0 && idx === 0 ? 'product-card' : undefined}>
+                <MarketplaceProductCard
+                  id={product.id}
+                  title={product.title}
+                  price={product.price}
+                  image={product.images?.[0] || '/placeholder.svg'}
+                  moq={product.moq || 1}
+                />
+              </div>
+            ))}
+          </div>
+        ) : (
+          // Grid layout
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+            {section.products.slice(0, 6).map((product) => (
               <MarketplaceProductCard
+                key={product.id}
                 id={product.id}
                 title={product.title}
                 price={product.price}
                 image={product.images?.[0] || '/placeholder.svg'}
                 moq={product.moq || 1}
               />
-            </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderFeaturedStores = () => {
+    if (featuredStores.length === 0) return null;
+
+    return (
+      <div className="px-4 py-3">
+        <div className="flex justify-between items-center mb-3">
+          <h2 className="text-lg font-bold text-foreground">✨ Featured Premium Stores</h2>
+          <Button
+            variant="link"
+            className="text-primary hover:text-primary/80 p-0 h-auto text-sm"
+            onClick={() => navigate('/stores')}
+          >
+            View All →
+          </Button>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {featuredStores.map((store) => (
+            <StoreCard
+              key={store.id}
+              id={store.id}
+              name={store.store_name}
+              logo={store.logo_url || undefined}
+              banner={store.banner_url || undefined}
+              city={store.city || undefined}
+              region={store.region || undefined}
+              productCount={store.productCount}
+            />
           ))}
         </div>
-      )}
-    </div>
-  );
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-background overflow-x-hidden pb-20">
@@ -497,7 +537,7 @@ const Home = () => {
                 className={`flex-shrink-0 px-4 py-2 border rounded-full text-sm font-medium transition-colors whitespace-nowrap ${
                   selectedCategory === cat
                     ? 'bg-primary text-primary-foreground border-primary'
-                    : 'bg-card border-border hover:bg-accent'
+                    : 'bg-card text-foreground border-border hover:bg-muted'
                 }`}
               >
                 {cat}
@@ -507,18 +547,55 @@ const Home = () => {
         </div>
       </div>
 
-      {/* Product Sections */}
-      <div className="space-y-6">
-        {renderProductSection('Top Deals', topDeals, '/top-deals')}
-        {renderProductSection('Top Ranking', topRanking, '/top-ranking')}
-        {renderProductSection('New Arrivals', newArrivals, '/new-arrivals')}
+      {/* Content Sections */}
+      <div className="space-y-4">
+        {loading ? (
+          <div className="px-4 py-8 text-center">
+            <p className="text-muted-foreground">Loading...</p>
+          </div>
+        ) : (
+          <>
+            {/* Featured Stores */}
+            {renderFeaturedStores()}
+
+            {/* Category Sections */}
+            {categorySections.map((section, index) => (
+              <div key={section.category}>
+                {renderCategorySection(section, index)}
+                
+                {/* Insert featured stores after 2nd category */}
+                {index === 1 && featuredStores.length > 0 && (
+                  <div className="px-4 py-3">
+                    <div className="bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-950/20 dark:to-yellow-950/20 rounded-2xl p-6 text-center border border-amber-200/50">
+                      <h3 className="text-lg font-bold text-foreground mb-2">
+                        🌟 Discover Premium Sellers
+                      </h3>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Shop from verified featured stores with exclusive perks
+                      </p>
+                      <Button
+                        onClick={() => navigate('/stores')}
+                        className="bg-gradient-to-r from-primary to-secondary hover:opacity-90"
+                      >
+                        Browse All Stores
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+
+            {categorySections.length === 0 && (
+              <div className="px-4 py-12 text-center">
+                <p className="text-muted-foreground">No products available</p>
+              </div>
+            )}
+          </>
+        )}
+      </div>
       </div>
 
-      </div>
-
-      <div data-tour="bottom-nav">
-        <BottomNav />
-      </div>
+      <BottomNav />
 
       <style>{`
         .scrollbar-hide::-webkit-scrollbar {
