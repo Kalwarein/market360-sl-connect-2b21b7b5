@@ -1082,6 +1082,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_and_deactivate_expired_moderations: {
+        Args: never
+        Returns: undefined
+      }
+      has_active_moderation: { Args: { user_uuid: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
