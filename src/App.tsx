@@ -69,6 +69,9 @@ import ModerationScreen from "./pages/ModerationScreen";
 import AdminUserDetail from "./pages/AdminUserDetail";
 import AdminAppeals from "./pages/AdminAppeals";
 import AdminAppealDetail from "./pages/AdminAppealDetail";
+import AdminUserReports from "./pages/AdminUserReports";
+import AdminUserReportDetail from "./pages/AdminUserReportDetail";
+import ReportIssue from "./pages/ReportIssue";
 import Onboarding from "./pages/Onboarding";
 
 const queryClient = new QueryClient();
@@ -125,6 +128,9 @@ const App = () => (
               <Route path="/admin/users/:userId" element={<AdminUserDetail />} />
               <Route path="/admin/appeals" element={<AdminAppeals />} />
               <Route path="/admin/appeals/:appealId" element={<AdminAppealDetail />} />
+              <Route path="/admin/user-reports" element={<AdminUserReports />} />
+              <Route path="/admin/user-reports/:id" element={<AdminUserReportDetail />} />
+              <Route path="/report-issue" element={<ProtectedRoute><ReportIssue /></ProtectedRoute>} />
               <Route path="/admin/stores" element={<AdminStores />} />
               <Route path="/admin/products" element={<AdminProducts />} />
               <Route path="/admin/orders" element={<AdminOrders />} />

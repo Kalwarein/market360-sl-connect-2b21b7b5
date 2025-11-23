@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Bell, ShoppingCart, MessageSquare, Search } from 'lucide-react';
+import { Bell, ShoppingCart, MessageSquare, Search, Headphones } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -344,6 +344,16 @@ const Home = () => {
             </div>
 
             <div className="flex items-center gap-3">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="relative rounded-full hover:bg-primary/10"
+                onClick={() => navigate('/report-issue')}
+                title="Customer Care - Report an Issue"
+              >
+                <Headphones className="h-5 w-5 text-primary" />
+              </Button>
+
               <Button
                 variant="ghost"
                 size="icon"
