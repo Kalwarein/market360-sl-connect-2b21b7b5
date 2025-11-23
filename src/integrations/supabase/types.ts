@@ -924,6 +924,63 @@ export type Database = {
         }
         Relationships: []
       }
+      user_reports: {
+        Row: {
+          action_taken: string | null
+          admin_notes: string | null
+          amount: number | null
+          created_at: string
+          description: string
+          evidence_urls: string[] | null
+          id: string
+          order_id: string | null
+          reported_user_id: string | null
+          reporter_id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          seller_name: string | null
+          status: string
+          store_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          action_taken?: string | null
+          admin_notes?: string | null
+          amount?: number | null
+          created_at?: string
+          description: string
+          evidence_urls?: string[] | null
+          id?: string
+          order_id?: string | null
+          reported_user_id?: string | null
+          reporter_id: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          seller_name?: string | null
+          status?: string
+          store_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          action_taken?: string | null
+          admin_notes?: string | null
+          amount?: number | null
+          created_at?: string
+          description?: string
+          evidence_urls?: string[] | null
+          id?: string
+          order_id?: string | null
+          reported_user_id?: string | null
+          reporter_id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          seller_name?: string | null
+          status?: string
+          store_name?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
