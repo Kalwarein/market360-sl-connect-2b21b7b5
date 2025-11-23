@@ -160,32 +160,22 @@ const StorePage = () => {
   // Premium Featured Store Layout
   if (isPremiumStore) {
     return (
-      <div className="min-h-screen pb-20 relative overflow-hidden">
-        {/* Animated Golden Background */}
-        <div className="fixed inset-0 bg-gradient-to-br from-black via-zinc-900 to-black" />
-        <div 
-          className="fixed inset-0 opacity-30"
-          style={{
-            background: 'radial-gradient(circle at 50% 50%, rgba(255, 215, 0, 0.15) 0%, transparent 70%)',
-            animation: 'pulse 4s ease-in-out infinite'
-          }}
-        />
-        
+      <div className="min-h-screen pb-20 bg-background">
         {/* Header Actions */}
-        <div className="relative z-20 px-4 pt-4 flex items-center justify-between">
+        <div className="px-4 pt-4 flex items-center justify-between">
           <Button
-            variant="ghost"
+            variant="outline"
             size="sm"
-            className="text-amber-200 bg-black/50 hover:bg-black/70 backdrop-blur-md border border-amber-500/30 rounded-xl h-9 px-3 transition-all shadow-lg"
+            className="rounded-xl h-9 px-3"
             onClick={() => navigate(-1)}
           >
             <ArrowLeft className="h-4 w-4 mr-1.5" />
             Back
           </Button>
           <Button
-            variant="ghost"
+            variant="outline"
             size="sm"
-            className="text-amber-200 bg-black/50 hover:bg-black/70 backdrop-blur-md border border-amber-500/30 rounded-xl h-9 px-3 transition-all shadow-lg"
+            className="rounded-xl h-9 px-3"
             onClick={() => setShareDialogOpen(true)}
           >
             <Share2 className="h-4 w-4 mr-1.5" />
@@ -194,36 +184,17 @@ const StorePage = () => {
         </div>
 
         {/* Premium Hero Section */}
-        <div className="relative z-10 px-4 pt-6">
-          {/* Premium Crown Banner */}
-          <div className="flex items-center justify-center mb-6 animate-fade-in">
-            <div className="bg-gradient-to-r from-amber-500 to-yellow-400 text-black px-6 py-2 rounded-full shadow-2xl border-2 border-yellow-300 animate-pulse">
-              <div className="flex items-center gap-2 font-bold">
-                <Crown className="h-5 w-5 fill-current" />
-                <span className="text-sm tracking-wider">PREMIUM FEATURED STORE</span>
-                <Crown className="h-5 w-5 fill-current" />
-              </div>
-            </div>
+        <div className="px-4 pt-6">
+          {/* Premium Banner */}
+          <div className="flex items-center justify-center mb-6">
+            <Badge className="bg-primary text-primary-foreground px-6 py-2 rounded-full shadow-lg text-sm font-bold">
+              <Crown className="h-5 w-5 mr-2 fill-current" />
+              PREMIUM FEATURED STORE
+            </Badge>
           </div>
 
           {/* Store Hero Card */}
-          <Card 
-            className="relative overflow-hidden border-2 shadow-2xl"
-            style={{
-              background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 50%, #1a1a1a 100%)',
-              borderImage: 'linear-gradient(135deg, #ffd700, #ffed4e, #ffd700, #ffb700) 1',
-              boxShadow: '0 0 60px rgba(255, 215, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
-            }}
-          >
-            {/* Shimmer Effect */}
-            <div 
-              className="absolute inset-0 opacity-40 pointer-events-none"
-              style={{
-                background: 'linear-gradient(90deg, transparent 0%, rgba(255, 215, 0, 0.5) 50%, transparent 100%)',
-                backgroundSize: '200% 100%',
-                animation: 'shimmer 3s infinite'
-              }}
-            />
+          <Card className="overflow-hidden border-2 border-primary/20 shadow-xl">
 
             {/* Store Banner */}
             <div className="relative h-48 overflow-hidden">
@@ -232,78 +203,54 @@ const StorePage = () => {
                   src={store.banner_url} 
                   alt={store.store_name}
                   className="w-full h-full object-cover"
-                  style={{ filter: 'brightness(0.85) contrast(1.1)' }}
                 />
               ) : (
-                <div className="w-full h-full bg-gradient-to-br from-amber-900 via-yellow-700 to-amber-900" />
+                <div className="w-full h-full bg-gradient-to-br from-primary via-primary-hover to-accent" />
               )}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
               
-              {/* Sparkle Effects */}
-              <Star className="absolute top-6 left-6 h-6 w-6 text-yellow-300 fill-yellow-300 animate-pulse" style={{ animationDelay: '0s' }} />
-              <Star className="absolute top-10 right-10 h-5 w-5 text-yellow-400 fill-yellow-400 animate-pulse" style={{ animationDelay: '0.5s' }} />
-              <Star className="absolute bottom-8 left-1/3 h-4 w-4 text-amber-300 fill-amber-300 animate-pulse" style={{ animationDelay: '1s' }} />
+              {/* Verified Badge - Floating */}
+              {hasVerifiedBadge && (
+                <div className="absolute top-4 right-4 z-10">
+                  <img 
+                    src={verifiedBadge} 
+                    alt="Verified" 
+                    className="h-16 w-16 object-contain drop-shadow-lg"
+                  />
+                </div>
+              )}
             </div>
 
-            <CardContent className="relative p-6">
-              {/* Golden Logo Frame */}
+            <CardContent className="p-6 relative">
+              {/* Logo */}
               <div className="absolute -top-16 left-6">
-                <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-br from-amber-400 to-yellow-600 rounded-2xl blur-lg opacity-75 animate-pulse" />
-                  <div 
-                    className="relative h-32 w-32 rounded-2xl overflow-hidden"
-                    style={{
-                      border: '4px solid',
-                      borderImage: 'linear-gradient(135deg, #ffd700, #ffed4e, #ffd700, #ffb700) 1',
-                      boxShadow: '0 8px 32px rgba(255, 215, 0, 0.6), inset 0 2px 4px rgba(255, 255, 255, 0.3)'
-                    }}
-                  >
-                    {store.logo_url ? (
-                      <img src={store.logo_url} alt={store.store_name} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-amber-800 to-yellow-900">
-                        <Crown className="h-16 w-16 text-yellow-300 fill-yellow-300" />
-                      </div>
-                    )}
-                  </div>
+                <div className="h-32 w-32 rounded-2xl overflow-hidden border-4 border-card shadow-xl bg-card">
+                  {store.logo_url ? (
+                    <img src={store.logo_url} alt={store.store_name} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary to-accent">
+                      <Crown className="h-16 w-16 text-primary-foreground" />
+                    </div>
+                  )}
                 </div>
               </div>
 
               {/* Store Info */}
               <div className="pl-40 min-h-[100px]">
                 <div className="flex items-center gap-3 mb-3">
-                  {/* Typewriter Store Name */}
-                  <h1 
-                    className="text-3xl font-black"
-                    style={{
-                      background: 'linear-gradient(135deg, #ffd700 0%, #ffed4e 50%, #ffd700 100%)',
-                      WebkitBackgroundClip: 'text',
-                      WebkitTextFillColor: 'transparent',
-                      backgroundClip: 'text',
-                      filter: 'drop-shadow(0 2px 8px rgba(255, 215, 0, 0.6))',
-                      animation: 'typewriter 3s steps(40) 1s 1 normal both'
-                    }}
-                  >
+                  <h1 className="text-3xl font-bold text-foreground">
                     {store.store_name}
                   </h1>
                   
-                  {/* Verified Badge */}
                   {hasVerifiedBadge && (
-                    <div className="relative animate-pulse">
-                      <div className="absolute inset-0 bg-amber-500/50 blur-xl rounded-full" />
-                      <img 
-                        src={verifiedBadge} 
-                        alt="Verified" 
-                        className="h-12 w-12 object-contain drop-shadow-2xl relative z-10"
-                      />
-                    </div>
+                    <CheckCircle className="h-6 w-6 text-primary fill-primary flex-shrink-0" />
                   )}
                 </div>
 
                 {/* Location */}
                 {(store.city || store.region) && (
-                  <div className="flex items-center gap-2 text-amber-200/90 mb-4">
-                    <MapPin className="h-4 w-4 text-amber-400" />
+                  <div className="flex items-center gap-2 text-muted-foreground mb-4">
+                    <MapPin className="h-4 w-4 text-primary" />
                     <span className="font-medium text-sm">
                       {[store.city, store.region, store.country].filter(Boolean).join(', ')}
                     </span>
@@ -312,39 +259,33 @@ const StorePage = () => {
 
                 {/* Trust Badges */}
                 <div className="flex items-center gap-2 flex-wrap mb-4">
-                  <Badge className="bg-gradient-to-r from-amber-600 to-yellow-500 text-black font-bold border-2 border-yellow-300 shadow-lg">
+                  <Badge className="bg-primary/10 text-primary font-semibold border border-primary/20 rounded-full">
                     <Shield className="h-3 w-3 mr-1" />
                     Trusted Seller
                   </Badge>
-                  <Badge className="bg-gradient-to-r from-emerald-600 to-green-500 text-white font-bold border border-emerald-400/50 shadow-lg">
+                  <Badge className="bg-accent/10 text-accent font-semibold border border-accent/20 rounded-full">
                     <CheckCircle className="h-3 w-3 mr-1" />
                     Verified
                   </Badge>
-                  <Badge className="bg-gradient-to-r from-violet-600 to-purple-500 text-white font-bold border border-violet-400/50 shadow-lg">
+                  <Badge className="bg-secondary/10 text-secondary-foreground font-semibold border border-secondary/20 rounded-full">
                     <Zap className="h-3 w-3 mr-1" />
                     Fast Response
-                  </Badge>
-                  <Badge className="bg-gradient-to-r from-rose-600 to-pink-500 text-white font-bold border border-rose-400/50 shadow-lg">
-                    <Award className="h-3 w-3 mr-1" />
-                    Top Rated
                   </Badge>
                 </div>
 
                 {/* Store Stats */}
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="flex items-center gap-1 text-amber-300">
-                    <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                  <div className="flex items-center gap-1 text-primary">
+                    <Star className="h-4 w-4 fill-primary text-primary" />
                     <span className="font-bold text-lg">4.9</span>
                   </div>
-                  <div className="h-5 w-px bg-amber-500/30" />
-                  <span className="text-amber-200 font-semibold">{products.length} Products</span>
-                  <div className="h-5 w-px bg-amber-500/30" />
-                  <span className="text-amber-200 font-semibold">500+ Sales</span>
+                  <div className="h-5 w-px bg-border" />
+                  <span className="text-foreground font-semibold">{products.length} Products</span>
                 </div>
 
                 {/* Description */}
                 {store.description && (
-                  <p className="text-amber-100/80 text-sm leading-relaxed line-clamp-2">
+                  <p className="text-muted-foreground text-sm leading-relaxed line-clamp-2">
                     {store.description}
                   </p>
                 )}
@@ -355,33 +296,24 @@ const StorePage = () => {
                 <div className="grid grid-cols-2 gap-3 mt-6">
                   <Button 
                     variant="outline"
-                    className="rounded-xl border-2 border-amber-500/50 text-amber-300 hover:bg-amber-500/20 shadow-lg" 
+                    className="rounded-xl" 
                     size="lg"
                     onClick={() => navigate('/auth')}
                   >
                     Sign In
                   </Button>
                   <Button 
-                    className="rounded-xl shadow-2xl font-bold relative overflow-hidden"
-                    style={{
-                      background: 'linear-gradient(135deg, #ffd700, #ffed4e)',
-                      color: '#000',
-                      border: '2px solid #ffb700'
-                    }}
+                    className="rounded-xl shadow-lg font-bold"
                     size="lg"
                     onClick={() => navigate('/auth')}
                   >
-                    <span className="relative z-10">Create Account</span>
+                    Create Account
                   </Button>
                 </div>
               ) : (
                 <div className="grid grid-cols-2 gap-3 mt-6">
                   <Button 
-                    className="rounded-xl shadow-2xl font-bold border-2"
-                    style={{
-                      background: 'linear-gradient(135deg, #0FA86C, #0B8A6D)',
-                      borderColor: '#0FA86C'
-                    }}
+                    className="rounded-xl shadow-lg font-bold"
                     size="lg"
                     onClick={handleContactSeller}
                     disabled={contacting}
@@ -391,7 +323,7 @@ const StorePage = () => {
                   </Button>
                   <Button 
                     variant="outline" 
-                    className="rounded-xl border-2 border-amber-500/50 text-amber-300 hover:bg-amber-500/20 shadow-lg" 
+                    className="rounded-xl" 
                     size="lg"
                     onClick={() => setShareDialogOpen(true)}
                   >
@@ -401,97 +333,56 @@ const StorePage = () => {
                 </div>
               )}
             </CardContent>
-
-            {/* Bottom Golden Accent */}
-            <div 
-              className="h-2 w-full"
-              style={{
-                background: 'linear-gradient(90deg, transparent 0%, #ffd700 50%, transparent 100%)'
-              }}
-            />
           </Card>
         </div>
 
         {/* Products Section */}
-        <div className="relative z-10 px-4 mt-8">
+        <div className="px-4 mt-8">
           <div className="flex items-center justify-between mb-4">
-            <h2 
-              className="text-2xl font-bold"
-              style={{
-                background: 'linear-gradient(135deg, #ffd700 0%, #ffed4e 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text'
-              }}
-            >
+            <h2 className="text-2xl font-bold text-foreground">
               Store Products
             </h2>
-            <Badge 
-              className="bg-gradient-to-r from-amber-600 to-yellow-500 text-black font-bold border-2 border-yellow-300"
-            >
+            <Badge className="bg-primary/10 text-primary font-bold border border-primary/20 rounded-full">
               {products.length} items
             </Badge>
           </div>
           
           {products.length === 0 ? (
-            <Card className="border-2 border-amber-500/30 bg-black/40 backdrop-blur-sm">
+            <Card className="border-2 border-border">
               <CardContent className="p-12 text-center">
-                <div className="mx-auto w-16 h-16 bg-amber-500/20 rounded-full flex items-center justify-center mb-4">
-                  <Package className="h-8 w-8 text-amber-400" />
+                <div className="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
+                  <Package className="h-8 w-8 text-muted-foreground" />
                 </div>
-                <p className="text-amber-200 font-medium">No products available</p>
-                <p className="text-sm text-amber-300/60 mt-1">Check back soon for new items</p>
+                <p className="text-foreground font-medium">No products available</p>
+                <p className="text-sm text-muted-foreground mt-1">Check back soon for new items</p>
               </CardContent>
             </Card>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               {products.map((product) => (
                 <Card
                   key={product.id}
-                  className="overflow-hidden cursor-pointer transition-all duration-300 border-2 bg-black/40 backdrop-blur-sm hover:scale-105"
-                  style={{
-                    borderImage: 'linear-gradient(135deg, #ffd700, #ffed4e) 1',
-                    boxShadow: '0 4px 20px rgba(255, 215, 0, 0.3)'
-                  }}
                   onClick={() => navigate(`/product/${product.id}`)}
+                  className="cursor-pointer hover:shadow-lg transition-all duration-300 overflow-hidden border border-border rounded-2xl"
                 >
-                  <div className="aspect-square bg-zinc-900 relative">
-                    <div className="absolute inset-0 bg-gradient-to-tr from-amber-500/10 to-transparent pointer-events-none z-10" />
+                  <div className="relative aspect-square overflow-hidden">
                     {product.images && product.images.length > 0 ? (
                       <img
                         src={product.images[0]}
                         alt={product.title}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <Package className="h-12 w-12 text-amber-500/50" />
+                      <div className="w-full h-full flex items-center justify-center bg-muted">
+                        <Package className="h-12 w-12 text-muted-foreground" />
                       </div>
                     )}
-                    <Badge className="absolute top-2 right-2 bg-amber-500 text-black font-bold text-xs shadow-xl">
-                      {product.category}
-                    </Badge>
-                    <Badge className="absolute top-2 left-2 bg-gradient-to-r from-emerald-500 to-green-500 text-white font-bold text-xs shadow-xl">
-                      <Sparkles className="h-3 w-3 mr-1" />
-                      Featured
-                    </Badge>
                   </div>
-                  <CardContent className="p-3 space-y-1 bg-black/60">
-                    <h3 className="font-semibold text-sm line-clamp-2 leading-tight text-amber-100">
+                  <CardContent className="p-3">
+                    <h3 className="text-sm font-medium line-clamp-2 text-foreground mb-2">
                       {product.title}
                     </h3>
-                    <p className="text-xs text-amber-300/70 font-mono">
-                      {product.product_code}
-                    </p>
-                    <p 
-                      className="font-bold text-lg pt-1"
-                      style={{
-                        background: 'linear-gradient(135deg, #ffd700, #ffed4e)',
-                        WebkitBackgroundClip: 'text',
-                        WebkitTextFillColor: 'transparent',
-                        backgroundClip: 'text'
-                      }}
-                    >
+                    <p className="text-lg font-bold text-primary">
                       Le {product.price.toLocaleString()}
                     </p>
                   </CardContent>
@@ -501,18 +392,16 @@ const StorePage = () => {
           )}
         </div>
 
-        {/* Share Dialog */}
-        {store && (
-          <ShareStoreDialog
-            open={shareDialogOpen}
-            onOpenChange={setShareDialogOpen}
-            store={store}
-            productCount={products.length}
-          />
-        )}
+        <ShareStoreDialog
+          open={shareDialogOpen}
+          onOpenChange={setShareDialogOpen}
+          store={store}
+          productCount={products.length}
+        />
       </div>
     );
   }
+
 
   // Standard Store Layout
   return (
