@@ -182,86 +182,136 @@ export const GuidedTour = () => {
 
     const rect = target.getBoundingClientRect();
     const tooltipWidth = 384; // max-w-sm
-    const tooltipHeight = 280; // estimated
-    const padding = 24;
-    const arrowSize = 10;
+    const tooltipHeight = 280;
+    const padding = 20;
+    const arrowSize = 12;
+    
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
 
-    // Try positions in order of preference
-    const positions = [
-      step.position,
-      step.position === 'top' ? 'bottom' : step.position === 'bottom' ? 'top' : step.position === 'left' ? 'right' : 'left',
-      'bottom',
-      'top',
-      'right',
-      'left'
-    ];
-
-    for (const pos of positions) {
-      let style: any = {};
-      let fits = true;
-
-      switch (pos) {
-        case 'top':
-          style = {
-            bottom: `${window.innerHeight - rect.top + arrowSize + padding}px`,
-            left: `${rect.left + rect.width / 2}px`,
-            transform: 'translateX(-50%)',
-          };
-          // Check if fits
-          if (rect.top - tooltipHeight - padding - arrowSize < 0) fits = false;
-          if (rect.left + rect.width / 2 - tooltipWidth / 2 < padding) fits = false;
-          if (rect.left + rect.width / 2 + tooltipWidth / 2 > window.innerWidth - padding) fits = false;
-          break;
-
-        case 'bottom':
-          style = {
-            top: `${rect.bottom + arrowSize + padding}px`,
-            left: `${rect.left + rect.width / 2}px`,
-            transform: 'translateX(-50%)',
-          };
-          // Check if fits
-          if (rect.bottom + tooltipHeight + padding + arrowSize > window.innerHeight) fits = false;
-          if (rect.left + rect.width / 2 - tooltipWidth / 2 < padding) fits = false;
-          if (rect.left + rect.width / 2 + tooltipWidth / 2 > window.innerWidth - padding) fits = false;
-          break;
-
-        case 'left':
-          style = {
-            top: `${rect.top + rect.height / 2}px`,
-            right: `${window.innerWidth - rect.left + arrowSize + padding}px`,
-            transform: 'translateY(-50%)',
-          };
-          // Check if fits
-          if (rect.left - tooltipWidth - padding - arrowSize < 0) fits = false;
-          if (rect.top + rect.height / 2 - tooltipHeight / 2 < padding) fits = false;
-          if (rect.top + rect.height / 2 + tooltipHeight / 2 > window.innerHeight - padding) fits = false;
-          break;
-
-        case 'right':
-          style = {
-            top: `${rect.top + rect.height / 2}px`,
-            left: `${rect.right + arrowSize + padding}px`,
-            transform: 'translateY(-50%)',
-          };
-          // Check if fits
-          if (rect.right + tooltipWidth + padding + arrowSize > window.innerWidth) fits = false;
-          if (rect.top + rect.height / 2 - tooltipHeight / 2 < padding) fits = false;
-          if (rect.top + rect.height / 2 + tooltipHeight / 2 > window.innerHeight - padding) fits = false;
-          break;
+    // Special handling for product cards - position to the side horizontally
+    if (step.target.includes('product-card')) {
+      // Try right side first
+      if (rect.right + tooltipWidth + padding + arrowSize < viewportWidth) {
+        return {
+          top: `${Math.max(padding, Math.min(rect.top + rect.height / 2, viewportHeight - tooltipHeight / 2 - padding))}px`,
+          left: `${rect.right + arrowSize + padding}px`,
+          transform: 'translateY(-50%)',
+          position: 'right'
+        };
       }
-
-      if (fits) {
-        return { ...style, position: pos };
+      // Try left side
+      if (rect.left - tooltipWidth - padding - arrowSize > 0) {
+        return {
+          top: `${Math.max(padding, Math.min(rect.top + rect.height / 2, viewportHeight - tooltipHeight / 2 - padding))}px`,
+          right: `${viewportWidth - rect.left + arrowSize + padding}px`,
+          transform: 'translateY(-50%)',
+          position: 'left'
+        };
       }
+      // Fallback to below if sides don't fit
+      return {
+        top: `${Math.min(rect.bottom + arrowSize + padding, viewportHeight - tooltipHeight - padding)}px`,
+        left: '50%',
+        transform: 'translateX(-50%)',
+        position: 'bottom'
+      };
     }
 
-    // Fallback to bottom center if nothing fits
-    return {
-      top: `${rect.bottom + arrowSize + padding}px`,
-      left: '50%',
-      transform: 'translateX(-50%)',
-      position: 'bottom'
-    };
+    // For other elements, try preferred position with smart fallback
+    let style: any = {};
+    
+    // Calculate if preferred position fits
+    const fitsTop = rect.top - tooltipHeight - arrowSize - padding > 0;
+    const fitsBottom = rect.bottom + tooltipHeight + arrowSize + padding < viewportHeight;
+    const fitsLeft = rect.left - tooltipWidth - arrowSize - padding > 0;
+    const fitsRight = rect.right + tooltipWidth + arrowSize + padding < viewportWidth;
+
+    switch (step.position) {
+      case 'top':
+        if (fitsTop) {
+          style = {
+            bottom: `${viewportHeight - rect.top + arrowSize + padding}px`,
+            left: `${Math.max(tooltipWidth / 2 + padding, Math.min(rect.left + rect.width / 2, viewportWidth - tooltipWidth / 2 - padding))}px`,
+            transform: 'translateX(-50%)',
+            position: 'top'
+          };
+        } else if (fitsBottom) {
+          style = {
+            top: `${rect.bottom + arrowSize + padding}px`,
+            left: `${Math.max(tooltipWidth / 2 + padding, Math.min(rect.left + rect.width / 2, viewportWidth - tooltipWidth / 2 - padding))}px`,
+            transform: 'translateX(-50%)',
+            position: 'bottom'
+          };
+        }
+        break;
+
+      case 'bottom':
+        if (fitsBottom) {
+          style = {
+            top: `${rect.bottom + arrowSize + padding}px`,
+            left: `${Math.max(tooltipWidth / 2 + padding, Math.min(rect.left + rect.width / 2, viewportWidth - tooltipWidth / 2 - padding))}px`,
+            transform: 'translateX(-50%)',
+            position: 'bottom'
+          };
+        } else if (fitsTop) {
+          style = {
+            bottom: `${viewportHeight - rect.top + arrowSize + padding}px`,
+            left: `${Math.max(tooltipWidth / 2 + padding, Math.min(rect.left + rect.width / 2, viewportWidth - tooltipWidth / 2 - padding))}px`,
+            transform: 'translateX(-50%)',
+            position: 'top'
+          };
+        }
+        break;
+
+      case 'left':
+        if (fitsLeft) {
+          style = {
+            top: `${Math.max(tooltipHeight / 2 + padding, Math.min(rect.top + rect.height / 2, viewportHeight - tooltipHeight / 2 - padding))}px`,
+            right: `${viewportWidth - rect.left + arrowSize + padding}px`,
+            transform: 'translateY(-50%)',
+            position: 'left'
+          };
+        } else if (fitsRight) {
+          style = {
+            top: `${Math.max(tooltipHeight / 2 + padding, Math.min(rect.top + rect.height / 2, viewportHeight - tooltipHeight / 2 - padding))}px`,
+            left: `${rect.right + arrowSize + padding}px`,
+            transform: 'translateY(-50%)',
+            position: 'right'
+          };
+        }
+        break;
+
+      case 'right':
+        if (fitsRight) {
+          style = {
+            top: `${Math.max(tooltipHeight / 2 + padding, Math.min(rect.top + rect.height / 2, viewportHeight - tooltipHeight / 2 - padding))}px`,
+            left: `${rect.right + arrowSize + padding}px`,
+            transform: 'translateY(-50%)',
+            position: 'right'
+          };
+        } else if (fitsLeft) {
+          style = {
+            top: `${Math.max(tooltipHeight / 2 + padding, Math.min(rect.top + rect.height / 2, viewportHeight - tooltipHeight / 2 - padding))}px`,
+            right: `${viewportWidth - rect.left + arrowSize + padding}px`,
+            transform: 'translateY(-50%)',
+            position: 'left'
+          };
+        }
+        break;
+    }
+
+    // Fallback: center on screen if nothing fits
+    if (!style.position) {
+      style = {
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
+        position: 'center'
+      };
+    }
+
+    return style;
   };
 
   if (!isActive) return null;
@@ -270,8 +320,8 @@ export const GuidedTour = () => {
 
   return (
     <>
-      {/* Blur Overlay with Spotlight Effect */}
-      <div className="fixed inset-0 z-[9998]">
+      {/* Blur Overlay with Spotlight Effect - blocks all clicks except highlighted element */}
+      <div className="fixed inset-0 z-[9998] pointer-events-auto">
         <div className="absolute inset-0 bg-background/60 backdrop-blur-md" 
              style={{
                maskImage: currentTarget ? `radial-gradient(circle at var(--spotlight-x, 50%) var(--spotlight-y, 50%), transparent 150px, black 200px)` : 'none',
@@ -330,16 +380,18 @@ export const GuidedTour = () => {
         
         return (
           <div
-            className="fixed z-[9999] bg-card border-2 border-primary rounded-2xl shadow-2xl p-6 max-w-sm animate-in fade-in slide-in-from-bottom-4 duration-300"
+            className="fixed z-[9999] bg-card border-2 border-primary rounded-2xl shadow-2xl p-6 max-w-sm animate-in fade-in duration-300 pointer-events-auto"
             style={tooltipStyle}
           >
-            {/* Arrow indicator - dynamic based on actual position */}
-            <div className={`absolute w-4 h-4 bg-card border-primary rotate-45 ${
-              actualPosition === 'top' ? 'bottom-[-10px] left-1/2 -translate-x-1/2 border-r-2 border-b-2' :
-              actualPosition === 'bottom' ? 'top-[-10px] left-1/2 -translate-x-1/2 border-l-2 border-t-2' :
-              actualPosition === 'left' ? 'right-[-10px] top-1/2 -translate-y-1/2 border-t-2 border-r-2' :
-              'left-[-10px] top-1/2 -translate-y-1/2 border-b-2 border-l-2'
-            }`} />
+            {/* Arrow indicator - only show if not center positioned */}
+            {actualPosition !== 'center' && (
+              <div className={`absolute w-4 h-4 bg-card border-primary rotate-45 ${
+                actualPosition === 'top' ? 'bottom-[-10px] left-1/2 -translate-x-1/2 border-r-2 border-b-2' :
+                actualPosition === 'bottom' ? 'top-[-10px] left-1/2 -translate-x-1/2 border-l-2 border-t-2' :
+                actualPosition === 'left' ? 'right-[-10px] top-1/2 -translate-y-1/2 border-t-2 border-r-2' :
+                'left-[-10px] top-1/2 -translate-y-1/2 border-b-2 border-l-2'
+              }`} />
+            )}
 
             <div className="space-y-4">
               {/* Wello AI Mini Avatar */}
@@ -403,6 +455,7 @@ export const GuidedTour = () => {
             box-shadow: 0 0 0 4px hsl(var(--primary)), 0 0 0 12px hsl(var(--primary) / 0.4), 0 0 60px 20px hsl(var(--primary) / 0.3) !important;
             border-radius: 16px;
             background: hsl(var(--card)) !important;
+            pointer-events: auto !important;
           }
         `}</style>
       )}
