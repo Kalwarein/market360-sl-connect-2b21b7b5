@@ -41,6 +41,9 @@ interface CategorySection {
 const Home = () => {
   const [categorySections, setCategorySections] = useState<CategorySection[]>([]);
   const [featuredStores, setFeaturedStores] = useState<Store[]>([]);
+  const [topDeals, setTopDeals] = useState<Product[]>([]);
+  const [topRanking, setTopRanking] = useState<Product[]>([]);
+  const [newArrivals, setNewArrivals] = useState<Product[]>([]);
   const [availableCategories, setAvailableCategories] = useState<string[]>(['All']);
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [categorySearch, setCategorySearch] = useState('');
@@ -122,10 +125,61 @@ const Home = () => {
   const loadData = async () => {
     setLoading(true);
     await Promise.all([
+      loadTopDeals(),
+      loadTopRanking(),
+      loadNewArrivals(),
       loadCategorySections(),
       loadFeaturedStores(),
     ]);
     setLoading(false);
+  };
+
+  const loadTopDeals = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('published', true)
+        .order('price', { ascending: true })
+        .limit(10);
+
+      if (error) throw error;
+      setTopDeals(data || []);
+    } catch (error) {
+      console.error('Error loading top deals:', error);
+    }
+  };
+
+  const loadTopRanking = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('published', true)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+      setTopRanking(data || []);
+    } catch (error) {
+      console.error('Error loading top ranking:', error);
+    }
+  };
+
+  const loadNewArrivals = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('published', true)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+      setNewArrivals(data || []);
+    } catch (error) {
+      console.error('Error loading new arrivals:', error);
+    }
   };
 
   const loadCategorySections = async () => {
@@ -555,6 +609,93 @@ const Home = () => {
           </div>
         ) : (
           <>
+            {/* Top Deals Section */}
+            {topDeals.length > 0 && (
+              <div className="px-4 py-3">
+                <div className="flex justify-between items-center mb-3">
+                  <h2 className="text-lg font-bold text-foreground">🔥 Top Deals</h2>
+                  <Button
+                    variant="link"
+                    className="text-primary hover:text-primary/80 p-0 h-auto text-sm"
+                    onClick={() => navigate('/top-deals')}
+                  >
+                    View All →
+                  </Button>
+                </div>
+                <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+                  {topDeals.map((product) => (
+                    <MarketplaceProductCard
+                      key={product.id}
+                      id={product.id}
+                      title={product.title}
+                      price={product.price}
+                      image={product.images?.[0] || '/placeholder.svg'}
+                      moq={product.moq || 1}
+                      tag="Top"
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Top Ranking Section */}
+            {topRanking.length > 0 && (
+              <div className="px-4 py-3">
+                <div className="flex justify-between items-center mb-3">
+                  <h2 className="text-lg font-bold text-foreground">⭐ Top Ranking</h2>
+                  <Button
+                    variant="link"
+                    className="text-primary hover:text-primary/80 p-0 h-auto text-sm"
+                    onClick={() => navigate('/top-ranking')}
+                  >
+                    View All →
+                  </Button>
+                </div>
+                <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+                  {topRanking.map((product) => (
+                    <MarketplaceProductCard
+                      key={product.id}
+                      id={product.id}
+                      title={product.title}
+                      price={product.price}
+                      image={product.images?.[0] || '/placeholder.svg'}
+                      moq={product.moq || 1}
+                      tag="Hot Selling"
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* New Arrivals Section */}
+            {newArrivals.length > 0 && (
+              <div className="px-4 py-3">
+                <div className="flex justify-between items-center mb-3">
+                  <h2 className="text-lg font-bold text-foreground">✨ New Arrivals</h2>
+                  <Button
+                    variant="link"
+                    className="text-primary hover:text-primary/80 p-0 h-auto text-sm"
+                    onClick={() => navigate('/new-arrivals')}
+                  >
+                    View All →
+                  </Button>
+                </div>
+                <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+                  {newArrivals.map((product) => (
+                    <MarketplaceProductCard
+                      key={product.id}
+                      id={product.id}
+                      title={product.title}
+                      price={product.price}
+                      image={product.images?.[0] || '/placeholder.svg'}
+                      moq={product.moq || 1}
+                      tag="New"
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Featured Stores */}
             {renderFeaturedStores()}
 
