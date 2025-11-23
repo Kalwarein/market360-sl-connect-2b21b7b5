@@ -199,26 +199,31 @@ const MessagesPage = () => {
         )}
       </div>
 
-      {selectedConversation && (
-        <ConversationActionSheet
-          open={actionSheetOpen}
-          onOpenChange={setActionSheetOpen}
-          conversation={conversations.find(c => c.id === selectedConversation)!}
-          onPin={() => pinConversation(selectedConversation)}
-          onMute={() => {
-            muteConversation(selectedConversation);
-            toast.success('Conversation muted');
-          }}
-          onArchive={() => {
-            archiveConversation(selectedConversation);
-            toast.success('Conversation archived');
-          }}
-          onDelete={async () => {
-            await deleteConversation(selectedConversation);
-            toast.success('Conversation deleted');
-          }}
-        />
-      )}
+      {selectedConversation && (() => {
+        const conversation = conversations.find(c => c.id === selectedConversation);
+        if (!conversation) return null;
+        
+        return (
+          <ConversationActionSheet
+            open={actionSheetOpen}
+            onOpenChange={setActionSheetOpen}
+            conversation={conversation}
+            onPin={() => pinConversation(selectedConversation)}
+            onMute={() => {
+              muteConversation(selectedConversation);
+              toast.success('Conversation muted');
+            }}
+            onArchive={() => {
+              archiveConversation(selectedConversation);
+              toast.success('Conversation archived');
+            }}
+            onDelete={async () => {
+              await deleteConversation(selectedConversation);
+              toast.success('Conversation deleted');
+            }}
+          />
+        );
+      })()}
 
       <BottomNav />
     </div>
