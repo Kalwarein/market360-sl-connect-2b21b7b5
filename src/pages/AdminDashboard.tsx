@@ -45,6 +45,12 @@ const AdminDashboard = () => {
     products: 0,
     orders: 0,
   });
+  const [pendingCounts, setPendingCounts] = useState({
+    sellerApps: 0,
+    walletRequests: 0,
+    appeals: 0,
+    reports: 0,
+  });
 
   useEffect(() => {
     // Check admin authentication
@@ -96,6 +102,21 @@ const AdminDashboard = () => {
         .order('created_at', { ascending: false });
 
       setApplications(appsData || []);
+
+      // Load pending counts
+      const [sellerAppsCount, walletRequestsCount, appealsCount, reportsCount] = await Promise.all([
+        supabase.from('seller_applications').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
+        supabase.from('wallet_requests').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
+        supabase.from('moderation_appeals').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
+        supabase.from('user_reports').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
+      ]);
+
+      setPendingCounts({
+        sellerApps: sellerAppsCount.count || 0,
+        walletRequests: walletRequestsCount.count || 0,
+        appeals: appealsCount.count || 0,
+        reports: reportsCount.count || 0,
+      });
     } catch (error) {
       console.error('Error loading dashboard:', error);
     }
@@ -188,10 +209,15 @@ const AdminDashboard = () => {
               variant={window.location.pathname === '/admin/seller-applications' ? 'default' : 'outline'}
               size="lg"
               onClick={() => navigate('/admin/seller-applications')}
-              className="h-auto flex-col gap-2 py-4"
+              className="h-auto flex-col gap-2 py-4 relative"
             >
               <FileText className="h-6 w-6" />
               <span className="text-xs font-semibold">Seller Apps</span>
+              {pendingCounts.sellerApps > 0 && (
+                <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center animate-pulse">
+                  {pendingCounts.sellerApps}
+                </span>
+              )}
             </Button>
             
             <Button
@@ -238,30 +264,45 @@ const AdminDashboard = () => {
               variant={window.location.pathname === '/admin/wallet-requests' ? 'default' : 'outline'}
               size="lg"
               onClick={() => navigate('/admin/wallet-requests')}
-              className="h-auto flex-col gap-2 py-4"
+              className="h-auto flex-col gap-2 py-4 relative"
             >
               <Wallet className="h-6 w-6" />
               <span className="text-xs font-semibold">Wallet</span>
+              {pendingCounts.walletRequests > 0 && (
+                <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center animate-pulse">
+                  {pendingCounts.walletRequests}
+                </span>
+              )}
             </Button>
             
             <Button
               variant={window.location.pathname === '/admin/appeals' ? 'default' : 'outline'}
               size="lg"
               onClick={() => navigate('/admin/appeals')}
-              className="h-auto flex-col gap-2 py-4"
+              className="h-auto flex-col gap-2 py-4 relative"
             >
               <AlertCircle className="h-6 w-6" />
               <span className="text-xs font-semibold">Appeals</span>
+              {pendingCounts.appeals > 0 && (
+                <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center animate-pulse">
+                  {pendingCounts.appeals}
+                </span>
+              )}
             </Button>
             
             <Button
               variant={window.location.pathname === '/admin/user-reports' ? 'default' : 'outline'}
               size="lg"
               onClick={() => navigate('/admin/user-reports')}
-              className="h-auto flex-col gap-2 py-4"
+              className="h-auto flex-col gap-2 py-4 relative"
             >
               <AlertTriangle className="h-6 w-6" />
               <span className="text-xs font-semibold">User Reports</span>
+              {pendingCounts.reports > 0 && (
+                <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center animate-pulse">
+                  {pendingCounts.reports}
+                </span>
+              )}
             </Button>
             
             <Button

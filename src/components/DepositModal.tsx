@@ -118,8 +118,8 @@ export const DepositModal = ({ open, onOpenChange, onSuccess }: DepositModalProp
                   <li>Enter details below and paste the reference number</li>
                   <li>Upload screenshot of SMS (optional but recommended)</li>
                 </ol>
-                <p className="text-xs text-orange-700 font-semibold mt-3 pt-3 border-t border-orange-200">
-                  Note: A 2% processing fee applies
+                <p className="text-xs text-green-700 font-semibold mt-3 pt-3 border-t border-orange-200">
+                  ✓ No fees! Full amount will be credited to your wallet
                 </p>
               </div>
             </div>

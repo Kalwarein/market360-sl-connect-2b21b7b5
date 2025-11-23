@@ -85,7 +85,7 @@ export const WithdrawModal = ({ open, onOpenChange, onSuccess, currentBalance }:
               </div>
               <div className="text-sm text-gray-700 space-y-2">
                 <p className="font-semibold text-gray-900">Withdrawal Information</p>
-                <p className="leading-relaxed">A 2% processing fee will be deducted from your withdrawal amount.</p>
+                <p className="leading-relaxed font-bold text-red-600">⚠️ IMPORTANT: A 2% processing fee will be deducted from your withdrawal amount.</p>
                 <div className="mt-3 pt-3 border-t border-yellow-200">
                   <p className="text-xs text-gray-600">Available Balance</p>
                   <p className="font-bold text-xl text-primary mt-1">SLL {currentBalance.toLocaleString()}</p>
@@ -108,9 +108,10 @@ export const WithdrawModal = ({ open, onOpenChange, onSuccess, currentBalance }:
               max={currentBalance}
             />
             {amount && (
-              <div className="mt-3 p-3 bg-primary/5 rounded-lg border border-primary/20 animate-fade-in">
-                <p className="text-sm text-muted-foreground">You will receive</p>
-                <p className="text-lg font-bold text-primary mt-1">SLL {finalAmount}</p>
+              <div className="mt-3 p-4 bg-yellow-50 rounded-lg border-2 border-yellow-400 animate-fade-in">
+                <p className="text-sm font-semibold text-gray-700">Amount after 2% fee:</p>
+                <p className="text-2xl font-bold text-primary mt-1">SLL {finalAmount}</p>
+                <p className="text-xs text-red-600 mt-2 font-semibold">This is what we will send to your Orange Money account</p>
               </div>
             )}
           </div>

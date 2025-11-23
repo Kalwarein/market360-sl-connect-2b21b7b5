@@ -40,13 +40,13 @@ const ReportIssue = () => {
         const filePath = `${user?.id}/${fileName}`;
 
         const { error: uploadError } = await supabase.storage
-          .from('chat-attachments')
+          .from('report-evidence')
           .upload(filePath, file);
 
         if (uploadError) throw uploadError;
 
         const { data: { publicUrl } } = supabase.storage
-          .from('chat-attachments')
+          .from('report-evidence')
           .getPublicUrl(filePath);
 
         uploadedUrls.push(publicUrl);

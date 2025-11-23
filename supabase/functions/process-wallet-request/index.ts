@@ -81,21 +81,22 @@ Deno.serve(async (req) => {
 
     if (action === 'approve') {
       if (request.type === 'deposit') {
-        const net = Number(request.amount) * 0.98
-        walletDelta = net
+        // No fee on deposits - full amount credited
+        const depositAmount = Number(request.amount);
+        walletDelta = depositAmount;
         const { error: wUpdErr } = await supabaseClient
           .from('wallets')
-          .update({ balance_leones: Number(wallet.balance_leones) + net })
+          .update({ balance_leones: Number(wallet.balance_leones) + depositAmount })
           .eq('id', wallet.id)
         if (wUpdErr) throw wUpdErr
 
         const { error: txErr } = await supabaseClient.from('transactions').insert({
           wallet_id: wallet.id,
-          amount: net,
+          amount: depositAmount,
           type: 'deposit',
           status: 'completed',
           reference: `DEP-${request.id}`,
-          metadata: { original_amount: request.amount, fee_percentage: 2, wallet_request_id: request.id, processed_by: user.id }
+          metadata: { original_amount: request.amount, fee_percentage: 0, wallet_request_id: request.id, processed_by: user.id }
         })
         if (txErr) throw txErr
       } else if (request.type === 'withdrawal') {
