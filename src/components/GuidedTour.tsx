@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { X, ChevronRight, Sparkles } from 'lucide-react';
+import { X, ChevronRight, Bot } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -181,30 +181,50 @@ export const GuidedTour = () => {
     if (!target) return {};
 
     const rect = target.getBoundingClientRect();
-    const positions: Record<string, any> = {
-      top: {
-        bottom: `${window.innerHeight - rect.top + 20}px`,
-        left: `${rect.left + rect.width / 2}px`,
-        transform: 'translateX(-50%)',
-      },
-      bottom: {
-        top: `${rect.bottom + 20}px`,
-        left: `${rect.left + rect.width / 2}px`,
-        transform: 'translateX(-50%)',
-      },
-      left: {
-        top: `${rect.top + rect.height / 2}px`,
-        right: `${window.innerWidth - rect.left + 20}px`,
-        transform: 'translateY(-50%)',
-      },
-      right: {
-        top: `${rect.top + rect.height / 2}px`,
-        left: `${rect.right + 20}px`,
-        transform: 'translateY(-50%)',
-      },
-    };
+    const tooltipWidth = 384; // max-w-sm is roughly 384px
+    const tooltipHeight = 300; // estimated height
+    const padding = 20;
 
-    return positions[step.position] || positions.bottom;
+    let position: any = {};
+
+    switch (step.position) {
+      case 'top':
+        position = {
+          bottom: `${window.innerHeight - rect.top + padding}px`,
+          left: `${Math.max(padding, Math.min(rect.left + rect.width / 2, window.innerWidth - tooltipWidth / 2 - padding))}px`,
+          transform: 'translateX(-50%)',
+        };
+        break;
+      case 'bottom':
+        position = {
+          top: `${rect.bottom + padding}px`,
+          left: `${Math.max(padding, Math.min(rect.left + rect.width / 2, window.innerWidth - tooltipWidth / 2 - padding))}px`,
+          transform: 'translateX(-50%)',
+        };
+        break;
+      case 'left':
+        position = {
+          top: `${Math.max(padding, Math.min(rect.top + rect.height / 2, window.innerHeight - tooltipHeight / 2 - padding))}px`,
+          right: `${window.innerWidth - rect.left + padding}px`,
+          transform: 'translateY(-50%)',
+        };
+        break;
+      case 'right':
+        position = {
+          top: `${Math.max(padding, Math.min(rect.top + rect.height / 2, window.innerHeight - tooltipHeight / 2 - padding))}px`,
+          left: `${Math.min(rect.right + padding, window.innerWidth - tooltipWidth - padding)}px`,
+          transform: 'translateY(-50%)',
+        };
+        break;
+      default:
+        position = {
+          top: `${rect.bottom + padding}px`,
+          left: `${Math.max(padding, Math.min(rect.left + rect.width / 2, window.innerWidth - tooltipWidth / 2 - padding))}px`,
+          transform: 'translateX(-50%)',
+        };
+    }
+
+    return position;
   };
 
   if (!isActive) return null;
@@ -237,8 +257,8 @@ export const GuidedTour = () => {
             <div className="flex flex-col items-center text-center space-y-6">
               {/* Wello AI Avatar */}
               <div className="relative">
-                <div className="h-32 w-32 rounded-full bg-gradient-to-br from-primary via-primary-hover to-accent flex items-center justify-center animate-pulse shadow-2xl">
-                  <Sparkles className="h-16 w-16 text-primary-foreground animate-spin-slow" />
+                <div className="h-32 w-32 rounded-full bg-gradient-to-br from-primary via-primary-hover to-accent flex items-center justify-center shadow-2xl">
+                  <Bot className="h-16 w-16 text-primary-foreground" />
                 </div>
                 <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground px-4 py-1 rounded-full text-sm font-bold shadow-lg">
                   Wello AI
@@ -288,7 +308,7 @@ export const GuidedTour = () => {
             {/* Wello AI Mini Avatar */}
             <div className="flex items-center gap-3">
               <div className="h-12 w-12 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg flex-shrink-0">
-                <Sparkles className="h-6 w-6 text-primary-foreground" />
+                <Bot className="h-6 w-6 text-primary-foreground" />
               </div>
               <div className="flex-1">
                 <h3 className="font-bold text-lg text-foreground">
