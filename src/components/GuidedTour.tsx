@@ -101,10 +101,19 @@ export const GuidedTour = () => {
         }
       }
 
-      // Scroll to target element
+      // Scroll to target element and update spotlight position
       const targetElement = document.querySelector(step.target);
       if (targetElement) {
         targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        
+        // Update spotlight position
+        setTimeout(() => {
+          const rect = targetElement.getBoundingClientRect();
+          const centerX = rect.left + rect.width / 2;
+          const centerY = rect.top + rect.height / 2;
+          document.documentElement.style.setProperty('--spotlight-x', `${centerX}px`);
+          document.documentElement.style.setProperty('--spotlight-y', `${centerY}px`);
+        }, 100);
       }
     }
   }, [currentStep, isActive]);
@@ -200,10 +209,19 @@ export const GuidedTour = () => {
 
   if (!isActive) return null;
 
+  const currentTarget = !showWelloIntro ? tourSteps[currentStep]?.target : null;
+
   return (
     <>
-      {/* Blur Overlay */}
-      <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[9998]" />
+      {/* Blur Overlay with Spotlight Effect */}
+      <div className="fixed inset-0 z-[9998]">
+        <div className="absolute inset-0 bg-background/60 backdrop-blur-md" 
+             style={{
+               maskImage: currentTarget ? `radial-gradient(circle at var(--spotlight-x, 50%) var(--spotlight-y, 50%), transparent 150px, black 200px)` : 'none',
+               WebkitMaskImage: currentTarget ? `radial-gradient(circle at var(--spotlight-x, 50%) var(--spotlight-y, 50%), transparent 150px, black 200px)` : 'none',
+             }} 
+        />
+      </div>
 
       {/* Wello AI Introduction */}
       {showWelloIntro && (
@@ -324,8 +342,9 @@ export const GuidedTour = () => {
           ${tourSteps[currentStep].target} {
             position: relative;
             z-index: 9999 !important;
-            box-shadow: 0 0 0 4px hsl(var(--primary)), 0 0 0 8px hsl(var(--primary) / 0.3) !important;
-            border-radius: 12px;
+            box-shadow: 0 0 0 4px hsl(var(--primary)), 0 0 0 12px hsl(var(--primary) / 0.4), 0 0 60px 20px hsl(var(--primary) / 0.3) !important;
+            border-radius: 16px;
+            background: hsl(var(--card)) !important;
           }
         `}</style>
       )}
