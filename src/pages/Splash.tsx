@@ -2,12 +2,12 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Wallet, ShieldCheck, Package, ArrowRight } from 'lucide-react';
+import { Wallet, ShieldCheck, Package, ArrowRight, Sparkles } from 'lucide-react';
 
 const Splash = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [currentStep, setCurrentStep] = useState(0);
+  const [currentStep, setCurrentStep] = useState(-1); // Start at -1 for initial landing screen
 
   // Redirect authenticated users to home
   useEffect(() => {
@@ -53,6 +53,103 @@ const Splash = () => {
   const handleSignIn = () => {
     navigate('/auth?mode=signin');
   };
+
+  // Initial landing screen
+  if (currentStep === -1) {
+    return (
+      <div className="fixed inset-0 bg-gradient-to-br from-primary/10 via-background to-accent/10 overflow-hidden">
+        {/* Animated background blobs */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute top-20 left-10 w-96 h-96 bg-primary/20 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute bottom-20 right-10 w-80 h-80 bg-accent/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+          <div className="absolute top-1/2 left-1/4 w-72 h-72 bg-primary/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
+        </div>
+
+        <div className="relative h-full flex flex-col items-center justify-between px-6 py-12">
+          {/* Top section - Sparkles decoration */}
+          <div className="flex justify-end w-full max-w-md">
+            <Sparkles className="w-8 h-8 text-primary animate-pulse" />
+          </div>
+
+          {/* Center section - Logo and content */}
+          <div className="flex flex-col items-center justify-center flex-1 animate-fade-in">
+            {/* Logo with 3D effect */}
+            <div className="relative mb-8">
+              {/* 3D shadow layers */}
+              <div className="absolute inset-0 bg-gradient-to-br from-primary to-accent rounded-full blur-3xl opacity-40 animate-pulse scale-110" />
+              <div className="absolute inset-0 bg-primary/30 rounded-full blur-2xl translate-y-2" />
+              
+              {/* Main logo container */}
+              <div className="relative bg-card rounded-full p-10 shadow-2xl border-4 border-primary/20 backdrop-blur-sm">
+                <img 
+                  src="/logo.png" 
+                  alt="Market360" 
+                  className="w-40 h-40 object-contain rounded-full"
+                />
+              </div>
+
+              {/* Floating sparkles around logo */}
+              <Sparkles className="absolute -top-3 -right-3 w-6 h-6 text-accent animate-bounce" />
+              <Sparkles className="absolute -bottom-3 -left-3 w-5 h-5 text-primary animate-bounce" style={{ animationDelay: '0.3s' }} />
+              <Sparkles className="absolute top-1/2 -right-6 w-4 h-4 text-primary animate-bounce" style={{ animationDelay: '0.6s' }} />
+            </div>
+
+            {/* Brand name with shimmer */}
+            <h1 className="text-6xl md:text-7xl font-black mb-4 tracking-tight">
+              <span className="bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent animate-shimmer bg-[length:200%_100%]">
+                Market360
+              </span>
+            </h1>
+
+            {/* Tagline */}
+            <p className="text-xl md:text-2xl text-muted-foreground font-medium text-center mb-2">
+              Sierra Leone's Trusted
+            </p>
+            <p className="text-2xl md:text-3xl font-bold text-foreground text-center mb-12">
+              Online Marketplace
+            </p>
+
+            {/* 3D Get Started Button */}
+            <div className="relative group">
+              {/* Button glow effect */}
+              <div className="absolute -inset-1 bg-gradient-to-r from-primary to-accent rounded-3xl blur opacity-40 group-hover:opacity-60 transition duration-300" />
+              
+              {/* 3D shadow layers */}
+              <div className="absolute inset-0 bg-gradient-to-b from-primary to-primary-hover rounded-3xl translate-y-2 opacity-80" />
+              
+              {/* Main button */}
+              <Button
+                onClick={() => setCurrentStep(0)}
+                size="lg"
+                className="relative h-16 px-12 text-xl rounded-3xl bg-gradient-to-br from-primary via-primary to-accent hover:from-primary/90 hover:via-primary/90 hover:to-accent/90 text-white font-bold shadow-2xl transition-all duration-300 group-hover:translate-y-1 group-hover:shadow-xl border-2 border-primary-light/50"
+              >
+                Get Started
+                <ArrowRight className="ml-3 h-6 w-6 group-hover:translate-x-1 transition-transform" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Bottom section - Progress indicators */}
+          <div className="flex flex-col items-center gap-4 animate-fade-in">
+            {/* Decorative line */}
+            <div className="flex items-center gap-2">
+              <div className="w-12 h-0.5 bg-gradient-to-r from-transparent to-primary rounded-full" />
+              <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
+              <div className="w-2 h-2 bg-primary/60 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }} />
+              <div className="w-2 h-2 bg-primary/40 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }} />
+              <div className="w-12 h-0.5 bg-gradient-to-l from-transparent to-primary rounded-full" />
+            </div>
+
+            {/* Trust badge */}
+            <div className="flex items-center gap-2 text-muted-foreground text-sm">
+              <ShieldCheck className="w-4 h-4 text-primary" />
+              <span className="font-medium">Trusted by thousands</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (currentStep === features.length) {
     // Final step - Auth options
@@ -202,8 +299,8 @@ const Splash = () => {
 
         {/* Skip option */}
         <button
-          onClick={handleGetStarted}
-          className="mt-6 text-muted-foreground hover:text-foreground transition-colors text-sm"
+          onClick={() => setCurrentStep(features.length)}
+          className="mt-6 text-muted-foreground hover:text-foreground transition-colors text-sm font-medium"
         >
           Skip
         </button>
