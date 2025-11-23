@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { LogOut, Edit2, Wallet, ShoppingBag, Bell, Store, Gift, Settings, Lock, FileText, Mail, Crown, ChevronRight, Camera } from 'lucide-react';
+import { LogOut, Edit2, Wallet, ShoppingBag, Bell, Store, Gift, Settings, Lock, FileText, Mail, Crown, ChevronRight, Camera, Headset } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import BottomNav from '@/components/BottomNav';
@@ -724,6 +724,16 @@ const Profile = () => {
         {/* Footer */}
         <div className="border-t border-border bg-muted/30 dark:bg-muted/10 p-6">
           <div className="flex items-center justify-center gap-8">
+            <button
+              onClick={() => navigate('/report-issue')}
+              className="flex flex-col items-center gap-2 hover:opacity-80 transition-smooth group"
+            >
+              <div className="p-3 bg-background dark:bg-card rounded-2xl group-hover:bg-primary/10 dark:group-hover:bg-primary/20 transition-smooth">
+                <Headset className="h-6 w-6 text-muted-foreground dark:text-muted-foreground group-hover:text-primary transition-colors" />
+              </div>
+              <span className="text-xs text-muted-foreground dark:text-muted-foreground font-medium">Customer Care</span>
+            </button>
+            
             <button
               onClick={() => navigate('/privacy')}
               className="flex flex-col items-center gap-2 hover:opacity-80 transition-smooth group"

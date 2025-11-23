@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Bell, ShoppingCart, MessageSquare, Search, Headphones } from 'lucide-react';
+import { Bell, ShoppingCart, MessageSquare, Search, Headset } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -34,6 +34,7 @@ const Home = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [cartCount, setCartCount] = useState(0);
   const [notificationCount, setNotificationCount] = useState(0);
+  const [showCustomerCareTooltip, setShowCustomerCareTooltip] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -42,6 +43,12 @@ const Home = () => {
     loadUnreadCount();
     loadCartCount();
     loadNotificationCount();
+
+    // Check if user has seen customer care tooltip
+    const hasSeenTooltip = localStorage.getItem('customer_care_tooltip_seen');
+    if (!hasSeenTooltip) {
+      setTimeout(() => setShowCustomerCareTooltip(true), 2000);
+    }
 
     // Real-time subscriptions
     if (!user) return;
@@ -344,15 +351,51 @@ const Home = () => {
             </div>
 
             <div className="flex items-center gap-3">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="relative rounded-full hover:bg-primary/10"
-                onClick={() => navigate('/report-issue')}
-                title="Customer Care - Report an Issue"
-              >
-                <Headphones className="h-5 w-5 text-primary" />
-              </Button>
+              <div className="relative">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="relative rounded-full hover:bg-primary/10"
+                  onClick={() => {
+                    navigate('/report-issue');
+                    if (showCustomerCareTooltip) {
+                      setShowCustomerCareTooltip(false);
+                      localStorage.setItem('customer_care_tooltip_seen', 'true');
+                    }
+                  }}
+                  title="Customer Care - Report an Issue"
+                >
+                  <Headset className="h-5 w-5 text-primary" />
+                </Button>
+                
+                {showCustomerCareTooltip && (
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 z-50 animate-in fade-in slide-in-from-top-2 duration-300">
+                    <div className="relative bg-primary text-primary-foreground rounded-2xl shadow-2xl p-4 w-64 border-2 border-primary/20">
+                      <button
+                        onClick={() => {
+                          setShowCustomerCareTooltip(false);
+                          localStorage.setItem('customer_care_tooltip_seen', 'true');
+                        }}
+                        className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center text-xs font-bold hover:bg-destructive/90 transition-colors shadow-lg"
+                      >
+                        ×
+                      </button>
+                      <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-primary rotate-45 border-t-2 border-l-2 border-primary/20"></div>
+                      <div className="flex items-start gap-3">
+                        <div className="flex-shrink-0 h-10 w-10 rounded-full bg-primary-foreground/20 flex items-center justify-center">
+                          <Headset className="h-5 w-5 text-primary-foreground" />
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-bold text-sm mb-1">Customer Care</h3>
+                          <p className="text-xs opacity-90 leading-relaxed">
+                            Report fraud, suspicious activity, or any issues you experience. Our team will respond quickly to ensure your safety.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
 
               <Button
                 variant="ghost"
