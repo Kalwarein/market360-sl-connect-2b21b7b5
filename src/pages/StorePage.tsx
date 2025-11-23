@@ -241,117 +241,148 @@ const StorePage = () => {
               )}
             </div>
 
-            <CardContent className="p-6 relative">
-              {/* Logo */}
-              <div className="absolute -top-16 left-6">
-                <div className="h-32 w-32 rounded-2xl overflow-hidden border-4 border-card shadow-xl bg-card">
-                  {store.logo_url ? (
-                    <img src={store.logo_url} alt={store.store_name} className="w-full h-full object-cover" />
+            <CardContent className="p-6">
+              {/* Two-Column Layout for Desktop, Stack on Mobile */}
+              <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-6 items-start">
+                
+                {/* Left Column - Logo and Key Stats */}
+                <div className="flex flex-col items-center md:items-start gap-4">
+                  {/* Logo */}
+                  <div className="h-32 w-32 md:h-40 md:w-40 rounded-2xl overflow-hidden border-4 border-primary/20 shadow-xl bg-card">
+                    {store.logo_url ? (
+                      <img src={store.logo_url} alt={store.store_name} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary to-accent">
+                        <Crown className="h-16 w-16 text-primary-foreground" />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Store Stats Cards */}
+                  <div className="w-full space-y-3">
+                    <Card className="bg-primary/5 border-primary/20">
+                      <CardContent className="p-3 text-center">
+                        <div className="flex items-center justify-center gap-1 text-primary mb-1">
+                          <Star className="h-5 w-5 fill-primary" />
+                          <span className="font-bold text-2xl">4.9</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground font-medium">Rating</p>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="bg-accent/5 border-accent/20">
+                      <CardContent className="p-3 text-center">
+                        <div className="flex items-center justify-center gap-1 mb-1">
+                          <Package className="h-5 w-5 text-accent" />
+                          <span className="font-bold text-2xl text-foreground">{products.length}</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground font-medium">Products</p>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="bg-secondary/5 border-secondary/20">
+                      <CardContent className="p-3 text-center">
+                        <div className="flex items-center justify-center gap-1 mb-1">
+                          <Award className="h-5 w-5 text-secondary-foreground" />
+                          <span className="font-bold text-xl text-foreground">Premium</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground font-medium">Featured Store</p>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
+
+                {/* Right Column - Store Information */}
+                <div className="space-y-4">
+                  {/* Store Name and Verified Badge */}
+                  <div>
+                    <div className="flex items-center gap-3 mb-2">
+                      <h1 className="text-3xl font-bold text-foreground">
+                        {store.store_name}
+                      </h1>
+                      {hasVerifiedBadge && (
+                        <CheckCircle className="h-7 w-7 text-primary fill-primary flex-shrink-0" />
+                      )}
+                    </div>
+
+                    {/* Location */}
+                    {(store.city || store.region) && (
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <MapPin className="h-4 w-4 text-primary" />
+                        <span className="font-medium text-sm">
+                          {[store.city, store.region, store.country].filter(Boolean).join(', ')}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Trust Badges */}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Badge className="bg-primary/10 text-primary font-semibold border border-primary/20 rounded-full px-3 py-1">
+                      <Shield className="h-3.5 w-3.5 mr-1.5" />
+                      Trusted Seller
+                    </Badge>
+                    <Badge className="bg-accent/10 text-accent font-semibold border border-accent/20 rounded-full px-3 py-1">
+                      <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
+                      Verified
+                    </Badge>
+                    <Badge className="bg-secondary/10 text-secondary-foreground font-semibold border border-secondary/20 rounded-full px-3 py-1">
+                      <Zap className="h-3.5 w-3.5 mr-1.5" />
+                      Fast Response
+                    </Badge>
+                  </div>
+
+                  {/* Description */}
+                  {store.description && (
+                    <Card className="bg-muted/30">
+                      <CardContent className="p-4">
+                        <p className="text-sm text-foreground leading-relaxed">
+                          {store.description}
+                        </p>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Action Buttons - Moved here for better flow */}
+                  {!user ? (
+                    <div className="grid grid-cols-2 gap-3">
+                      <Button 
+                        variant="outline"
+                        className="rounded-xl h-11" 
+                        onClick={() => navigate('/auth')}
+                      >
+                        Sign In
+                      </Button>
+                      <Button 
+                        className="rounded-xl shadow-lg font-bold h-11"
+                        onClick={() => navigate('/auth')}
+                      >
+                        Create Account
+                      </Button>
+                    </div>
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary to-accent">
-                      <Crown className="h-16 w-16 text-primary-foreground" />
+                    <div className="grid grid-cols-2 gap-3">
+                      <Button 
+                        className="rounded-xl shadow-lg font-bold h-11"
+                        onClick={handleContactSeller}
+                        disabled={contacting}
+                      >
+                        <MessageCircle className="h-4 w-4 mr-2" />
+                        {contacting ? 'Opening...' : 'Contact Seller'}
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        className="rounded-xl h-11" 
+                        onClick={() => setShareDialogOpen(true)}
+                      >
+                        <Share2 className="h-4 w-4 mr-2" />
+                        Share Store
+                      </Button>
                     </div>
                   )}
                 </div>
               </div>
 
-              {/* Store Info */}
-              <div className="pl-40 min-h-[100px]">
-                <div className="flex items-center gap-3 mb-3">
-                  <h1 className="text-3xl font-bold text-foreground">
-                    {store.store_name}
-                  </h1>
-                  
-                  {hasVerifiedBadge && (
-                    <CheckCircle className="h-6 w-6 text-primary fill-primary flex-shrink-0" />
-                  )}
-                </div>
-
-                {/* Location */}
-                {(store.city || store.region) && (
-                  <div className="flex items-center gap-2 text-muted-foreground mb-4">
-                    <MapPin className="h-4 w-4 text-primary" />
-                    <span className="font-medium text-sm">
-                      {[store.city, store.region, store.country].filter(Boolean).join(', ')}
-                    </span>
-                  </div>
-                )}
-
-                {/* Trust Badges */}
-                <div className="flex items-center gap-2 flex-wrap mb-4">
-                  <Badge className="bg-primary/10 text-primary font-semibold border border-primary/20 rounded-full">
-                    <Shield className="h-3 w-3 mr-1" />
-                    Trusted Seller
-                  </Badge>
-                  <Badge className="bg-accent/10 text-accent font-semibold border border-accent/20 rounded-full">
-                    <CheckCircle className="h-3 w-3 mr-1" />
-                    Verified
-                  </Badge>
-                  <Badge className="bg-secondary/10 text-secondary-foreground font-semibold border border-secondary/20 rounded-full">
-                    <Zap className="h-3 w-3 mr-1" />
-                    Fast Response
-                  </Badge>
-                </div>
-
-                {/* Store Stats */}
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="flex items-center gap-1 text-primary">
-                    <Star className="h-4 w-4 fill-primary text-primary" />
-                    <span className="font-bold text-lg">4.9</span>
-                  </div>
-                  <div className="h-5 w-px bg-border" />
-                  <span className="text-foreground font-semibold">{products.length} Products</span>
-                </div>
-
-                {/* Description */}
-                {store.description && (
-                  <p className="text-muted-foreground text-sm leading-relaxed line-clamp-2">
-                    {store.description}
-                  </p>
-                )}
-              </div>
-
-              {/* Action Buttons */}
-              {!user ? (
-                <div className="grid grid-cols-2 gap-3 mt-6">
-                  <Button 
-                    variant="outline"
-                    className="rounded-xl" 
-                    size="lg"
-                    onClick={() => navigate('/auth')}
-                  >
-                    Sign In
-                  </Button>
-                  <Button 
-                    className="rounded-xl shadow-lg font-bold"
-                    size="lg"
-                    onClick={() => navigate('/auth')}
-                  >
-                    Create Account
-                  </Button>
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 gap-3 mt-6">
-                  <Button 
-                    className="rounded-xl shadow-lg font-bold"
-                    size="lg"
-                    onClick={handleContactSeller}
-                    disabled={contacting}
-                  >
-                    <MessageCircle className="h-4 w-4 mr-2" />
-                    {contacting ? 'Opening...' : 'Contact Seller'}
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    className="rounded-xl" 
-                    size="lg"
-                    onClick={() => setShareDialogOpen(true)}
-                  >
-                    <Share2 className="h-4 w-4 mr-2" />
-                    Share Store
-                  </Button>
-                </div>
-              )}
             </CardContent>
           </Card>
         </div>
