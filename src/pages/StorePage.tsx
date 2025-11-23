@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, MapPin, MessageCircle, Star, Package, TrendingUp, Sparkles, Crown, Share2, Shield, Zap, Award, CheckCircle } from 'lucide-react';
+import { ArrowLeft, MapPin, MessageCircle, Star, Package, Crown, Share2, Shield, Zap, Award, CheckCircle } from 'lucide-react';
 import { useStorePerks } from '@/hooks/useStorePerks';
 import { ShareStoreDialog } from '@/components/ShareStoreDialog';
 import { toast } from 'sonner';
@@ -40,8 +40,6 @@ const StorePage = () => {
   const { user } = useAuth();
   const [store, setStore] = useState<Store | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
-  const [topRanking, setTopRanking] = useState<Product[]>([]);
-  const [newArrivals, setNewArrivals] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [contacting, setContacting] = useState(false);
@@ -122,24 +120,7 @@ const StorePage = () => {
 
       if (productsError) throw productsError;
       
-      const allProducts = productsData || [];
-      setProducts(allProducts);
-      
-      // Load top ranking products (with views)
-      const { data: viewsData } = await supabase
-        .from('product_views')
-        .select('product_id, count')
-        .in('product_id', allProducts.map(p => p.id));
-      
-      const viewCounts = new Map(viewsData?.map(v => [v.product_id, v.count]) || []);
-      const ranked = [...allProducts].sort((a, b) => 
-        (viewCounts.get(b.id) || 0) - (viewCounts.get(a.id) || 0)
-      ).slice(0, 10);
-      setTopRanking(ranked);
-      
-      // Load new arrivals (newest products)
-      const newest = [...allProducts].slice(0, 10);
-      setNewArrivals(newest);
+      setProducts(productsData || []);
     } catch (error) {
       console.error('Error loading store:', error);
     } finally {
@@ -401,104 +382,6 @@ const StorePage = () => {
             </Card>
           ) : (
             <>
-              {/* Top Ranking Section */}
-              {topRanking.length > 0 && (
-                <div className="mb-8">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2">
-                      <TrendingUp className="h-5 w-5 text-primary" />
-                      <h2 className="text-2xl font-bold text-foreground">Top Ranking</h2>
-                    </div>
-                    <Badge className="bg-primary/10 text-primary border border-primary/20 rounded-full font-bold">
-                      {topRanking.length} items
-                    </Badge>
-                  </div>
-                  <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory">
-                    {topRanking.map((product, index) => (
-                      <Card
-                        key={product.id}
-                        className="min-w-[180px] max-w-[200px] overflow-hidden cursor-pointer hover:shadow-xl hover:scale-[1.02] transition-all duration-200 border border-border rounded-2xl snap-start"
-                        onClick={() => navigate(`/product/${product.id}`)}
-                      >
-                        <div className="relative aspect-square overflow-hidden">
-                          {product.images && product.images.length > 0 ? (
-                            <img
-                              src={product.images[0]}
-                              alt={product.title}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center bg-muted">
-                              <Package className="h-12 w-12 text-muted-foreground" />
-                            </div>
-                          )}
-                          <Badge className="absolute top-2 left-2 bg-primary text-primary-foreground font-bold shadow-md">
-                            #{index + 1}
-                          </Badge>
-                        </div>
-                        <CardContent className="p-3">
-                          <h3 className="text-xs font-medium line-clamp-2 text-foreground mb-2">
-                            {product.title}
-                          </h3>
-                          <p className="text-sm font-bold text-primary">
-                            Le {product.price.toLocaleString()}
-                          </p>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* New Arrivals Section */}
-              {newArrivals.length > 0 && (
-                <div className="mb-8">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2">
-                      <Sparkles className="h-5 w-5 text-accent" />
-                      <h2 className="text-2xl font-bold text-foreground">New Arrivals</h2>
-                    </div>
-                    <Badge className="bg-accent/10 text-accent border border-accent/20 rounded-full font-bold">
-                      {newArrivals.length} items
-                    </Badge>
-                  </div>
-                  <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory">
-                    {newArrivals.map((product) => (
-                      <Card
-                        key={product.id}
-                        className="min-w-[180px] max-w-[200px] overflow-hidden cursor-pointer hover:shadow-xl hover:scale-[1.02] transition-all duration-200 border border-border rounded-2xl snap-start"
-                        onClick={() => navigate(`/product/${product.id}`)}
-                      >
-                        <div className="relative aspect-square overflow-hidden">
-                          {product.images && product.images.length > 0 ? (
-                            <img
-                              src={product.images[0]}
-                              alt={product.title}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center bg-muted">
-                              <Package className="h-12 w-12 text-muted-foreground" />
-                            </div>
-                          )}
-                          <Badge className="absolute top-2 right-2 bg-accent/90 backdrop-blur-sm text-xs shadow-md">
-                            New
-                          </Badge>
-                        </div>
-                        <CardContent className="p-3">
-                          <h3 className="text-xs font-medium line-clamp-2 text-foreground mb-2">
-                            {product.title}
-                          </h3>
-                          <p className="text-sm font-bold text-primary">
-                            Le {product.price.toLocaleString()}
-                          </p>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </div>
-              )}
-
               {/* All Products Section */}
               <div>
                 <div className="flex items-center justify-between mb-4">
@@ -646,7 +529,7 @@ const StorePage = () => {
                   <Badge variant="outline" className="shadow-sm">{products.length} Products</Badge>
                   {hasTrendingPlacement && (
                     <Badge className="bg-rose-500 text-white shadow-md">
-                      <TrendingUp className="h-3 w-3 mr-1" />
+                      <Zap className="h-3 w-3 mr-1" />
                       Trending
                     </Badge>
                   )}
@@ -721,104 +604,6 @@ const StorePage = () => {
         </div>
       ) : (
         <>
-          {/* Top Ranking Section */}
-          {topRanking.length > 0 && (
-            <div className="px-4 mb-8">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-primary" />
-                  <h2 className="text-xl font-bold text-foreground">Top Ranking</h2>
-                </div>
-                <Badge className="bg-primary/10 text-primary border border-primary/20 rounded-full">
-                  {topRanking.length} items
-                </Badge>
-              </div>
-              <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory">
-                {topRanking.map((product, index) => (
-                  <Card
-                    key={product.id}
-                    className="min-w-[160px] max-w-[180px] overflow-hidden cursor-pointer hover:shadow-xl hover:scale-[1.02] transition-all duration-200 border-border/50 snap-start"
-                    onClick={() => navigate(`/product/${product.id}`)}
-                  >
-                    <div className="relative aspect-square bg-muted">
-                      {product.images && product.images.length > 0 ? (
-                        <img
-                          src={product.images[0]}
-                          alt={product.title}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/50">
-                          <Package className="h-12 w-12 text-muted-foreground/50" />
-                        </div>
-                      )}
-                      <Badge className="absolute top-2 left-2 bg-primary text-primary-foreground font-bold shadow-md">
-                        #{index + 1}
-                      </Badge>
-                    </div>
-                    <CardContent className="p-3 space-y-1">
-                      <h3 className="font-semibold text-xs line-clamp-2 leading-tight text-foreground">
-                        {product.title}
-                      </h3>
-                      <p className="text-primary font-bold text-sm">
-                        Le {product.price.toLocaleString()}
-                      </p>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* New Arrivals Section */}
-          {newArrivals.length > 0 && (
-            <div className="px-4 mb-8">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="h-5 w-5 text-accent" />
-                  <h2 className="text-xl font-bold text-foreground">New Arrivals</h2>
-                </div>
-                <Badge className="bg-accent/10 text-accent border border-accent/20 rounded-full">
-                  {newArrivals.length} items
-                </Badge>
-              </div>
-              <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory">
-                {newArrivals.map((product) => (
-                  <Card
-                    key={product.id}
-                    className="min-w-[160px] max-w-[180px] overflow-hidden cursor-pointer hover:shadow-xl hover:scale-[1.02] transition-all duration-200 border-border/50 snap-start"
-                    onClick={() => navigate(`/product/${product.id}`)}
-                  >
-                    <div className="relative aspect-square bg-muted">
-                      {product.images && product.images.length > 0 ? (
-                        <img
-                          src={product.images[0]}
-                          alt={product.title}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/50">
-                          <Package className="h-12 w-12 text-muted-foreground/50" />
-                        </div>
-                      )}
-                      <Badge className="absolute top-2 right-2 bg-accent/90 backdrop-blur-sm text-xs shadow-md">
-                        New
-                      </Badge>
-                    </div>
-                    <CardContent className="p-3 space-y-1">
-                      <h3 className="font-semibold text-xs line-clamp-2 leading-tight text-foreground">
-                        {product.title}
-                      </h3>
-                      <p className="text-primary font-bold text-sm">
-                        Le {product.price.toLocaleString()}
-                      </p>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          )}
-
           {/* All Products Section */}
           <div className="px-4">
             <div className="flex items-center justify-between mb-4">
