@@ -172,8 +172,8 @@ export const GuidedTour = () => {
     }
   };
 
-  const handleSkip = () => {
-    completeTour();
+  const handleSkip = async () => {
+    await completeTour();
   };
 
   const getTooltipPosition = (step: TourStep) => {
