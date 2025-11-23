@@ -181,50 +181,87 @@ export const GuidedTour = () => {
     if (!target) return {};
 
     const rect = target.getBoundingClientRect();
-    const tooltipWidth = 384; // max-w-sm is roughly 384px
-    const tooltipHeight = 300; // estimated height
-    const padding = 20;
+    const tooltipWidth = 384; // max-w-sm
+    const tooltipHeight = 280; // estimated
+    const padding = 24;
+    const arrowSize = 10;
 
-    let position: any = {};
+    // Try positions in order of preference
+    const positions = [
+      step.position,
+      step.position === 'top' ? 'bottom' : step.position === 'bottom' ? 'top' : step.position === 'left' ? 'right' : 'left',
+      'bottom',
+      'top',
+      'right',
+      'left'
+    ];
 
-    switch (step.position) {
-      case 'top':
-        position = {
-          bottom: `${window.innerHeight - rect.top + padding}px`,
-          left: `${Math.max(padding, Math.min(rect.left + rect.width / 2, window.innerWidth - tooltipWidth / 2 - padding))}px`,
-          transform: 'translateX(-50%)',
-        };
-        break;
-      case 'bottom':
-        position = {
-          top: `${rect.bottom + padding}px`,
-          left: `${Math.max(padding, Math.min(rect.left + rect.width / 2, window.innerWidth - tooltipWidth / 2 - padding))}px`,
-          transform: 'translateX(-50%)',
-        };
-        break;
-      case 'left':
-        position = {
-          top: `${Math.max(padding, Math.min(rect.top + rect.height / 2, window.innerHeight - tooltipHeight / 2 - padding))}px`,
-          right: `${window.innerWidth - rect.left + padding}px`,
-          transform: 'translateY(-50%)',
-        };
-        break;
-      case 'right':
-        position = {
-          top: `${Math.max(padding, Math.min(rect.top + rect.height / 2, window.innerHeight - tooltipHeight / 2 - padding))}px`,
-          left: `${Math.min(rect.right + padding, window.innerWidth - tooltipWidth - padding)}px`,
-          transform: 'translateY(-50%)',
-        };
-        break;
-      default:
-        position = {
-          top: `${rect.bottom + padding}px`,
-          left: `${Math.max(padding, Math.min(rect.left + rect.width / 2, window.innerWidth - tooltipWidth / 2 - padding))}px`,
-          transform: 'translateX(-50%)',
-        };
+    for (const pos of positions) {
+      let style: any = {};
+      let fits = true;
+
+      switch (pos) {
+        case 'top':
+          style = {
+            bottom: `${window.innerHeight - rect.top + arrowSize + padding}px`,
+            left: `${rect.left + rect.width / 2}px`,
+            transform: 'translateX(-50%)',
+          };
+          // Check if fits
+          if (rect.top - tooltipHeight - padding - arrowSize < 0) fits = false;
+          if (rect.left + rect.width / 2 - tooltipWidth / 2 < padding) fits = false;
+          if (rect.left + rect.width / 2 + tooltipWidth / 2 > window.innerWidth - padding) fits = false;
+          break;
+
+        case 'bottom':
+          style = {
+            top: `${rect.bottom + arrowSize + padding}px`,
+            left: `${rect.left + rect.width / 2}px`,
+            transform: 'translateX(-50%)',
+          };
+          // Check if fits
+          if (rect.bottom + tooltipHeight + padding + arrowSize > window.innerHeight) fits = false;
+          if (rect.left + rect.width / 2 - tooltipWidth / 2 < padding) fits = false;
+          if (rect.left + rect.width / 2 + tooltipWidth / 2 > window.innerWidth - padding) fits = false;
+          break;
+
+        case 'left':
+          style = {
+            top: `${rect.top + rect.height / 2}px`,
+            right: `${window.innerWidth - rect.left + arrowSize + padding}px`,
+            transform: 'translateY(-50%)',
+          };
+          // Check if fits
+          if (rect.left - tooltipWidth - padding - arrowSize < 0) fits = false;
+          if (rect.top + rect.height / 2 - tooltipHeight / 2 < padding) fits = false;
+          if (rect.top + rect.height / 2 + tooltipHeight / 2 > window.innerHeight - padding) fits = false;
+          break;
+
+        case 'right':
+          style = {
+            top: `${rect.top + rect.height / 2}px`,
+            left: `${rect.right + arrowSize + padding}px`,
+            transform: 'translateY(-50%)',
+          };
+          // Check if fits
+          if (rect.right + tooltipWidth + padding + arrowSize > window.innerWidth) fits = false;
+          if (rect.top + rect.height / 2 - tooltipHeight / 2 < padding) fits = false;
+          if (rect.top + rect.height / 2 + tooltipHeight / 2 > window.innerHeight - padding) fits = false;
+          break;
+      }
+
+      if (fits) {
+        return { ...style, position: pos };
+      }
     }
 
-    return position;
+    // Fallback to bottom center if nothing fits
+    return {
+      top: `${rect.bottom + arrowSize + padding}px`,
+      left: '50%',
+      transform: 'translateX(-50%)',
+      position: 'bottom'
+    };
   };
 
   if (!isActive) return null;
@@ -287,74 +324,75 @@ export const GuidedTour = () => {
       )}
 
       {/* Tour Steps */}
-      {!showWelloIntro && (
-        <div
-          className="fixed z-[9999] bg-card border-2 border-primary rounded-2xl shadow-2xl p-6 max-w-sm animate-in fade-in slide-in-from-bottom-4 duration-300"
-          style={getTooltipPosition(tourSteps[currentStep])}
-        >
-          {/* Arrow indicator */}
-          <div className={`absolute w-4 h-4 bg-card border-primary rotate-45 ${
-            tourSteps[currentStep].position === 'top' ? 'bottom-[-10px] border-r-2 border-b-2' :
-            tourSteps[currentStep].position === 'bottom' ? 'top-[-10px] border-l-2 border-t-2' :
-            tourSteps[currentStep].position === 'left' ? 'right-[-10px] border-t-2 border-r-2' :
-            'left-[-10px] border-b-2 border-l-2'
-          } ${
-            tourSteps[currentStep].position === 'top' || tourSteps[currentStep].position === 'bottom'
-              ? 'left-1/2 -translate-x-1/2'
-              : 'top-1/2 -translate-y-1/2'
-          }`} />
+      {!showWelloIntro && (() => {
+        const tooltipStyle = getTooltipPosition(tourSteps[currentStep]);
+        const actualPosition = tooltipStyle.position || tourSteps[currentStep].position;
+        
+        return (
+          <div
+            className="fixed z-[9999] bg-card border-2 border-primary rounded-2xl shadow-2xl p-6 max-w-sm animate-in fade-in slide-in-from-bottom-4 duration-300"
+            style={tooltipStyle}
+          >
+            {/* Arrow indicator - dynamic based on actual position */}
+            <div className={`absolute w-4 h-4 bg-card border-primary rotate-45 ${
+              actualPosition === 'top' ? 'bottom-[-10px] left-1/2 -translate-x-1/2 border-r-2 border-b-2' :
+              actualPosition === 'bottom' ? 'top-[-10px] left-1/2 -translate-x-1/2 border-l-2 border-t-2' :
+              actualPosition === 'left' ? 'right-[-10px] top-1/2 -translate-y-1/2 border-t-2 border-r-2' :
+              'left-[-10px] top-1/2 -translate-y-1/2 border-b-2 border-l-2'
+            }`} />
 
-          <div className="space-y-4">
-            {/* Wello AI Mini Avatar */}
-            <div className="flex items-center gap-3">
-              <div className="h-12 w-12 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg flex-shrink-0">
-                <Bot className="h-6 w-6 text-primary-foreground" />
-              </div>
-              <div className="flex-1">
-                <h3 className="font-bold text-lg text-foreground">
-                  {tourSteps[currentStep].title}
-                </h3>
-                <p className="text-xs text-muted-foreground">
-                  Step {currentStep + 1} of {tourSteps.length}
-                </p>
-              </div>
-              <button
-                onClick={handleSkip}
-                className="p-2 rounded-full hover:bg-muted transition-colors flex-shrink-0"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-
-            <p className="text-muted-foreground leading-relaxed">
-              {tourSteps[currentStep].description}
-            </p>
-
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex gap-1">
-                {tourSteps.map((_, index) => (
-                  <div
-                    key={index}
-                    className={`h-2 rounded-full transition-all ${
-                      index === currentStep
-                        ? 'w-8 bg-primary'
-                        : 'w-2 bg-muted'
-                    }`}
-                  />
-                ))}
+            <div className="space-y-4">
+              {/* Wello AI Mini Avatar */}
+              <div className="flex items-center gap-3">
+                <div className="h-12 w-12 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg flex-shrink-0">
+                  <Bot className="h-6 w-6 text-primary-foreground" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-bold text-lg text-foreground">
+                    {tourSteps[currentStep].title}
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    Step {currentStep + 1} of {tourSteps.length}
+                  </p>
+                </div>
+                <button
+                  onClick={handleSkip}
+                  className="p-2 rounded-full hover:bg-muted transition-colors flex-shrink-0"
+                >
+                  <X className="h-4 w-4" />
+                </button>
               </div>
 
-              <Button
-                onClick={handleNext}
-                className="rounded-xl shadow-md hover:shadow-lg transition-all"
-              >
-                {currentStep === tourSteps.length - 1 ? 'Finish' : 'Next'}
-                <ChevronRight className="ml-1 h-4 w-4" />
-              </Button>
+              <p className="text-muted-foreground leading-relaxed">
+                {tourSteps[currentStep].description}
+              </p>
+
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex gap-1">
+                  {tourSteps.map((_, index) => (
+                    <div
+                      key={index}
+                      className={`h-2 rounded-full transition-all ${
+                        index === currentStep
+                          ? 'w-8 bg-primary'
+                          : 'w-2 bg-muted'
+                      }`}
+                    />
+                  ))}
+                </div>
+
+                <Button
+                  onClick={handleNext}
+                  className="rounded-xl shadow-md hover:shadow-lg transition-all"
+                >
+                  {currentStep === tourSteps.length - 1 ? 'Finish' : 'Next'}
+                  <ChevronRight className="ml-1 h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Highlight Target Element */}
       {!showWelloIntro && (
