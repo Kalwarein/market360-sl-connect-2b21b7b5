@@ -57,6 +57,9 @@ const AdminUserDetail = () => {
 
   const loadUserDetails = async () => {
     try {
+      // First, deactivate any expired moderations
+      await supabase.rpc('check_and_deactivate_expired_moderations');
+
       // Load user profile
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
@@ -78,15 +81,16 @@ const AdminUserDetail = () => {
       if (logsError) throw logsError;
       setAuditLogs(logs || []);
 
-      // Check for active moderation
+      // Check for active moderation (non-expired)
       const { data: moderationData } = await supabase
         .from('user_moderation')
         .select('*')
         .eq('user_id', userId)
         .eq('is_active', true)
+        .or('expires_at.is.null,expires_at.gt.now()')
         .order('created_at', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
       setModeration(moderationData);
     } catch (error) {
@@ -209,7 +213,7 @@ const AdminUserDetail = () => {
             onClick={() => setSuspendModalOpen(true)}
             variant="outline"
             className="w-full"
-            disabled={moderation?.is_active}
+            disabled={moderation?.is_active && (!moderation.expires_at || new Date(moderation.expires_at) > new Date())}
           >
             <Clock className="h-4 w-4 mr-2" />
             Suspend User
@@ -218,7 +222,7 @@ const AdminUserDetail = () => {
             onClick={() => setBanModalOpen(true)}
             variant="destructive"
             className="w-full"
-            disabled={moderation?.is_active}
+            disabled={moderation?.is_active && (!moderation.expires_at || new Date(moderation.expires_at) > new Date())}
           >
             <Ban className="h-4 w-4 mr-2" />
             Ban User
