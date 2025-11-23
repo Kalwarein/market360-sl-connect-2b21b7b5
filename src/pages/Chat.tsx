@@ -142,6 +142,24 @@ const Chat = () => {
       )
       .subscribe();
 
+    // Listen for conversation deletions
+    const conversationChannel = supabase
+      .channel(`conversation-${conversationId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'conversations',
+          filter: `id=eq.${conversationId}`,
+        },
+        () => {
+          toast.error('This conversation has been deleted');
+          navigate('/messages');
+        }
+      )
+      .subscribe();
+
     const presenceChannel = supabase.channel(`presence-${conversationId}`, {
       config: { presence: { key: user?.id } },
     });
@@ -200,6 +218,7 @@ const Chat = () => {
     return () => {
       presenceChannel.untrack().then(() => {
         supabase.removeChannel(messagesChannel);
+        supabase.removeChannel(conversationChannel);
         supabase.removeChannel(presenceChannel);
       });
     };
@@ -238,6 +257,13 @@ const Chat = () => {
 
       if (error) throw error;
 
+      // If conversation doesn't exist (deleted), redirect to messages page
+      if (!data) {
+        toast.error('This conversation no longer exists');
+        navigate('/messages');
+        return;
+      }
+
       const isBuyer = data.buyer_id === user?.id;
       const otherUserId = isBuyer ? data.seller_id : data.buyer_id;
       
@@ -273,6 +299,7 @@ const Chat = () => {
     } catch (error) {
       console.error('Error loading conversation:', error);
       toast.error('Failed to load conversation');
+      navigate('/messages');
     }
   };
 

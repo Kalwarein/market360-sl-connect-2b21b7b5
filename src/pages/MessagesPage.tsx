@@ -218,8 +218,13 @@ const MessagesPage = () => {
               toast.success('Conversation archived');
             }}
             onDelete={async () => {
-              await deleteConversation(selectedConversation);
-              toast.success('Conversation deleted');
+              try {
+                await deleteConversation(selectedConversation);
+                toast.success('Conversation deleted permanently');
+              } catch (error) {
+                console.error('Failed to delete conversation:', error);
+                toast.error('Failed to delete conversation. Please try again.');
+              }
             }}
           />
         );

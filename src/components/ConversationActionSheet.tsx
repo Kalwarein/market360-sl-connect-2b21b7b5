@@ -1,6 +1,8 @@
 import { Pin, BellOff, Archive, Trash2, X } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { useState } from 'react';
 
 interface ConversationActionSheetProps {
   open: boolean;
@@ -29,62 +31,90 @@ export const ConversationActionSheet = ({
   onArchive,
   onDelete,
 }: ConversationActionSheetProps) => {
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="rounded-t-3xl">
-        <SheetHeader>
-          <SheetTitle>Chat with {conversation.other_user?.name || 'Unknown'}</SheetTitle>
-        </SheetHeader>
-        <div className="space-y-2 mt-4">
-          <Button
-            variant="ghost"
-            className="w-full justify-start gap-3 h-12"
-            onClick={() => {
-              onPin();
-              onOpenChange(false);
-            }}
-          >
-            <Pin className="h-5 w-5" />
-            <span>{conversation.is_pinned ? 'Unpin' : 'Pin'} Conversation</span>
-          </Button>
+    <>
+      <Sheet open={open} onOpenChange={onOpenChange}>
+        <SheetContent side="bottom" className="rounded-t-3xl">
+          <SheetHeader>
+            <SheetTitle>Chat with {conversation.other_user?.name || 'Unknown'}</SheetTitle>
+          </SheetHeader>
+          <div className="space-y-2 mt-4">
+            <Button
+              variant="ghost"
+              className="w-full justify-start gap-3 h-12"
+              onClick={() => {
+                onPin();
+                onOpenChange(false);
+              }}
+            >
+              <Pin className="h-5 w-5" />
+              <span>{conversation.is_pinned ? 'Unpin' : 'Pin'} Conversation</span>
+            </Button>
 
-          <Button
-            variant="ghost"
-            className="w-full justify-start gap-3 h-12"
-            onClick={() => {
-              onMute();
-              onOpenChange(false);
-            }}
-          >
-            <BellOff className="h-5 w-5" />
-            <span>{conversation.is_muted ? 'Unmute' : 'Mute'} Notifications</span>
-          </Button>
+            <Button
+              variant="ghost"
+              className="w-full justify-start gap-3 h-12"
+              onClick={() => {
+                onMute();
+                onOpenChange(false);
+              }}
+            >
+              <BellOff className="h-5 w-5" />
+              <span>{conversation.is_muted ? 'Unmute' : 'Mute'} Notifications</span>
+            </Button>
 
-          <Button
-            variant="ghost"
-            className="w-full justify-start gap-3 h-12"
-            onClick={() => {
-              onArchive();
-              onOpenChange(false);
-            }}
-          >
-            <Archive className="h-5 w-5" />
-            <span>{conversation.is_archived ? 'Unarchive' : 'Archive'} Chat</span>
-          </Button>
+            <Button
+              variant="ghost"
+              className="w-full justify-start gap-3 h-12"
+              onClick={() => {
+                onArchive();
+                onOpenChange(false);
+              }}
+            >
+              <Archive className="h-5 w-5" />
+              <span>{conversation.is_archived ? 'Unarchive' : 'Archive'} Chat</span>
+            </Button>
 
-          <Button
-            variant="ghost"
-            className="w-full justify-start gap-3 h-12 text-destructive hover:text-destructive"
-            onClick={() => {
-              onDelete();
-              onOpenChange(false);
-            }}
-          >
-            <Trash2 className="h-5 w-5" />
-            <span>Delete Chat</span>
-          </Button>
-        </div>
-      </SheetContent>
-    </Sheet>
+            <Button
+              variant="ghost"
+              className="w-full justify-start gap-3 h-12 text-destructive hover:text-destructive"
+              onClick={() => {
+                setShowDeleteConfirm(true);
+                onOpenChange(false);
+              }}
+            >
+              <Trash2 className="h-5 w-5" />
+              <span>Delete Chat</span>
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete conversation?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete all messages in this conversation with {conversation.other_user?.name || 'this user'}. 
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                onDelete();
+                setShowDeleteConfirm(false);
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };

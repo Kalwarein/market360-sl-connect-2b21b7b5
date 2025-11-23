@@ -279,10 +279,38 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
 
   const deleteConversation = async (id: string) => {
     try {
-      // In a real app, you'd delete from database
+      // First, delete all messages in the conversation
+      const { error: messagesError } = await supabase
+        .from('messages')
+        .delete()
+        .eq('conversation_id', id);
+
+      if (messagesError) {
+        console.error('Error deleting messages:', messagesError);
+        throw messagesError;
+      }
+
+      // Then delete the conversation itself
+      const { error: conversationError } = await supabase
+        .from('conversations')
+        .delete()
+        .eq('id', id);
+
+      if (conversationError) {
+        console.error('Error deleting conversation:', conversationError);
+        throw conversationError;
+      }
+
+      // Remove from local state
       setConversations(prev => prev.filter(conv => conv.id !== id));
+      
+      // Clear cache to force refresh
+      localStorage.removeItem(CACHE_KEY);
+      
+      console.log(`Successfully deleted conversation ${id} and all its messages`);
     } catch (error) {
       console.error('Error deleting conversation:', error);
+      throw error;
     }
   };
 
