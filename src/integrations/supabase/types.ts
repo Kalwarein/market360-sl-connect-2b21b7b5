@@ -544,6 +544,7 @@ export type Database = {
           notification_preferences: Json | null
           occupation: string | null
           onboarding_completed: boolean | null
+          onboarding_tour_completed: boolean | null
           onesignal_player_id: string | null
           phone: string | null
           phone_verification_code: string | null
@@ -575,6 +576,7 @@ export type Database = {
           notification_preferences?: Json | null
           occupation?: string | null
           onboarding_completed?: boolean | null
+          onboarding_tour_completed?: boolean | null
           onesignal_player_id?: string | null
           phone?: string | null
           phone_verification_code?: string | null
@@ -606,6 +608,7 @@ export type Database = {
           notification_preferences?: Json | null
           occupation?: string | null
           onboarding_completed?: boolean | null
+          onboarding_tour_completed?: boolean | null
           onesignal_player_id?: string | null
           phone?: string | null
           phone_verification_code?: string | null
