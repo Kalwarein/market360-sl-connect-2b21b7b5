@@ -73,6 +73,8 @@ import AdminUserReports from "./pages/AdminUserReports";
 import AdminUserReportDetail from "./pages/AdminUserReportDetail";
 import ReportIssue from "./pages/ReportIssue";
 import Onboarding from "./pages/Onboarding";
+import Deposit from "./pages/Deposit";
+import Withdrawal from "./pages/Withdrawal";
 
 const queryClient = new QueryClient();
 
@@ -109,6 +111,8 @@ const App = () => (
               <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="/become-seller" element={<ProtectedRoute><BecomeSellerMultiStep /></ProtectedRoute>} />
               <Route path="/wallet" element={<ProtectedRoute><Wallet /></ProtectedRoute>} />
+              <Route path="/deposit" element={<ProtectedRoute><Deposit /></ProtectedRoute>} />
+              <Route path="/withdrawal" element={<ProtectedRoute><Withdrawal /></ProtectedRoute>} />
               <Route path="/seller-dashboard" element={<ProtectedRoute><SellerDashboard /></ProtectedRoute>} />
               <Route path="/add-product" element={<ProtectedRoute><AddProduct /></ProtectedRoute>} />
               <Route path="/product-creation-success" element={<ProtectedRoute><ProductCreationSuccess /></ProtectedRoute>} />
