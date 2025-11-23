@@ -7,8 +7,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { ArrowLeft, Wallet as WalletIcon, ArrowUpCircle, ArrowDownCircle, Clock, Info } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
-import { DepositModal } from '@/components/DepositModal';
-import { WithdrawModal } from '@/components/WithdrawModal';
 
 interface Transaction {
   id: string;
@@ -25,8 +23,6 @@ const Wallet = () => {
   const [balance, setBalance] = useState(0);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
-  const [depositModalOpen, setDepositModalOpen] = useState(false);
-  const [withdrawModalOpen, setWithdrawModalOpen] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -136,7 +132,7 @@ const Wallet = () => {
         <div className="grid grid-cols-2 gap-4">
           <Button
             size="lg"
-            onClick={() => setDepositModalOpen(true)}
+            onClick={() => navigate('/deposit')}
             className="h-16 text-base font-semibold"
           >
             <ArrowUpCircle className="mr-2 h-5 w-5" />
@@ -145,7 +141,7 @@ const Wallet = () => {
           <Button
             size="lg"
             variant="outline"
-            onClick={() => setWithdrawModalOpen(true)}
+            onClick={() => navigate('/withdrawal')}
             className="h-16 text-base font-semibold"
           >
             <ArrowDownCircle className="mr-2 h-5 w-5" />
@@ -217,19 +213,6 @@ const Wallet = () => {
           </CardContent>
         </Card>
       </div>
-
-      <DepositModal
-        open={depositModalOpen}
-        onOpenChange={setDepositModalOpen}
-        onSuccess={loadWalletData}
-      />
-
-      <WithdrawModal
-        open={withdrawModalOpen}
-        onOpenChange={setWithdrawModalOpen}
-        onSuccess={loadWalletData}
-        currentBalance={balance}
-      />
     </div>
   );
 };
