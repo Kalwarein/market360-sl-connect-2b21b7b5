@@ -11,6 +11,7 @@ import Sidebar from '@/components/Sidebar';
 import { PremiumSearchBar } from '@/components/PremiumSearchBar';
 import { MarketplaceProductCard } from '@/components/MarketplaceProductCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { GuidedTour } from '@/components/GuidedTour';
 
 interface Product {
   id: string;
@@ -324,15 +325,16 @@ const Home = () => {
         </div>
       ) : (
         <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-          {products.map((product) => (
-            <MarketplaceProductCard
-              key={product.id}
-              id={product.id}
-              title={product.title}
-              price={product.price}
-              image={product.images?.[0] || '/placeholder.svg'}
-              moq={product.moq || 1}
-            />
+          {products.map((product, index) => (
+            <div key={product.id} data-tour={index === 0 ? 'product-card' : undefined}>
+              <MarketplaceProductCard
+                id={product.id}
+                title={product.title}
+                price={product.price}
+                image={product.images?.[0] || '/placeholder.svg'}
+                moq={product.moq || 1}
+              />
+            </div>
           ))}
         </div>
       )}
@@ -341,17 +343,20 @@ const Home = () => {
 
   return (
     <div className="min-h-screen bg-background overflow-x-hidden pb-20">
+      <GuidedTour />
       {/* Header - Fixed */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-b border-border shadow-md">
         <div className="max-w-7xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Sidebar />
+              <div data-tour="sidebar-trigger">
+                <Sidebar />
+              </div>
               <h1 className="text-xl font-bold text-primary">Market360</h1>
             </div>
 
             <div className="flex items-center gap-3">
-              <div className="relative">
+              <div className="relative" data-tour="customer-care">
                 <Button
                   variant="ghost"
                   size="icon"
@@ -402,6 +407,7 @@ const Home = () => {
                 size="icon"
                 className="relative rounded-full"
                 onClick={() => navigate('/notifications')}
+                data-tour="notifications"
               >
                 <Bell className="h-5 w-5" />
                 {notificationCount > 0 && (
@@ -416,6 +422,7 @@ const Home = () => {
                 size="icon"
                 className="relative rounded-full"
                 onClick={() => navigate('/cart')}
+                data-tour="cart"
               >
                 <ShoppingCart className="h-5 w-5" />
                 {cartCount > 0 && (
@@ -430,6 +437,7 @@ const Home = () => {
                 size="icon"
                 className="relative rounded-full"
                 onClick={() => navigate('/messages')}
+                data-tour="messages"
               >
                 <MessageSquare className="h-5 w-5" />
                 {unreadCount > 0 && (
@@ -446,7 +454,7 @@ const Home = () => {
       {/* Content with top padding to account for fixed header */}
       <div className="pt-16">
       {/* Search Bar Section */}
-      <div className="max-w-7xl mx-auto px-4 py-3">
+      <div className="max-w-7xl mx-auto px-4 py-3" data-tour="search-bar">
         <PremiumSearchBar
           value={searchQuery}
           onChange={setSearchQuery}
@@ -467,7 +475,7 @@ const Home = () => {
       </div>
 
       {/* Categories Row with Search */}
-      <div className="px-4 py-3 space-y-2">
+      <div className="px-4 py-3 space-y-2" data-tour="categories">
         <div className="flex gap-2 items-center">
           <div className="relative flex-shrink-0 w-48">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -508,7 +516,9 @@ const Home = () => {
 
       </div>
 
-      <BottomNav />
+      <div data-tour="bottom-nav">
+        <BottomNav />
+      </div>
 
       <style>{`
         .scrollbar-hide::-webkit-scrollbar {
