@@ -17,111 +17,141 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Get current hour in GMT
-    const currentHour = new Date().getUTCHours();
-    
-    // Determine time of day and message
-    let timeOfDay = '';
+    // Get current time in GMT
+    const now = new Date();
+    const currentHour = now.getUTCHours();
+
+    console.log(`Running daily reminders at ${now.toISOString()}, GMT hour: ${currentHour}`);
+
+    // Determine time of day and message - only 8 AM and 6 PM
+    let timeOfDay: 'morning' | 'evening' | null = null;
     let message = '';
     let emoji = '';
-    
-    if (currentHour >= 5 && currentHour < 12) {
+
+    // 8 AM GMT
+    if (currentHour === 8) {
       timeOfDay = 'morning';
-      message = 'Check out today\'s hot deals and new arrivals!';
+      message = 'Start your day with great deals and new products on Market360!';
       emoji = '🌅';
-    } else if (currentHour >= 12 && currentHour < 17) {
-      timeOfDay = 'afternoon';
-      message = 'Don\'t miss out on trending products!';
-      emoji = '☀️';
-    } else if (currentHour >= 17 && currentHour < 21) {
+    } 
+    // 6 PM GMT (18:00)
+    else if (currentHour === 18) {
       timeOfDay = 'evening';
-      message = 'Evening deals are waiting for you!';
+      message = 'Check out what\'s new this evening on Market360 - browse stores and discover deals!';
       emoji = '🌆';
     } else {
-      // Skip night time reminders
+      console.log(`Not a scheduled reminder time. Current hour: ${currentHour}`);
       return new Response(
-        JSON.stringify({ message: 'Skipping night time reminders' }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ message: 'Not a scheduled reminder time' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
       );
     }
 
-    // Get all users with push subscriptions
-    const { data: subscriptions, error: subsError } = await supabaseClient
-      .from('push_subscriptions')
-      .select('user_id')
-      .limit(1000); // Process in batches
+    // Get all users with their profile info
+    const { data: profiles, error: profilesError } = await supabaseClient
+      .from('profiles')
+      .select('id, email, name, full_name, notification_preferences');
 
-    if (subsError) {
-      console.error('Error fetching subscriptions:', subsError);
-      return new Response(
-        JSON.stringify({ error: 'Failed to fetch subscriptions' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    if (profilesError) {
+      console.error('Error fetching profiles:', profilesError);
+      throw profilesError;
     }
 
-    if (!subscriptions || subscriptions.length === 0) {
-      return new Response(
-        JSON.stringify({ message: 'No users with push subscriptions found' }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    console.log(`Found ${profiles?.length || 0} users to send reminders to`);
 
-    // Send reminders to all subscribed users
-    const notificationPromises = subscriptions.map(async (sub) => {
+    let successCount = 0;
+    let skippedCount = 0;
+
+    // Send reminders to each user
+    for (const profile of profiles || []) {
       try {
+        const userName = profile.full_name || profile.name || 'there';
+
         // Create in-app notification
-        await supabaseClient
+        const { error: notificationError } = await supabaseClient
           .from('notifications')
           .insert({
-            user_id: sub.user_id,
+            user_id: profile.id,
             type: 'system',
             title: `${emoji} Good ${timeOfDay}!`,
             body: message,
-            link_url: '/'
+            link_url: '/',
           });
 
-        // Send push notification
-        await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-push-notification`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`
+        if (notificationError) {
+          console.error(`Error creating notification for user ${profile.id}:`, notificationError);
+        }
+
+        // Check if user has email notifications enabled
+        const notifPrefs = profile.notification_preferences as any;
+        const emailEnabled = notifPrefs?.email_notifications !== false;
+        
+        if (!emailEnabled) {
+          console.log(`Email notifications disabled for user ${profile.id}, skipping email`);
+          skippedCount++;
+          continue;
+        }
+
+        // Send email via send-email function
+        const { error: emailError } = await supabaseClient.functions.invoke('send-email', {
+          body: {
+            type: 'daily_reminder',
+            to: profile.email,
+            data: {
+              userName,
+              timeOfDay,
+              message,
+            },
           },
-          body: JSON.stringify({
-            userId: sub.user_id,
-            title: `${emoji} Good ${timeOfDay}!`,
-            body: message,
-            url: '/',
-            tag: 'daily-reminder',
-            icon: '/pwa-192x192.png'
-          })
         });
 
-        return { success: true, userId: sub.user_id };
-      } catch (error) {
-        console.error('Failed to send reminder to user:', sub.user_id, error);
-        return { success: false, userId: sub.user_id };
-      }
-    });
+        if (emailError) {
+          console.error(`Error sending email to ${profile.email}:`, emailError);
+        } else {
+          console.log(`Successfully sent ${timeOfDay} reminder to ${profile.email}`);
+          successCount++;
+        }
 
-    const results = await Promise.all(notificationPromises);
-    const successCount = results.filter(r => r.success).length;
+        // Also send push notification if user has subscriptions
+        try {
+          await supabaseClient.functions.invoke('send-push-notification', {
+            body: {
+              userId: profile.id,
+              title: `${emoji} Good ${timeOfDay}!`,
+              body: message,
+              url: '/',
+              tag: 'daily-reminder',
+              icon: '/pwa-192x192.png'
+            }
+          });
+        } catch (pushError) {
+          console.error(`Error sending push notification to user ${profile.id}:`, pushError);
+        }
+
+      } catch (userError) {
+        console.error(`Error processing user ${profile.id}:`, userError);
+      }
+    }
+
+    console.log(`Daily reminders completed: ${successCount} emails sent, ${skippedCount} skipped`);
 
     return new Response(
       JSON.stringify({ 
-        message: `Sent ${successCount} of ${results.length} daily reminders`,
+        success: true, 
         timeOfDay,
-        results 
+        emailsSent: successCount,
+        skipped: skippedCount,
+        total: profiles?.length || 0
       }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
     );
 
   } catch (error) {
-    console.error('Error in send-daily-reminders function:', error);
-    const err = error as any;
+    console.error('Error in send-daily-reminders:', error);
+    const err = error as Error;
     return new Response(
       JSON.stringify({ error: err.message || 'Internal server error' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     );
   }
 });

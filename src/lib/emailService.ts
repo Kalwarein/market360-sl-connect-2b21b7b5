@@ -54,11 +54,15 @@ export const sendEmail = async (type: EmailType, to: string, data: EmailData, us
 
     console.log(`Sending ${type} email to ${to}${isCritical ? ' (CRITICAL - bypassing preferences)' : ''}`);
     
+    // Get app URL dynamically
+    const appUrl = window.location.origin;
+    
     const { data: response, error } = await supabase.functions.invoke('send-email', {
       body: {
         type,
         to,
         data,
+        appUrl, // Pass the dynamic app URL
       },
     });
 
