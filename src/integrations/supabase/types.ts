@@ -149,6 +149,7 @@ export type Database = {
           id: string
           message_type: Database["public"]["Enums"]["message_type"]
           read_at: string | null
+          reply_to_message_id: string | null
           sender_id: string
           status: string | null
         }
@@ -161,6 +162,7 @@ export type Database = {
           id?: string
           message_type?: Database["public"]["Enums"]["message_type"]
           read_at?: string | null
+          reply_to_message_id?: string | null
           sender_id: string
           status?: string | null
         }
@@ -173,6 +175,7 @@ export type Database = {
           id?: string
           message_type?: Database["public"]["Enums"]["message_type"]
           read_at?: string | null
+          reply_to_message_id?: string | null
           sender_id?: string
           status?: string | null
         }
@@ -182,6 +185,13 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_reply_to_message_id_fkey"
+            columns: ["reply_to_message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
             referencedColumns: ["id"]
           },
         ]

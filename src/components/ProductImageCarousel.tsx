@@ -90,17 +90,17 @@ const ProductImageCarousel = ({ images }: ProductImageCarouselProps) => {
   return (
     <div 
       ref={containerRef}
-      className="relative w-full rounded-2xl overflow-hidden bg-muted flex items-center justify-center h-96"
+      className="relative w-full rounded-2xl overflow-hidden bg-muted"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
       {/* Images */}
-      <div className="relative w-full h-full flex items-center justify-center">
+      <div className="relative w-full min-h-[300px] max-h-[600px]">
         {images.map((image, index) => (
           <div
             key={index}
-            className={`absolute inset-0 transition-opacity duration-500 flex items-center justify-center p-4 ${
+            className={`absolute inset-0 transition-opacity duration-500 flex items-center justify-center ${
               index === currentIndex ? 'opacity-100 z-10' : 'opacity-0 z-0'
             }`}
           >
@@ -120,7 +120,7 @@ const ProductImageCarousel = ({ images }: ProductImageCarouselProps) => {
               <img
                 src={image}
                 alt={`Product ${index + 1}`}
-                className="max-w-full max-h-full object-contain"
+                className="w-full h-full object-contain"
                 onLoad={() => handleImageLoad(index)}
                 onError={() => handleImageError(index, image)}
                 style={{ display: imageLoadStates[index] ? 'block' : 'none' }}
