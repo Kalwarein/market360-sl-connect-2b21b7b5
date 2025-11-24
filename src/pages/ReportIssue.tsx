@@ -76,33 +76,67 @@ const ReportIssue = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!user?.id) {
+      toast.error('Please login to submit a report');
+      navigate('/auth');
+      return;
+    }
+
     if (!formData.description.trim()) {
       toast.error('Please describe the issue');
       return;
     }
 
+    if (formData.description.trim().length < 20) {
+      toast.error('Please provide a more detailed description (at least 20 characters)');
+      return;
+    }
+
     setLoading(true);
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('user_reports')
         .insert({
-          reporter_id: user?.id,
-          store_name: formData.storeName || null,
-          seller_name: formData.sellerName || null,
-          order_id: formData.orderId || null,
-          description: formData.description,
+          reporter_id: user.id,
+          store_name: formData.storeName.trim() || null,
+          seller_name: formData.sellerName.trim() || null,
+          order_id: formData.orderId.trim() || null,
+          description: formData.description.trim(),
           amount: formData.amount ? parseFloat(formData.amount) : null,
-          evidence_urls: formData.evidenceUrls,
+          evidence_urls: formData.evidenceUrls.length > 0 ? formData.evidenceUrls : null,
           status: 'pending'
-        });
+        })
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error:', error);
+        throw new Error(error.message || 'Failed to submit report');
+      }
 
-      toast.success('Report submitted successfully. Our team will review it shortly.');
-      navigate('/');
+      if (!data || data.length === 0) {
+        throw new Error('Report was not created. Please try again.');
+      }
+
+      console.log('Report submitted successfully:', data);
+      toast.success('Report submitted successfully! Our team will review it within 24-48 hours.');
+      
+      // Clear form
+      setFormData({
+        storeName: '',
+        sellerName: '',
+        orderId: '',
+        description: '',
+        amount: '',
+        evidenceUrls: [],
+      });
+
+      // Navigate after a short delay
+      setTimeout(() => {
+        navigate('/');
+      }, 2000);
     } catch (error: any) {
       console.error('Error submitting report:', error);
-      toast.error('Failed to submit report. Please try again.');
+      toast.error(error.message || 'Failed to submit report. Please check your connection and try again.');
     } finally {
       setLoading(false);
     }

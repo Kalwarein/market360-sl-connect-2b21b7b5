@@ -28,7 +28,7 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('onboarding_completed')
+        .select('onboarding_completed, onboarding_tour_completed')
         .eq('id', user!.id)
         .single();
 
@@ -37,7 +37,13 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
         // Default to completed if error to prevent blocking access
         setOnboardingCompleted(true);
       } else {
-        setOnboardingCompleted(data?.onboarding_completed === true);
+        const isOnboardingComplete = data?.onboarding_completed === true;
+        setOnboardingCompleted(isOnboardingComplete);
+        
+        // If onboarding is complete but tour isn't, ensure tour will trigger on home page
+        if (isOnboardingComplete && data?.onboarding_tour_completed === false) {
+          console.log('Onboarding complete, tour will start on home page');
+        }
       }
     } catch (error) {
       console.error('Error checking onboarding status:', error);
