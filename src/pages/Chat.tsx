@@ -70,6 +70,7 @@ const Chat = () => {
   const [replyToMessage, setReplyToMessage] = useState<Message | null>(null);
   const [otherUserOnline, setOtherUserOnline] = useState(false);
   const [otherUserLastSeen, setOtherUserLastSeen] = useState<string | null>(null);
+  const [isSending, setIsSending] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -372,21 +373,30 @@ const Chat = () => {
 
   const handleSend = async () => {
     if (!newMessage.trim() && !attachedProduct) return;
+    if (isSending) return;
+
+    const messageText = newMessage.trim();
+    const productAttachment = attachedProduct;
+
+    // Clear input immediately so user can type next message
+    setNewMessage('');
+    setAttachedProduct(null);
+    setIsSending(true);
 
     try {
       const messageData: any = {
         conversation_id: conversationId,
         sender_id: user?.id,
-        body: newMessage.trim() || (attachedProduct ? 'Shared a product' : ''),
+        body: messageText || (productAttachment ? 'Shared a product' : ''),
         status: 'sent',
       };
 
-      if (!attachedProduct) {
+      if (!productAttachment) {
         messageData.message_type = 'text';
       }
 
-      if (attachedProduct) {
-        messageData.attachments = [JSON.stringify(attachedProduct)];
+      if (productAttachment) {
+        messageData.attachments = [JSON.stringify(productAttachment)];
       }
 
       const { data: insertedMessage, error } = await supabase
@@ -411,8 +421,6 @@ const Chat = () => {
         }, 500);
       }
 
-      if (error) throw error;
-
       await supabase
         .from('conversations')
         .update({ last_message_at: new Date().toISOString() })
@@ -433,7 +441,7 @@ const Chat = () => {
         const notifPrefs = recipientProfile?.notification_preferences as any;
         if (!notifPrefs || notifPrefs?.messages !== false) {
           const senderName = currentUserName || 'Someone';
-          const messagePreview = newMessage.trim() || (attachedProduct ? `Shared ${attachedProduct.title}` : 'New message');
+          const messagePreview = messageText || (productAttachment ? `Shared ${productAttachment.title}` : 'New message');
           
           await supabase.functions.invoke('create-order-notification', {
             body: {
@@ -442,21 +450,24 @@ const Chat = () => {
               title: `💬 ${senderName}`,
               body: messagePreview.length > 50 ? messagePreview.substring(0, 50) + '...' : messagePreview,
               link_url: `/chat/${conversationId}`,
-              image_url: attachedProduct?.images?.[0] || currentUserAvatar,
+              image_url: productAttachment?.images?.[0] || currentUserAvatar,
               metadata: { conversation_id: conversationId, sender_id: user?.id }
             }
           });
         }
       }
 
-      setNewMessage('');
-      setAttachedProduct(null);
       setIsTyping(false);
       const channel = supabase.channel(`presence-${conversationId}`);
       channel.track({ user_id: user?.id, typing: false });
     } catch (error) {
       console.error('Error sending message:', error);
       toast.error('Failed to send message');
+      // Restore message on error
+      setNewMessage(messageText);
+      setAttachedProduct(productAttachment);
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -979,15 +990,16 @@ const Chat = () => {
             }}
             onKeyPress={(e) => e.key === 'Enter' && handleSend()}
             placeholder="Type a message..."
+            disabled={isSending}
             className="flex-1 rounded-full border-2 focus:border-primary transition-all"
           />
           <Button 
             onClick={handleSend} 
             size="icon" 
             className="rounded-full hover:scale-105 transition-transform"
-            disabled={!newMessage.trim() && !attachedProduct}
+            disabled={isSending || (!newMessage.trim() && !attachedProduct)}
           >
-            <Send className="h-5 w-5" />
+            <Send className={`h-5 w-5 ${isSending ? 'animate-pulse' : ''}`} />
           </Button>
         </div>
       </div>
