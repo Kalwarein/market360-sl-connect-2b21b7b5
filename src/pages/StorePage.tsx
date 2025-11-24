@@ -248,147 +248,168 @@ const StorePage = () => {
               )}
             </div>
 
-            <CardContent className="p-6">
-              {/* Two-Column Layout for Desktop, Stack on Mobile */}
-              <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-6 items-start">
-                
-                {/* Left Column - Logo and Key Stats */}
-                <div className="flex flex-col items-center md:items-start gap-4">
-                  {/* Logo */}
-                  <div className="h-32 w-32 md:h-40 md:w-40 rounded-2xl overflow-hidden border-4 border-primary/20 shadow-xl bg-card">
-                    {store.logo_url ? (
-                      <img src={store.logo_url} alt={store.store_name} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary to-accent">
-                        <Crown className="h-16 w-16 text-primary-foreground" />
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Store Stats Cards */}
-                  <div className="w-full space-y-3">
-                    <Card className="bg-primary/5 border-primary/20">
-                      <CardContent className="p-3 text-center">
-                        <div className="flex items-center justify-center gap-1 text-primary mb-1">
-                          <Star className="h-5 w-5 fill-primary" />
-                          <span className="font-bold text-2xl">4.9</span>
-                        </div>
-                        <p className="text-xs text-muted-foreground font-medium">Rating</p>
-                      </CardContent>
-                    </Card>
-
-                    <Card className="bg-accent/5 border-accent/20">
-                      <CardContent className="p-3 text-center">
-                        <div className="flex items-center justify-center gap-1 mb-1">
-                          <Package className="h-5 w-5 text-accent" />
-                          <span className="font-bold text-2xl text-foreground">{products.length}</span>
-                        </div>
-                        <p className="text-xs text-muted-foreground font-medium">Products</p>
-                      </CardContent>
-                    </Card>
-
-                    <Card className="bg-secondary/5 border-secondary/20">
-                      <CardContent className="p-3 text-center">
-                        <div className="flex items-center justify-center gap-1 mb-1">
-                          <Award className="h-5 w-5 text-secondary-foreground" />
-                          <span className="font-bold text-xl text-foreground">Premium</span>
-                        </div>
-                        <p className="text-xs text-muted-foreground font-medium">Featured Store</p>
-                      </CardContent>
-                    </Card>
-                  </div>
+            <CardContent className="p-6 space-y-6">
+              {/* Store Name and Verified Badge - First */}
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-3 mb-2">
+                  <h1 className="text-3xl md:text-4xl font-black text-foreground">
+                    {store.store_name}
+                  </h1>
+                  {hasVerifiedBadge && (
+                    <CheckCircle className="h-8 w-8 text-primary fill-primary flex-shrink-0 animate-pulse-slow" />
+                  )}
                 </div>
 
-                {/* Right Column - Store Information */}
-                <div className="space-y-4">
-                  {/* Store Name and Verified Badge */}
-                  <div>
-                    <div className="flex items-center gap-3 mb-2">
-                      <h1 className="text-3xl font-bold text-foreground">
-                        {store.store_name}
-                      </h1>
-                      {hasVerifiedBadge && (
-                        <CheckCircle className="h-7 w-7 text-primary fill-primary flex-shrink-0" />
-                      )}
-                    </div>
-
-                    {/* Location */}
-                    {(store.city || store.region) && (
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <MapPin className="h-4 w-4 text-primary" />
-                        <span className="font-medium text-sm">
-                          {[store.city, store.region, store.country].filter(Boolean).join(', ')}
-                        </span>
-                      </div>
-                    )}
+                {/* Location */}
+                {(store.city || store.region) && (
+                  <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                    <MapPin className="h-4 w-4 text-primary" />
+                    <span className="font-medium text-sm">
+                      {[store.city, store.region, store.country].filter(Boolean).join(', ')}
+                    </span>
                   </div>
+                )}
+              </div>
 
-                  {/* Trust Badges */}
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <Badge className="bg-primary/10 text-primary font-semibold border border-primary/20 rounded-full px-3 py-1">
-                      <Shield className="h-3.5 w-3.5 mr-1.5" />
-                      Trusted Seller
-                    </Badge>
-                    <Badge className="bg-accent/10 text-accent font-semibold border border-accent/20 rounded-full px-3 py-1">
-                      <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
-                      Verified
-                    </Badge>
-                    <Badge className="bg-secondary/10 text-secondary-foreground font-semibold border border-secondary/20 rounded-full px-3 py-1">
-                      <Zap className="h-3.5 w-3.5 mr-1.5" />
-                      Fast Response
-                    </Badge>
-                  </div>
+              {/* Action Buttons - Second (Right After Store Name) */}
+              {!user ? (
+                <div className="grid grid-cols-2 gap-3 max-w-lg mx-auto">
+                  <Button 
+                    variant="outline"
+                    className="rounded-xl h-12 font-bold border-2 hover:border-primary" 
+                    onClick={() => navigate('/auth')}
+                  >
+                    Sign In
+                  </Button>
+                  <Button 
+                    className="rounded-xl shadow-2xl font-bold h-12 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90"
+                    onClick={() => navigate('/auth')}
+                  >
+                    Create Account
+                  </Button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-3 max-w-lg mx-auto">
+                  <Button 
+                    className="rounded-xl shadow-2xl font-bold h-12 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90"
+                    onClick={handleContactSeller}
+                    disabled={contacting}
+                  >
+                    <MessageCircle className="h-5 w-5 mr-2" />
+                    {contacting ? 'Opening...' : 'Contact Seller'}
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="rounded-xl h-12 font-bold border-2 hover:border-primary" 
+                    onClick={() => setShareDialogOpen(true)}
+                  >
+                    <Share2 className="h-5 w-5 mr-2" />
+                    Share Store
+                  </Button>
+                </div>
+              )}
 
-                  {/* Description */}
-                  {store.description && (
-                    <Card className="bg-muted/30">
-                      <CardContent className="p-4">
-                        <p className="text-sm text-foreground leading-relaxed">
-                          {store.description}
-                        </p>
-                      </CardContent>
-                    </Card>
-                  )}
-
-                  {/* Action Buttons - Moved here for better flow */}
-                  {!user ? (
-                    <div className="grid grid-cols-2 gap-3">
-                      <Button 
-                        variant="outline"
-                        className="rounded-xl h-11" 
-                        onClick={() => navigate('/auth')}
-                      >
-                        Sign In
-                      </Button>
-                      <Button 
-                        className="rounded-xl shadow-lg font-bold h-11"
-                        onClick={() => navigate('/auth')}
-                      >
-                        Create Account
-                      </Button>
-                    </div>
+              {/* Store Logo - Third (Centered) */}
+              <div className="flex justify-center">
+                <div className="h-32 w-32 rounded-2xl overflow-hidden border-4 border-primary/20 shadow-2xl bg-card hover:scale-105 transition-transform duration-300">
+                  {store.logo_url ? (
+                    <img src={store.logo_url} alt={store.store_name} className="w-full h-full object-cover" />
                   ) : (
-                    <div className="grid grid-cols-2 gap-3">
-                      <Button 
-                        className="rounded-xl shadow-lg font-bold h-11"
-                        onClick={handleContactSeller}
-                        disabled={contacting}
-                      >
-                        <MessageCircle className="h-4 w-4 mr-2" />
-                        {contacting ? 'Opening...' : 'Contact Seller'}
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        className="rounded-xl h-11" 
-                        onClick={() => setShareDialogOpen(true)}
-                      >
-                        <Share2 className="h-4 w-4 mr-2" />
-                        Share Store
-                      </Button>
+                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary to-accent">
+                      <Crown className="h-16 w-16 text-primary-foreground" />
                     </div>
                   )}
                 </div>
               </div>
+
+              {/* Store Stats Cards - Fourth (Stacked Vertically Below) */}
+              <div className="max-w-md mx-auto space-y-4">
+                {/* Rating Card */}
+                <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-2 border-primary/20 shadow-lg hover:shadow-xl transition-shadow duration-300">
+                  <CardContent className="p-5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="bg-primary/20 rounded-full p-3">
+                          <Star className="h-7 w-7 text-primary fill-primary" />
+                        </div>
+                        <div>
+                          <p className="text-3xl font-black text-primary">4.9</p>
+                          <p className="text-sm text-muted-foreground font-semibold">Store Rating</p>
+                        </div>
+                      </div>
+                      <Badge className="bg-primary text-primary-foreground px-3 py-1 rounded-full font-bold">
+                        Excellent
+                      </Badge>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Products Card */}
+                <Card className="bg-gradient-to-br from-accent/10 to-accent/5 border-2 border-accent/20 shadow-lg hover:shadow-xl transition-shadow duration-300">
+                  <CardContent className="p-5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="bg-accent/20 rounded-full p-3">
+                          <Package className="h-7 w-7 text-accent" />
+                        </div>
+                        <div>
+                          <p className="text-3xl font-black text-foreground">{products.length}</p>
+                          <p className="text-sm text-muted-foreground font-semibold">Products Listed</p>
+                        </div>
+                      </div>
+                      <Badge className="bg-accent text-white px-3 py-1 rounded-full font-bold">
+                        Active
+                      </Badge>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Premium Status Card */}
+                <Card className="bg-gradient-to-br from-secondary/10 to-secondary/5 border-2 border-secondary/20 shadow-lg hover:shadow-xl transition-shadow duration-300">
+                  <CardContent className="p-5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="bg-secondary/20 rounded-full p-3">
+                          <Award className="h-7 w-7 text-secondary-foreground" />
+                        </div>
+                        <div>
+                          <p className="text-2xl font-black text-foreground">Premium</p>
+                          <p className="text-sm text-muted-foreground font-semibold">Featured Store</p>
+                        </div>
+                      </div>
+                      <Crown className="h-12 w-12 text-primary/30 fill-current" />
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Trust Badges - Fifth */}
+              <div className="flex items-center justify-center gap-2 flex-wrap">
+                <Badge className="bg-primary/10 text-primary font-bold border-2 border-primary/20 rounded-full px-4 py-2 hover:scale-105 transition-transform">
+                  <Shield className="h-4 w-4 mr-1.5" />
+                  Trusted Seller
+                </Badge>
+                <Badge className="bg-accent/10 text-accent font-bold border-2 border-accent/20 rounded-full px-4 py-2 hover:scale-105 transition-transform">
+                  <CheckCircle className="h-4 w-4 mr-1.5" />
+                  Verified
+                </Badge>
+                <Badge className="bg-secondary/10 text-secondary-foreground font-bold border-2 border-secondary/20 rounded-full px-4 py-2 hover:scale-105 transition-transform">
+                  <Zap className="h-4 w-4 mr-1.5" />
+                  Fast Response
+                </Badge>
+              </div>
+
+              {/* Description - Sixth (Last) */}
+              {store.description && (
+                <Card className="bg-muted/50 border-2 border-border shadow-lg">
+                  <CardContent className="p-5">
+                    <h3 className="font-bold text-base mb-2 text-foreground">About This Store</h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      {store.description}
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
 
             </CardContent>
           </Card>
