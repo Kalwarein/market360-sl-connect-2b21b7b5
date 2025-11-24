@@ -24,9 +24,11 @@ interface Message {
   message_type: string;
   created_at: string;
   attachments?: string[];
-  status?: 'sent' | 'delivered' | 'read';
+  status?: 'pending' | 'sent' | 'delivered' | 'read' | 'failed';
   delivered_at?: string;
   read_at?: string;
+  isOptimistic?: boolean;
+  error?: string;
 }
 
 interface Conversation {
@@ -110,7 +112,13 @@ const Chat = () => {
         },
         (payload) => {
           const newMessage = payload.new as Message;
-          setMessages((prev) => [...prev, newMessage]);
+          
+          // Only add if it's not already in the list (to avoid duplicates from optimistic updates)
+          setMessages((prev) => {
+            const exists = prev.some(m => m.id === newMessage.id);
+            if (exists) return prev;
+            return [...prev, newMessage];
+          });
           
           // Auto-mark as delivered if it's not our message
           if (newMessage.sender_id !== user?.id) {
@@ -381,8 +389,9 @@ const Chat = () => {
       created_at: new Date().toISOString(),
       read_at: undefined,
       delivered_at: undefined,
-      status: 'sent',
+      status: 'pending',
       message_type: 'text',
+      isOptimistic: true,
     };
 
     // Add optimistic message immediately to UI
@@ -412,8 +421,12 @@ const Chat = () => {
 
       if (error) throw error;
 
-      // Remove optimistic message, real-time subscription will add the real one
-      setMessages(prev => prev.filter(m => m.id !== optimisticMessageId));
+      // Replace optimistic message with real one
+      setMessages(prev => prev.map(m => 
+        m.id === optimisticMessageId 
+          ? { ...insertedMessage, status: 'sent' } as Message
+          : m
+      ));
 
       // Auto-update to delivered if other user is online
       if (otherUserId && isUserOnline(otherUserId) && insertedMessage) {
@@ -470,14 +483,87 @@ const Chat = () => {
       await channel.track({ user_id: user?.id, typing: false });
     } catch (error) {
       console.error('Error sending message:', error);
-      toast.error('Failed to send message');
-      // Remove optimistic message on error
-      setMessages(prev => prev.filter(m => m.id !== optimisticMessageId));
-      // Restore message on error
-      setNewMessage(messageText);
-      setAttachedProduct(productAttachment);
+      
+      // Mark optimistic message as failed instead of removing it
+      setMessages(prev => prev.map(m => 
+        m.id === optimisticMessageId 
+          ? { ...m, status: 'failed', error: 'Failed to send. Tap to retry.' }
+          : m
+      ));
     } finally {
       setIsSending(false);
+    }
+  };
+
+  const handleRetryMessage = async (message: Message) => {
+    if (!message.isOptimistic) return;
+
+    // Update message status to pending
+    setMessages(prev => prev.map(m => 
+      m.id === message.id 
+        ? { ...m, status: 'pending', error: undefined }
+        : m
+    ));
+
+    try {
+      const messageData: any = {
+        conversation_id: conversationId,
+        sender_id: user?.id,
+        body: message.body,
+        status: 'sent',
+        message_type: message.message_type,
+      };
+
+      if (message.attachments) {
+        messageData.attachments = message.attachments;
+      }
+
+      const { data: insertedMessage, error } = await supabase
+        .from('messages')
+        .insert(messageData)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Replace optimistic message with real one
+      setMessages(prev => prev.map(m => 
+        m.id === message.id 
+          ? { ...insertedMessage, status: 'sent' } as Message
+          : m
+      ));
+
+      // Auto-update to delivered if other user is online
+      if (otherUserId && isUserOnline(otherUserId) && insertedMessage) {
+        setTimeout(() => {
+          supabase
+            .from('messages')
+            .update({ 
+              status: 'delivered',
+              delivered_at: new Date().toISOString()
+            })
+            .eq('id', insertedMessage.id)
+            .then(() => {});
+        }, 500);
+      }
+
+      await supabase
+        .from('conversations')
+        .update({ last_message_at: new Date().toISOString() })
+        .eq('id', conversationId);
+
+      toast.success('Message sent');
+    } catch (error) {
+      console.error('Error retrying message:', error);
+      
+      // Mark as failed again
+      setMessages(prev => prev.map(m => 
+        m.id === message.id 
+          ? { ...m, status: 'failed', error: 'Failed to send. Tap to retry.' }
+          : m
+      ));
+      
+      toast.error('Failed to send message. Please try again.');
     }
   };
 
@@ -648,7 +734,25 @@ const Chat = () => {
     
     const status = message.status || (message.read_at ? 'read' : 'sent');
     
-    if (status === 'read') {
+    if (status === 'failed') {
+      return (
+        <div className="flex items-center gap-1">
+          <X className="h-3.5 w-3.5 text-destructive" />
+          <button 
+            onClick={() => handleRetryMessage(message)}
+            className="text-[10px] text-destructive underline cursor-pointer hover:text-destructive/80"
+          >
+            Retry
+          </button>
+        </div>
+      );
+    } else if (status === 'pending') {
+      return (
+        <div className="flex items-center gap-1">
+          <div className="h-3 w-3 border-2 border-t-transparent border-primary-foreground/70 rounded-full animate-spin"></div>
+        </div>
+      );
+    } else if (status === 'read') {
       return <CheckCheck className="h-3.5 w-3.5 text-blue-500" />;
     } else if (status === 'delivered' || message.delivered_at) {
       return <CheckCheck className="h-3.5 w-3.5 text-muted-foreground" />;
@@ -837,11 +941,14 @@ const Chat = () => {
           <div
             className={`px-3 py-2 rounded-lg shadow-sm transition-all select-none relative ${
               isOwn
-                ? 'bg-primary text-primary-foreground rounded-br-md'
+                ? `bg-primary text-primary-foreground rounded-br-md ${message.status === 'failed' ? 'opacity-60' : ''}`
                 : 'bg-card border border-border/50 rounded-bl-md'
             }`}
           >
             <p className="text-sm whitespace-pre-wrap break-words select-none leading-relaxed">{message.body}</p>
+            {message.status === 'failed' && message.error && (
+              <p className="text-[10px] text-destructive mt-1 italic">{message.error}</p>
+            )}
             <div className={`flex items-center gap-1 mt-1 ${isOwn ? 'justify-end' : 'justify-start'}`}>
               <span className={`text-[10px] ${isOwn ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
                 {format(new Date(message.created_at), 'HH:mm')}
