@@ -143,10 +143,11 @@ const AdminWalletRequestDetail = () => {
     request.status === 'rejected' ? <XCircle className="h-4 w-4" /> :
     null;
 
-  const feeAmount = request.amount * 0.02;
+  // Only withdrawals have 2% fee, deposits get full amount
+  const feeAmount = request.type === 'withdrawal' ? request.amount * 0.02 : 0;
   const finalAmount = request.type === 'deposit' 
-    ? request.amount - feeAmount 
-    : request.amount + feeAmount;
+    ? request.amount // Full amount for deposits
+    : request.amount - feeAmount; // Amount after fee for withdrawals
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -229,13 +230,23 @@ const AdminWalletRequestDetail = () => {
                 <span className="text-sm font-medium">Requested Amount:</span>
                 <span className="text-sm font-semibold">Le {request.amount.toLocaleString()}</span>
               </div>
-              <div className="flex justify-between items-center text-muted-foreground">
-                <span className="text-sm">Transaction Fee (2%):</span>
-                <span className="text-sm">- Le {feeAmount.toLocaleString()}</span>
-              </div>
+              {request.type === 'withdrawal' && feeAmount > 0 && (
+                <div className="flex justify-between items-center text-muted-foreground">
+                  <span className="text-sm">Transaction Fee (2%):</span>
+                  <span className="text-sm">- Le {feeAmount.toLocaleString()}</span>
+                </div>
+              )}
+              {request.type === 'deposit' && (
+                <div className="flex justify-between items-center text-green-600">
+                  <span className="text-sm font-medium">Transaction Fee:</span>
+                  <span className="text-sm font-bold">✓ No Fee (0%)</span>
+                </div>
+              )}
               <div className="border-t border-border pt-2 mt-2">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm font-semibold">Final Amount:</span>
+                  <span className="text-sm font-semibold">
+                    {request.type === 'deposit' ? 'Amount to Credit:' : 'Amount to Send:'}
+                  </span>
                   <span className="text-lg font-bold text-primary">
                     Le {finalAmount.toLocaleString()}
                   </span>
@@ -316,7 +327,9 @@ const AdminWalletRequestDetail = () => {
             </AlertDialogTitle>
             <AlertDialogDescription>
               {actionType === 'approve'
-                ? `This will credit Le ${finalAmount.toLocaleString()} to the user's wallet after deducting the 2% transaction fee.`
+                ? request.type === 'deposit'
+                  ? `This will credit Le ${finalAmount.toLocaleString()} (full amount, no fees) to the user's wallet.`
+                  : `This will send Le ${finalAmount.toLocaleString()} to the user after deducting the 2% transaction fee.`
                 : 'This will reject the request and notify the user.'}
             </AlertDialogDescription>
           </AlertDialogHeader>

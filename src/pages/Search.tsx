@@ -177,7 +177,7 @@ const Search = () => {
       {/* Content with top padding for fixed header */}
       <div className="pt-32 p-4">
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'trending' | 'results')}>
-          <TabsList className="grid w-full grid-cols-2 mb-6">
+          <TabsList className="grid w-full grid-cols-2 mb-6 relative z-50 bg-background">
             <TabsTrigger value="trending" className="flex items-center gap-2">
               <TrendingUp className="h-4 w-4" />
               Trending
