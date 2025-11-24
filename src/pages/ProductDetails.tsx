@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, MessageSquare, ShoppingCart, Share2, Store as StoreIcon, Shield, ChevronRight } from 'lucide-react';
+import { ArrowLeft, MessageSquare, ShoppingCart, Share2, Store as StoreIcon, Shield, ChevronRight, CheckCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import ProductImageCarousel from '@/components/ProductImageCarousel';
@@ -16,6 +16,7 @@ import KeyAttributes from '@/components/KeyAttributes';
 import ProductTags from '@/components/ProductTags';
 import { CategoryCarousel } from '@/components/CategoryCard';
 import { ShareDialog } from '@/components/ShareDialog';
+import { useStorePerks } from '@/hooks/useStorePerks';
 
 interface Product {
   id: string;
@@ -72,6 +73,9 @@ const ProductDetails = () => {
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [showShareDialog, setShowShareDialog] = useState(false);
+  
+  // Get store perks
+  const { hasVerifiedBadge } = useStorePerks(product?.stores?.id || null);
 
   useEffect(() => {
     loadProduct();
@@ -299,7 +303,32 @@ const ProductDetails = () => {
 
         <div className="space-y-2">
           <div className="flex items-start justify-between gap-3">
-            <h1 className="text-2xl font-bold leading-tight">{product.title}</h1>
+            <div className="flex-1">
+              <h1 className="text-2xl font-bold leading-tight">{product.title}</h1>
+              
+              {/* Store Name with Verified Badge */}
+              {product.stores && (
+                <div 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate(`/store/${product.stores.id}`);
+                  }}
+                  className="flex items-center gap-2 mt-2 cursor-pointer hover:opacity-80 transition-opacity"
+                >
+                  <StoreIcon className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground font-medium">
+                    {product.stores.store_name}
+                  </span>
+                  {hasVerifiedBadge && (
+                    <div className="flex items-center gap-1">
+                      <CheckCircle className="h-4 w-4 text-primary fill-primary" />
+                      <span className="text-xs font-semibold text-primary">Verified</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            
             <Badge variant="secondary" className="shrink-0">
               {product.category}
             </Badge>

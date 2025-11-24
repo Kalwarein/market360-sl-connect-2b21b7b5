@@ -146,7 +146,7 @@ const Stores = () => {
 
       if (error) throw error;
 
-      // Count products for each store
+      // Count products and check for boosted visibility perk for each store
       const storesWithCounts = await Promise.all(
         (data || []).map(async (store) => {
           const { count } = await supabase
@@ -155,14 +155,35 @@ const Stores = () => {
             .eq('store_id', store.id)
             .eq('published', true);
 
-          return { ...store, productCount: count || 0 };
+          // Check if store has boosted visibility perk
+          const { data: boostPerk } = await supabase
+            .from('store_perks')
+            .select('id')
+            .eq('store_id', store.id)
+            .eq('perk_type', 'boosted_visibility')
+            .eq('is_active', true)
+            .gte('expires_at', new Date().toISOString())
+            .maybeSingle();
+
+          return { 
+            ...store, 
+            productCount: count || 0,
+            hasBoostedVisibility: !!boostPerk
+          };
         })
       );
 
-      setStores(storesWithCounts);
+      // Sort stores: boosted visibility first, then by creation date
+      const sortedStores = storesWithCounts.sort((a, b) => {
+        if (a.hasBoostedVisibility && !b.hasBoostedVisibility) return -1;
+        if (!a.hasBoostedVisibility && b.hasBoostedVisibility) return 1;
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      });
+
+      setStores(sortedStores);
       
       const delays: { [key: string]: string } = {};
-      storesWithCounts.forEach((store, index) => {
+      sortedStores.forEach((store, index) => {
         delays[store.id] = `${index * 0.1}s`;
       });
       setCardDelays(delays);
