@@ -109,9 +109,16 @@ const Onboarding = () => {
       }
 
       console.log('Profile updated successfully:', data);
+      
+      // Mark onboarding tour as not completed so Wello AI will start
+      await supabase
+        .from('profiles')
+        .update({ onboarding_tour_completed: false })
+        .eq('id', user.id);
+      
       toast.success('Welcome to Market360! Your profile is complete.');
       
-      // Force a full page reload to re-check onboarding status
+      // Force a full page reload to re-check onboarding status and start tour
       setTimeout(() => {
         window.location.href = '/';
       }, 1000);
