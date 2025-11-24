@@ -14,7 +14,7 @@ interface EmailRequest {
   data: any;
 }
 
-const generateOrderConfirmationEmail = (data: any) => {
+const generateOrderConfirmationEmail = (data: any, appUrl: string) => {
   const { orderNumber, productName, productImage, quantity, totalAmount, deliveryAddress, storeName } = data;
   
   return `
@@ -23,32 +23,33 @@ const generateOrderConfirmationEmail = (data: any) => {
       <head>
         <meta charset="utf-8">
         <style>
-          body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f7f9fb; margin: 0; padding: 0; }
-          .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; }
-          .header { background: linear-gradient(135deg, #0FA86C 0%, #0B8A6D 100%); padding: 40px 20px; text-align: center; }
-          .header h1 { color: #ffffff; margin: 0; font-size: 28px; }
-          .content { padding: 40px 30px; }
-          .product-card { background: #f7f9fb; border-radius: 12px; padding: 20px; margin: 20px 0; display: flex; gap: 20px; align-items: center; }
-          .product-image { width: 100px; height: 100px; object-fit: cover; border-radius: 8px; }
-          .product-info h3 { margin: 0 0 8px 0; color: #0B2B22; }
-          .product-info p { margin: 4px 0; color: #6B7280; }
-          .price { color: #0FA86C; font-weight: bold; font-size: 18px; }
-          .details-box { background: #f7f9fb; border-left: 4px solid #0FA86C; padding: 20px; margin: 20px 0; }
-          .details-box h3 { margin: 0 0 12px 0; color: #0B2B22; }
-          .details-box p { margin: 6px 0; color: #6B7280; }
-          .footer { background: #0B2B22; color: #ffffff; padding: 30px; text-align: center; }
-          .footer p { margin: 5px 0; font-size: 14px; }
-          .button { display: inline-block; background: #0FA86C; color: #ffffff; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; margin: 20px 0; }
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: hsl(150 20% 97%); margin: 0; padding: 0; }
+          .container { max-width: 600px; margin: 0 auto; background: hsl(0 0% 100%); }
+          .header { background: linear-gradient(135deg, hsl(151 50% 45%) 0%, hsl(151 50% 55%) 100%); padding: 48px 24px; text-align: center; }
+          .header h1 { color: hsl(0 0% 100%); margin: 0; font-size: 32px; font-weight: 700; letter-spacing: -0.5px; }
+          .content { padding: 48px 32px; }
+          .product-card { background: hsl(150 20% 97%); border-radius: 16px; padding: 24px; margin: 24px 0; display: flex; gap: 20px; align-items: center; }
+          .product-image { width: 100px; height: 100px; object-fit: cover; border-radius: 12px; }
+          .product-info h3 { margin: 0 0 8px 0; color: hsl(156 40% 15%); font-size: 18px; font-weight: 600; }
+          .product-info p { margin: 4px 0; color: hsl(156 10% 50%); font-size: 14px; }
+          .price { color: hsl(151 50% 45%); font-weight: 700; font-size: 20px; }
+          .details-box { background: hsl(150 20% 97%); padding: 24px; margin: 24px 0; border-radius: 12px; }
+          .details-box h3 { margin: 0 0 16px 0; color: hsl(156 40% 15%); font-size: 16px; font-weight: 600; }
+          .details-box p { margin: 8px 0; color: hsl(156 10% 50%); font-size: 14px; line-height: 1.6; }
+          .footer { background: hsl(156 40% 15%); color: hsl(0 0% 100%); padding: 32px; text-align: center; }
+          .footer p { margin: 6px 0; font-size: 14px; }
+          .button { display: inline-block; background: hsl(151 50% 45%); color: hsl(0 0% 100%); padding: 16px 40px; text-decoration: none; border-radius: 12px; font-weight: 600; margin: 24px 0; transition: all 0.2s; }
+          .button:hover { background: hsl(151 50% 38%); }
         </style>
       </head>
       <body>
         <div class="container">
           <div class="header">
-            <h1>✓ Order Confirmed!</h1>
+            <h1>✓ Order Confirmed</h1>
           </div>
           <div class="content">
-            <h2>Thank you for your order!</h2>
-            <p>Your order has been successfully placed and is being processed.</p>
+            <h2 style="color: hsl(156 40% 15%); font-size: 24px; margin: 0 0 12px 0;">Thank you for your order!</h2>
+            <p style="color: hsl(156 10% 50%); margin: 0 0 24px 0;">Your order has been successfully placed and is being processed.</p>
             
             <div class="product-card">
               <img src="${productImage}" alt="${productName}" class="product-image" />
@@ -56,7 +57,7 @@ const generateOrderConfirmationEmail = (data: any) => {
                 <h3>${productName}</h3>
                 <p>Quantity: ${quantity}</p>
                 <p class="price">Le ${totalAmount.toLocaleString()}</p>
-                <p style="font-size: 12px; color: #999;">From ${storeName}</p>
+                <p style="font-size: 12px; color: hsl(156 10% 50%);">From ${storeName}</p>
               </div>
             </div>
 
@@ -66,16 +67,16 @@ const generateOrderConfirmationEmail = (data: any) => {
               <p><strong>Delivery Address:</strong> ${deliveryAddress}</p>
             </div>
 
-            <a href="https://market360-sl-connect.lovable.app/order-detail/${data.orderId}" class="button">Track Your Order</a>
+            <a href="${appUrl}/order-detail/${data.orderId}" class="button">Track Your Order</a>
 
-            <p style="margin-top: 30px; color: #6B7280; font-size: 14px;">
+            <p style="margin-top: 32px; color: hsl(156 10% 50%); font-size: 14px; line-height: 1.6;">
               Your order is secured with Market360's escrow protection. Funds will only be released to the seller once you confirm delivery.
             </p>
           </div>
           <div class="footer">
-            <p><strong>Market360</strong></p>
-            <p>Sierra Leone's Trusted Marketplace</p>
-            <p style="font-size: 12px; margin-top: 15px;">© 2025 Market360. All rights reserved.</p>
+            <p style="font-size: 18px; font-weight: 600; margin-bottom: 8px;">Market360</p>
+            <p style="opacity: 0.9;">Sierra Leone's Trusted Marketplace</p>
+            <p style="font-size: 12px; margin-top: 16px; opacity: 0.7;">© 2025 Market360. All rights reserved.</p>
           </div>
         </div>
       </body>
@@ -83,7 +84,7 @@ const generateOrderConfirmationEmail = (data: any) => {
   `;
 };
 
-const generateNewOrderSellerEmail = (data: any) => {
+const generateNewOrderSellerEmail = (data: any, appUrl: string) => {
   const { orderNumber, productName, productImage, quantity, totalAmount, buyerName, deliveryAddress } = data;
   
   return `
@@ -92,34 +93,34 @@ const generateNewOrderSellerEmail = (data: any) => {
       <head>
         <meta charset="utf-8">
         <style>
-          body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f7f9fb; margin: 0; padding: 0; }
-          .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; }
-          .header { background: linear-gradient(135deg, #0077CC 0%, #0FA86C 100%); padding: 40px 20px; text-align: center; }
-          .header h1 { color: #ffffff; margin: 0; font-size: 28px; }
-          .content { padding: 40px 30px; }
-          .alert-badge { background: #FF9900; color: white; padding: 8px 16px; border-radius: 20px; display: inline-block; margin-bottom: 20px; font-weight: bold; }
-          .product-card { background: #f7f9fb; border-radius: 12px; padding: 20px; margin: 20px 0; display: flex; gap: 20px; align-items: center; }
-          .product-image { width: 100px; height: 100px; object-fit: cover; border-radius: 8px; }
-          .product-info h3 { margin: 0 0 8px 0; color: #0B2B22; }
-          .product-info p { margin: 4px 0; color: #6B7280; }
-          .price { color: #0FA86C; font-weight: bold; font-size: 18px; }
-          .details-box { background: #f7f9fb; border-left: 4px solid #0077CC; padding: 20px; margin: 20px 0; }
-          .details-box h3 { margin: 0 0 12px 0; color: #0B2B22; }
-          .details-box p { margin: 6px 0; color: #6B7280; }
-          .footer { background: #0B2B22; color: #ffffff; padding: 30px; text-align: center; }
-          .footer p { margin: 5px 0; font-size: 14px; }
-          .button { display: inline-block; background: #0077CC; color: #ffffff; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; margin: 20px 0; }
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: hsl(150 20% 97%); margin: 0; padding: 0; }
+          .container { max-width: 600px; margin: 0 auto; background: hsl(0 0% 100%); }
+          .header { background: linear-gradient(135deg, hsl(203 100% 40%) 0%, hsl(151 50% 45%) 100%); padding: 48px 24px; text-align: center; }
+          .header h1 { color: hsl(0 0% 100%); margin: 0; font-size: 32px; font-weight: 700; letter-spacing: -0.5px; }
+          .content { padding: 48px 32px; }
+          .alert-badge { background: hsl(38 92% 50%); color: hsl(0 0% 100%); padding: 10px 20px; border-radius: 24px; display: inline-block; margin-bottom: 24px; font-weight: 600; font-size: 13px; letter-spacing: 0.5px; }
+          .product-card { background: hsl(150 20% 97%); border-radius: 16px; padding: 24px; margin: 24px 0; display: flex; gap: 20px; align-items: center; }
+          .product-image { width: 100px; height: 100px; object-fit: cover; border-radius: 12px; }
+          .product-info h3 { margin: 0 0 8px 0; color: hsl(156 40% 15%); font-size: 18px; font-weight: 600; }
+          .product-info p { margin: 4px 0; color: hsl(156 10% 50%); font-size: 14px; }
+          .price { color: hsl(151 50% 45%); font-weight: 700; font-size: 20px; }
+          .details-box { background: hsl(150 20% 97%); padding: 24px; margin: 24px 0; border-radius: 12px; }
+          .details-box h3 { margin: 0 0 16px 0; color: hsl(156 40% 15%); font-size: 16px; font-weight: 600; }
+          .details-box p { margin: 8px 0; color: hsl(156 10% 50%); font-size: 14px; line-height: 1.6; }
+          .footer { background: hsl(156 40% 15%); color: hsl(0 0% 100%); padding: 32px; text-align: center; }
+          .footer p { margin: 6px 0; font-size: 14px; }
+          .button { display: inline-block; background: hsl(203 100% 40%); color: hsl(0 0% 100%); padding: 16px 40px; text-decoration: none; border-radius: 12px; font-weight: 600; margin: 24px 0; transition: all 0.2s; }
         </style>
       </head>
       <body>
         <div class="container">
           <div class="header">
-            <h1>🔔 New Order Received!</h1>
+            <h1>🔔 New Order Received</h1>
           </div>
           <div class="content">
             <span class="alert-badge">ACTION REQUIRED</span>
-            <h2>You have a new order to process</h2>
-            <p>A customer has placed an order for your product. Please process it promptly.</p>
+            <h2 style="color: hsl(156 40% 15%); font-size: 24px; margin: 0 0 12px 0;">You have a new order to process</h2>
+            <p style="color: hsl(156 10% 50%); margin: 0 0 24px 0;">A customer has placed an order for your product. Please process it promptly.</p>
             
             <div class="product-card">
               <img src="${productImage}" alt="${productName}" class="product-image" />
@@ -137,16 +138,16 @@ const generateNewOrderSellerEmail = (data: any) => {
               <p><strong>Delivery Address:</strong> ${deliveryAddress}</p>
             </div>
 
-            <a href="https://market360-sl-connect.lovable.app/seller/order/${data.orderId}" class="button">Process Order Now</a>
+            <a href="${appUrl}/seller/order/${data.orderId}" class="button">Process Order Now</a>
 
-            <p style="margin-top: 30px; color: #6B7280; font-size: 14px;">
+            <p style="margin-top: 32px; color: hsl(156 10% 50%); font-size: 14px; line-height: 1.6;">
               <strong>Important:</strong> Funds are held in escrow and will be released to your wallet once the buyer confirms delivery.
             </p>
           </div>
           <div class="footer">
-            <p><strong>Market360 Seller Dashboard</strong></p>
-            <p>Sierra Leone's Trusted Marketplace</p>
-            <p style="font-size: 12px; margin-top: 15px;">© 2025 Market360. All rights reserved.</p>
+            <p style="font-size: 18px; font-weight: 600; margin-bottom: 8px;">Market360 Seller Dashboard</p>
+            <p style="opacity: 0.9;">Sierra Leone's Trusted Marketplace</p>
+            <p style="font-size: 12px; margin-top: 16px; opacity: 0.7;">© 2025 Market360. All rights reserved.</p>
           </div>
         </div>
       </body>
@@ -154,7 +155,7 @@ const generateNewOrderSellerEmail = (data: any) => {
   `;
 };
 
-const generateOrderStatusEmail = (data: any) => {
+const generateOrderStatusEmail = (data: any, appUrl: string) => {
   const { orderNumber, productName, status, buyerName } = data;
   
   const statusMessages: Record<string, { title: string; message: string; color: string }> = {
@@ -215,7 +216,7 @@ const generateOrderStatusEmail = (data: any) => {
               <p style="margin-top: 15px;">${statusInfo.message}</p>
             </div>
 
-            <a href="https://market360-sl-connect.lovable.app/order-detail/${data.orderId}" class="button">View Order Details</a>
+            <a href="${appUrl}/order-detail/${data.orderId}" class="button">View Order Details</a>
           </div>
           <div class="footer">
             <p><strong>Market360</strong></p>
@@ -228,7 +229,7 @@ const generateOrderStatusEmail = (data: any) => {
   `;
 };
 
-const generateWalletTransactionEmail = (data: any) => {
+const generateWalletTransactionEmail = (data: any, appUrl: string) => {
   const { transactionType, amount, balance, userName } = data;
   
   const transactionInfo: Record<string, { title: string; message: string; color: string }> = {
@@ -297,7 +298,7 @@ const generateWalletTransactionEmail = (data: any) => {
               <div class="balance">Le ${balance.toLocaleString()}</div>
             </div>
 
-            <a href="https://market360-sl-connect.lovable.app/wallet" class="button">View Wallet</a>
+            <a href="${appUrl}/wallet" class="button">View Wallet</a>
           </div>
           <div class="footer">
             <p><strong>Market360 Wallet</strong></p>
@@ -310,7 +311,7 @@ const generateWalletTransactionEmail = (data: any) => {
   `;
 };
 
-const generateNewMessageEmail = (data: any) => {
+const generateNewMessageEmail = (data: any, appUrl: string) => {
   const { senderName, productName, messagePreview, conversationId } = data;
   
   return `
@@ -346,7 +347,7 @@ const generateNewMessageEmail = (data: any) => {
               <div class="preview">"${messagePreview}"</div>
             </div>
 
-            <a href="https://market360-sl-connect.lovable.app/chat/${conversationId}" class="button">Reply Now</a>
+            <a href="${appUrl}/chat/${conversationId}" class="button">Reply Now</a>
           </div>
           <div class="footer">
             <p><strong>Market360 Messages</strong></p>
