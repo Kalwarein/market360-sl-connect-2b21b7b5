@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Bell, ShoppingCart, MessageSquare, Search, Headset } from 'lucide-react';
+import { Bell, ShoppingCart, MessageSquare, Search, Headset, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -13,6 +13,7 @@ import { MarketplaceProductCard } from '@/components/MarketplaceProductCard';
 import { StoreCard } from '@/components/StoreCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { GuidedTour } from '@/components/GuidedTour';
+import { RecentlyViewed } from '@/components/RecentlyViewed';
 
 interface Product {
   id: string;
@@ -53,6 +54,7 @@ const Home = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [cartCount, setCartCount] = useState(0);
   const [notificationCount, setNotificationCount] = useState(0);
+  const [favoritesCount, setFavoritesCount] = useState(0);
   const [showCustomerCareTooltip, setShowCustomerCareTooltip] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -62,6 +64,7 @@ const Home = () => {
     loadUnreadCount();
     loadCartCount();
     loadNotificationCount();
+    loadFavoritesCount();
 
     // Check if user has seen customer care tooltip
     const hasSeenTooltip = localStorage.getItem('customer_care_tooltip_seen');
@@ -87,10 +90,16 @@ const Home = () => {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, loadNotificationCount)
       .subscribe();
 
+    const favoritesChannel = supabase
+      .channel('favorites-count-home')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'favorites' }, loadFavoritesCount)
+      .subscribe();
+
     return () => {
       supabase.removeChannel(messagesChannel);
       supabase.removeChannel(cartChannel);
       supabase.removeChannel(notificationsChannel);
+      supabase.removeChannel(favoritesChannel);
     };
   }, [user]);
 
@@ -348,6 +357,21 @@ const Home = () => {
     }
   };
 
+  const loadFavoritesCount = async () => {
+    if (!user) return;
+
+    try {
+      const { count } = await supabase
+        .from('favorites')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id);
+
+      setFavoritesCount(count || 0);
+    } catch (error) {
+      console.error('Error loading favorites count:', error);
+    }
+  };
+
   const filteredCategories = availableCategories.filter(cat =>
     cat.toLowerCase().includes(categorySearch.toLowerCase())
   );
@@ -507,6 +531,20 @@ const Home = () => {
                 {notificationCount > 0 && (
                   <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs">
                     {notificationCount}
+                  </Badge>
+                )}
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="icon"
+                className="relative rounded-full"
+                onClick={() => navigate('/favorites')}
+              >
+                <Heart className="h-5 w-5" />
+                {favoritesCount > 0 && (
+                  <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs">
+                    {favoritesCount}
                   </Badge>
                 )}
               </Button>
@@ -698,6 +736,11 @@ const Home = () => {
 
             {/* Featured Stores */}
             {renderFeaturedStores()}
+
+            {/* Recently Viewed */}
+            <div className="px-4">
+              <RecentlyViewed />
+            </div>
 
             {/* Category Sections */}
             {categorySections.map((section, index) => (

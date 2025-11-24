@@ -76,6 +76,7 @@ import ReportIssue from "./pages/ReportIssue";
 import Onboarding from "./pages/Onboarding";
 import Deposit from "./pages/Deposit";
 import Withdrawal from "./pages/Withdrawal";
+import Favorites from "./pages/Favorites";
 
 const queryClient = new QueryClient();
 
@@ -115,6 +116,7 @@ const App = () => (
               <Route path="/wallet" element={<ProtectedRoute><Wallet /></ProtectedRoute>} />
               <Route path="/deposit" element={<ProtectedRoute><Deposit /></ProtectedRoute>} />
               <Route path="/withdrawal" element={<ProtectedRoute><Withdrawal /></ProtectedRoute>} />
+              <Route path="/favorites" element={<ProtectedRoute><Favorites /></ProtectedRoute>} />
               <Route path="/seller-dashboard" element={<ProtectedRoute><SellerDashboard /></ProtectedRoute>} />
               <Route path="/add-product" element={<ProtectedRoute><AddProduct /></ProtectedRoute>} />
               <Route path="/product-creation-success" element={<ProtectedRoute><ProductCreationSuccess /></ProtectedRoute>} />
