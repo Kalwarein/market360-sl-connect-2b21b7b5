@@ -237,9 +237,45 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
       )
       .subscribe();
 
+    // Listen for profile updates (online status changes)
+    const profilesChannel = supabase
+      .channel('profiles-presence-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'profiles',
+        },
+        (payload) => {
+          const updatedProfile = payload.new as any;
+          
+          // Update the conversation with the new online status
+          setConversations(prev => 
+            prev.map(conv => {
+              const otherUserId = conv.buyer_id === user?.id ? conv.seller_id : conv.buyer_id;
+              
+              if (otherUserId === updatedProfile.id && conv.other_user) {
+                return {
+                  ...conv,
+                  other_user: {
+                    ...conv.other_user,
+                    is_online: updatedProfile.is_online,
+                    last_seen: updatedProfile.last_seen
+                  }
+                };
+              }
+              return conv;
+            })
+          );
+        }
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(messagesChannel);
       supabase.removeChannel(conversationsChannel);
+      supabase.removeChannel(profilesChannel);
     };
   };
 

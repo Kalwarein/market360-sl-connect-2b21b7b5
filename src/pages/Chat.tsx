@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePresence } from '@/contexts/PresenceContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -49,6 +50,7 @@ interface Conversation {
 const Chat = () => {
   const { conversationId } = useParams();
   const { user } = useAuth();
+  const { isUserOnline } = usePresence();
   const navigate = useNavigate();
   const location = useLocation();
   const [conversation, setConversation] = useState<Conversation | null>(null);
@@ -68,9 +70,10 @@ const Chat = () => {
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
   const [messageActionSheetOpen, setMessageActionSheetOpen] = useState(false);
   const [replyToMessage, setReplyToMessage] = useState<Message | null>(null);
-  const [otherUserOnline, setOtherUserOnline] = useState(false);
+  const [otherUserId, setOtherUserId] = useState<string | null>(null);
   const [otherUserLastSeen, setOtherUserLastSeen] = useState<string | null>(null);
   const [isSending, setIsSending] = useState(false);
+  const [conversationTyping, setConversationTyping] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!user) {
@@ -161,69 +164,54 @@ const Chat = () => {
       )
       .subscribe();
 
-    const presenceChannel = supabase.channel(`presence-${conversationId}`, {
+    // Typing indicator channel for this conversation
+    const typingChannel = supabase.channel(`typing-${conversationId}`, {
       config: { presence: { key: user?.id } },
     });
 
-    presenceChannel
+    typingChannel
       .on('presence', { event: 'sync' }, () => {
-        const state = presenceChannel.presenceState();
-        const otherUsers = Object.keys(state).filter(key => key !== user?.id);
+        const state = typingChannel.presenceState();
+        const typingUsers = new Set<string>();
         
-        const someoneTyping = otherUsers.some(userId => {
-          const userState = state[userId] as any;
-          return userState && userState[0]?.typing === true;
+        Object.keys(state).forEach(userId => {
+          if (userId !== user?.id) {
+            const userState = state[userId] as any;
+            if (userState && userState[0]?.typing === true) {
+              typingUsers.add(userId);
+            }
+          }
         });
-        setOtherUserTyping(someoneTyping);
-
-        // Track online status
-        const isOnline = otherUsers.length > 0;
-        setOtherUserOnline(isOnline);
+        
+        setConversationTyping(typingUsers);
       })
-      .on('presence', { event: 'join' }, () => {
-        setOtherUserOnline(true);
-        // Update profile online status
-        if (conversation) {
-          const otherUserId = conversation.buyer_id === user?.id 
-            ? conversation.seller_id 
-            : conversation.buyer_id;
-          supabase
-            .from('profiles')
-            .update({ is_online: true })
-            .eq('id', otherUserId)
-            .then(() => {});
+      .on('presence', { event: 'join' }, ({ key, newPresences }) => {
+        const presence = newPresences[0] as any;
+        if (presence?.typing && key !== user?.id) {
+          setConversationTyping(prev => new Set(prev).add(key));
         }
       })
-      .on('presence', { event: 'leave' }, () => {
-        setOtherUserOnline(false);
-        // Update profile last seen
-        if (conversation) {
-          const otherUserId = conversation.buyer_id === user?.id 
-            ? conversation.seller_id 
-            : conversation.buyer_id;
-          const now = new Date().toISOString();
-          setOtherUserLastSeen(now);
-          supabase
-            .from('profiles')
-            .update({ is_online: false, last_seen: now })
-            .eq('id', otherUserId)
-            .then(() => {});
-        }
+      .on('presence', { event: 'leave' }, ({ key }) => {
+        setConversationTyping(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(key);
+          return newSet;
+        });
       })
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
-          await presenceChannel.track({ user_id: user?.id, typing: false, online: true });
+          await typingChannel.track({ user_id: user?.id, typing: false });
         }
       });
 
     return () => {
-      presenceChannel.untrack().then(() => {
+      typingChannel.untrack().then(() => {
         supabase.removeChannel(messagesChannel);
         supabase.removeChannel(conversationChannel);
-        supabase.removeChannel(presenceChannel);
+        supabase.removeChannel(typingChannel);
       });
     };
-  }, [conversationId, user, conversation]);
+  }, [conversationId, user]);
 
   useEffect(() => {
     scrollToBottom();
@@ -266,17 +254,17 @@ const Chat = () => {
       }
 
       const isBuyer = data.buyer_id === user?.id;
-      const otherUserId = isBuyer ? data.seller_id : data.buyer_id;
+      const otherUserIdValue = isBuyer ? data.seller_id : data.buyer_id;
+      setOtherUserId(otherUserIdValue);
       
       const { data: profile } = await supabase
         .from('profiles')
         .select('name, avatar_url, is_online, last_seen')
-        .eq('id', otherUserId)
+        .eq('id', otherUserIdValue)
         .maybeSingle();
 
-      // Set initial online status
+      // Set initial online status and last seen
       if (profile) {
-        setOtherUserOnline(profile.is_online || false);
         setOtherUserLastSeen(profile.last_seen || null);
       }
 
@@ -337,22 +325,22 @@ const Chat = () => {
     }
   };
 
-  const handleTyping = () => {
+  const handleTyping = async () => {
+    const channel = supabase.channel(`typing-${conversationId}`);
+    
     if (!isTyping) {
       setIsTyping(true);
-      const channel = supabase.channel(`presence-${conversationId}`);
-      channel.track({ user_id: user?.id, typing: true });
+      await channel.track({ user_id: user?.id, typing: true });
     }
 
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
 
-    typingTimeoutRef.current = setTimeout(() => {
+    typingTimeoutRef.current = setTimeout(async () => {
       setIsTyping(false);
-      const channel = supabase.channel(`presence-${conversationId}`);
-      channel.track({ user_id: user?.id, typing: false });
-    }, 2000);
+      await channel.track({ user_id: user?.id, typing: false });
+    }, 1500);
   };
 
   const markMessagesAsRead = async () => {
@@ -408,7 +396,7 @@ const Chat = () => {
       if (error) throw error;
 
       // Auto-update to delivered if other user is online
-      if (otherUserOnline && insertedMessage) {
+      if (otherUserId && isUserOnline(otherUserId) && insertedMessage) {
         setTimeout(() => {
           supabase
             .from('messages')
@@ -458,8 +446,8 @@ const Chat = () => {
       }
 
       setIsTyping(false);
-      const channel = supabase.channel(`presence-${conversationId}`);
-      channel.track({ user_id: user?.id, typing: false });
+      const channel = supabase.channel(`typing-${conversationId}`);
+      await channel.track({ user_id: user?.id, typing: false });
     } catch (error) {
       console.error('Error sending message:', error);
       toast.error('Failed to send message');
@@ -875,15 +863,15 @@ const Chat = () => {
             <AvatarFallback className="bg-primary/10 text-primary text-sm font-semibold">
               {conversation?.other_user?.name?.charAt(0)?.toUpperCase() || <User className="h-5 w-5" />}
             </AvatarFallback>
-            {otherUserOnline && (
+            {otherUserId && isUserOnline(otherUserId) && (
               <div className="absolute bottom-0 right-0 h-3 w-3 bg-green-500 rounded-full border-2 border-card"></div>
             )}
           </Avatar>
           <div className="flex-1 min-w-0">
             <h3 className="font-semibold text-base truncate">{conversation?.other_user?.name || 'Unknown User'}</h3>
-            {otherUserTyping ? (
+            {conversationTyping.size > 0 ? (
               <p className="text-xs text-primary animate-pulse font-medium">typing...</p>
-            ) : otherUserOnline ? (
+            ) : otherUserId && isUserOnline(otherUserId) ? (
               <p className="text-xs text-green-600 font-medium">online</p>
             ) : otherUserLastSeen ? (
               <p className="text-xs text-muted-foreground">
@@ -915,19 +903,19 @@ const Chat = () => {
           {messages.map((message) => renderMessage(message))}
           
           {/* Typing Indicator */}
-          {otherUserTyping && (
-            <div className="flex gap-2.5 mb-3 animate-fade-in">
+          {conversationTyping.size > 0 && (
+            <div className="flex gap-2.5 mb-3 animate-in fade-in slide-in-from-left-2 duration-200">
               <Avatar className="h-8 w-8 border border-border/50 flex-shrink-0">
                 <AvatarImage src={conversation?.other_user?.avatar_url || undefined} />
                 <AvatarFallback className="bg-primary/10 text-primary font-semibold text-xs">
                   {conversation?.other_user?.name?.charAt(0)?.toUpperCase() || <User className="h-4 w-4" />}
                 </AvatarFallback>
               </Avatar>
-              <div className="px-4 py-3 rounded-lg rounded-bl-md bg-card border border-border/50 shadow-sm">
-                <div className="flex gap-1">
-                  <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                  <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                  <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+              <div className="px-4 py-2.5 rounded-2xl rounded-bl-md bg-muted/50 border border-border/30 shadow-sm">
+                <div className="flex gap-1.5 items-center">
+                  <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms', animationDuration: '1s' }}></div>
+                  <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '200ms', animationDuration: '1s' }}></div>
+                  <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '400ms', animationDuration: '1s' }}></div>
                 </div>
               </div>
             </div>

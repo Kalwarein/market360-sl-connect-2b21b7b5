@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useChat } from '@/contexts/ChatContext';
+import { usePresence } from '@/contexts/PresenceContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -16,6 +17,7 @@ import { toast } from 'sonner';
 const MessagesPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { isUserOnline } = usePresence();
   const { 
     conversations, 
     loading, 
@@ -27,6 +29,17 @@ const MessagesPage = () => {
   } = useChat();
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   const [actionSheetOpen, setActionSheetOpen] = useState(false);
+  const [onlineStatuses, setOnlineStatuses] = useState<Map<string, boolean>>(new Map());
+
+  // Update online statuses from global presence
+  useEffect(() => {
+    const newStatuses = new Map<string, boolean>();
+    conversations.forEach(conv => {
+      const otherUserId = conv.buyer_id === user?.id ? conv.seller_id : conv.buyer_id;
+      newStatuses.set(conv.id, isUserOnline(otherUserId));
+    });
+    setOnlineStatuses(newStatuses);
+  }, [conversations, isUserOnline, user?.id]);
 
   const formatTime = (timestamp: string) => {
     const date = new Date(timestamp);
@@ -79,7 +92,10 @@ const MessagesPage = () => {
             {conversations
               .filter(c => !c.is_archived)
               .map((conversation) => {
-                const isBuyer = conversation.buyer_id === user?.id;
+                 const isBuyer = conversation.buyer_id === user?.id;
+                const otherUserId = isBuyer ? conversation.seller_id : conversation.buyer_id;
+                const isOnline = onlineStatuses.get(conversation.id) || false;
+                
                 const lastMessagePreview = conversation.last_message
                   ? conversation.last_message.body.length > 50
                     ? `${conversation.last_message.body.substring(0, 50)}...`
@@ -122,11 +138,14 @@ const MessagesPage = () => {
                           </div>
                         )}
                         
-                        <Avatar className="h-14 w-14 border-2 border-primary/20">
+                        <Avatar className="h-14 w-14 border-2 border-primary/20 relative">
                           <AvatarImage src={conversation.other_user?.avatar_url || undefined} />
                           <AvatarFallback className="bg-primary/10 text-primary font-bold text-lg">
                             {conversation.other_user?.name?.[0]?.toUpperCase() || 'U'}
                           </AvatarFallback>
+                          {isOnline && (
+                            <div className="absolute bottom-0 right-0 h-3.5 w-3.5 bg-green-500 rounded-full border-2 border-card"></div>
+                          )}
                         </Avatar>
 
                         <div className="flex-1 min-w-0">
@@ -155,7 +174,7 @@ const MessagesPage = () => {
                               </div>
                               <p className="text-xs text-muted-foreground">
                                 {isBuyer ? 'Seller' : 'Buyer'}
-                                {conversation.other_user?.is_online 
+                                {isOnline 
                                   ? ' • online' 
                                   : conversation.other_user?.last_seen 
                                     ? ` • last seen ${format(new Date(conversation.other_user.last_seen), 'HH:mm')}` 

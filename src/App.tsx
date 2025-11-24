@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { CartProvider } from "./contexts/CartContext";
 import { ChatProvider } from "./contexts/ChatContext";
+import { PresenceProvider } from "./contexts/PresenceContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { useOneSignal } from "./hooks/useOneSignal";
 
@@ -91,9 +92,10 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <AppContent />
-          <ChatProvider>
-            <CartProvider>
-              <Routes>
+          <PresenceProvider>
+            <ChatProvider>
+              <CartProvider>
+                <Routes>
               <Route path="/splash" element={<Splash />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
@@ -156,9 +158,10 @@ const App = () => (
               <Route path="/how-to-top-up" element={<ProtectedRoute><HowToTopUp /></ProtectedRoute>} />
               <Route path="/product-management/:id" element={<ProtectedRoute><ProductManagement /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
-              </Routes>
-            </CartProvider>
-          </ChatProvider>
+                </Routes>
+              </CartProvider>
+            </ChatProvider>
+          </PresenceProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
