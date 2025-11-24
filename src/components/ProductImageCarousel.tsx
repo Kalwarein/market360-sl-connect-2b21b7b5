@@ -13,27 +13,44 @@ const ProductImageCarousel = ({ images }: ProductImageCarouselProps) => {
   const [touchEnd, setTouchEnd] = useState(0);
   const [imageLoadStates, setImageLoadStates] = useState<Record<number, boolean>>({});
   const [imageErrorStates, setImageErrorStates] = useState<Record<number, boolean>>({});
+  const [imageDimensions, setImageDimensions] = useState<Record<number, { width: number; height: number }>>({});
+  const [containerHeight, setContainerHeight] = useState(400);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      handleNext();
-    }, 1000); // Auto-advance every 1 second
+    // Initialize first image height if dimensions are already loaded
+    if (imageDimensions[0] && containerRef.current) {
+      updateContainerHeight(0);
+    }
+  }, [imageDimensions]);
 
-    return () => clearInterval(interval);
-  }, [currentIndex, images.length]);
+  const updateContainerHeight = (index: number) => {
+    const dimensions = imageDimensions[index];
+    if (dimensions && containerRef.current) {
+      const containerWidth = containerRef.current.offsetWidth;
+      const aspectRatio = dimensions.height / dimensions.width;
+      const calculatedHeight = containerWidth * aspectRatio;
+      // Clamp height between 300px and 700px
+      const finalHeight = Math.min(Math.max(calculatedHeight, 300), 700);
+      setContainerHeight(finalHeight);
+    }
+  };
 
   const handlePrevious = () => {
     if (isAnimating) return;
     setIsAnimating(true);
-    setCurrentIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
+    const newIndex = currentIndex === 0 ? images.length - 1 : currentIndex - 1;
+    setCurrentIndex(newIndex);
+    updateContainerHeight(newIndex);
     setTimeout(() => setIsAnimating(false), 500);
   };
 
   const handleNext = () => {
     if (isAnimating) return;
     setIsAnimating(true);
-    setCurrentIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
+    const newIndex = currentIndex === images.length - 1 ? 0 : currentIndex + 1;
+    setCurrentIndex(newIndex);
+    updateContainerHeight(newIndex);
     setTimeout(() => setIsAnimating(false), 500);
   };
 
@@ -41,6 +58,7 @@ const ProductImageCarousel = ({ images }: ProductImageCarouselProps) => {
     if (isAnimating) return;
     setIsAnimating(true);
     setCurrentIndex(index);
+    updateContainerHeight(index);
     setTimeout(() => setIsAnimating(false), 500);
   };
 
@@ -70,8 +88,27 @@ const ProductImageCarousel = ({ images }: ProductImageCarouselProps) => {
     setTouchEnd(0);
   };
 
-  const handleImageLoad = (index: number) => {
+  const handleImageLoad = (index: number, event: React.SyntheticEvent<HTMLImageElement>) => {
+    const img = event.currentTarget;
+    const naturalWidth = img.naturalWidth;
+    const naturalHeight = img.naturalHeight;
+    
+    setImageDimensions(prev => ({ 
+      ...prev, 
+      [index]: { width: naturalWidth, height: naturalHeight }
+    }));
+    
     setImageLoadStates(prev => ({ ...prev, [index]: true }));
+    
+    // Update container height when current image loads
+    if (index === currentIndex && containerRef.current) {
+      const containerWidth = containerRef.current.offsetWidth;
+      const aspectRatio = naturalHeight / naturalWidth;
+      const calculatedHeight = containerWidth * aspectRatio;
+      // Clamp height between 300px and 700px for reasonable display
+      const finalHeight = Math.min(Math.max(calculatedHeight, 300), 700);
+      setContainerHeight(finalHeight);
+    }
   };
 
   const handleImageError = (index: number, imageUrl: string) => {
@@ -90,17 +127,21 @@ const ProductImageCarousel = ({ images }: ProductImageCarouselProps) => {
   return (
     <div 
       ref={containerRef}
-      className="relative w-full rounded-2xl overflow-hidden bg-muted"
+      className="relative w-full overflow-hidden bg-muted"
+      style={{ 
+        height: `${containerHeight}px`,
+        transition: 'height 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
+      }}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
       {/* Images */}
-      <div className="relative w-full min-h-[300px] max-h-[600px]">
+      <div className="relative w-full h-full">
         {images.map((image, index) => (
           <div
             key={index}
-            className={`absolute inset-0 transition-opacity duration-500 flex items-center justify-center ${
+            className={`absolute inset-0 transition-opacity duration-500 ${
               index === currentIndex ? 'opacity-100 z-10' : 'opacity-0 z-0'
             }`}
           >
@@ -121,7 +162,7 @@ const ProductImageCarousel = ({ images }: ProductImageCarouselProps) => {
                 src={image}
                 alt={`Product ${index + 1}`}
                 className="w-full h-full object-contain"
-                onLoad={() => handleImageLoad(index)}
+                onLoad={(e) => handleImageLoad(index, e)}
                 onError={() => handleImageError(index, image)}
                 style={{ display: imageLoadStates[index] ? 'block' : 'none' }}
               />

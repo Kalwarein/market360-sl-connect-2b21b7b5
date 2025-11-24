@@ -298,10 +298,13 @@ const ProductDetails = () => {
         </div>
       </div>
 
-      <div className="p-4 space-y-4">
-        <ProductImageCarousel images={product.images} />
-
-        <div className="space-y-2">
+      <div className="space-y-4">
+        <div className="-mx-4 sm:mx-0">
+          <ProductImageCarousel images={product.images} />
+        </div>
+        
+        <div className="px-4 space-y-4">
+          <div className="space-y-2">
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1">
               <h1 className="text-2xl font-bold leading-tight">{product.title}</h1>
@@ -620,6 +623,7 @@ const ProductDetails = () => {
             </div>
           </CardContent>
         </Card>
+      </div>
       </div>
 
       {!user ? (
