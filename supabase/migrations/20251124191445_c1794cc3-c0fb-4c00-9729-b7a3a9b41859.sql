@@ -1,0 +1,2 @@
+-- Add reply_to_message_id column to messages table for WhatsApp-style reply functionality
+ALTER TABLE messages ADD COLUMN IF NOT EXISTS reply_to_message_id UUID REFERENCES messages(id) ON DELETE SET NULL;

@@ -29,6 +29,8 @@ interface Message {
   read_at?: string;
   isOptimistic?: boolean;
   error?: string;
+  reply_to_message_id?: string;
+  reply_to_message?: Message;
 }
 
 interface Conversation {
@@ -76,6 +78,11 @@ const Chat = () => {
   const [otherUserLastSeen, setOtherUserLastSeen] = useState<string | null>(null);
   const [isSending, setIsSending] = useState(false);
   const [conversationTyping, setConversationTyping] = useState<Set<string>>(new Set());
+  const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
+  const [swipeStartX, setSwipeStartX] = useState(0);
+  const [swipeOffsetX, setSwipeOffsetX] = useState(0);
+  const [swipingMessageId, setSwipingMessageId] = useState<string | null>(null);
+  const messageRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
 
   useEffect(() => {
     if (!user) {
@@ -310,7 +317,21 @@ const Chat = () => {
         .order('created_at', { ascending: true });
 
       if (error) throw error;
-      setMessages((data || []) as Message[]);
+      
+      // Build a message map for quick lookups
+      const messageMap = new Map<string, Message>();
+      (data || []).forEach(msg => messageMap.set(msg.id, msg as Message));
+      
+      // Attach reply_to_message for each message that has reply_to_message_id
+      const messagesWithReplies = (data || []).map(msg => {
+        const message = msg as Message;
+        if (message.reply_to_message_id) {
+          message.reply_to_message = messageMap.get(message.reply_to_message_id);
+        }
+        return message;
+      });
+      
+      setMessages(messagesWithReplies);
 
       // Check if this is an enquiry conversation
       const hasEnquiryMessage = (data || []).some((msg: any) => {
@@ -373,10 +394,12 @@ const Chat = () => {
 
     const messageText = newMessage.trim();
     const productAttachment = attachedProduct;
+    const replyingTo = replyToMessage;
 
     // Clear input immediately so user can type next message
     setNewMessage('');
     setAttachedProduct(null);
+    setReplyToMessage(null);
     setIsSending(true);
 
     // Create optimistic message to show instantly
@@ -392,6 +415,8 @@ const Chat = () => {
       status: 'pending',
       message_type: 'text',
       isOptimistic: true,
+      reply_to_message_id: replyingTo?.id,
+      reply_to_message: replyingTo,
     };
 
     // Add optimistic message immediately to UI
@@ -411,6 +436,10 @@ const Chat = () => {
 
       if (productAttachment) {
         messageData.attachments = [JSON.stringify(productAttachment)];
+      }
+
+      if (replyingTo) {
+        messageData.reply_to_message_id = replyingTo.id;
       }
 
       const { data: insertedMessage, error } = await supabase
@@ -722,10 +751,46 @@ const Chat = () => {
     }
   };
 
-  const handleReplyToMessage = () => {
-    if (selectedMessage) {
-      setReplyToMessage(selectedMessage);
+  const handleReplyToMessage = (message?: Message) => {
+    const msgToReply = message || selectedMessage;
+    if (msgToReply) {
+      setReplyToMessage(msgToReply);
+      setMessageActionSheetOpen(false);
     }
+  };
+
+  const scrollToMessage = (messageId: string) => {
+    const messageElement = messageRefs.current[messageId];
+    if (messageElement) {
+      messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setHighlightedMessageId(messageId);
+      setTimeout(() => setHighlightedMessageId(null), 2000);
+    }
+  };
+
+  const handleSwipeStart = (e: React.TouchEvent, messageId: string) => {
+    setSwipeStartX(e.touches[0].clientX);
+    setSwipingMessageId(messageId);
+  };
+
+  const handleSwipeMove = (e: React.TouchEvent, messageId: string) => {
+    if (swipingMessageId !== messageId) return;
+    const currentX = e.touches[0].clientX;
+    const diff = currentX - swipeStartX;
+    
+    // Only allow swipe to the right and limit to 80px
+    if (diff > 0 && diff <= 80) {
+      setSwipeOffsetX(diff);
+    }
+  };
+
+  const handleSwipeEnd = (message: Message) => {
+    if (swipeOffsetX > 40) {
+      handleReplyToMessage(message);
+    }
+    setSwipeOffsetX(0);
+    setSwipingMessageId(null);
+    setSwipeStartX(0);
   };
 
 
@@ -909,21 +974,31 @@ const Chat = () => {
 
     return (
       <div 
-        className={`flex gap-2.5 ${isOwn ? 'flex-row-reverse' : ''} mb-3 animate-fade-in group`} 
+        ref={(el) => { messageRefs.current[message.id] = el; }}
+        className={`flex gap-2.5 ${isOwn ? 'flex-row-reverse' : ''} mb-3 animate-fade-in group relative`} 
         key={message.id}
+        style={{
+          transform: swipingMessageId === message.id ? `translateX(${swipeOffsetX}px)` : 'none',
+          transition: swipingMessageId === message.id ? 'none' : 'transform 0.2s ease-out'
+        }}
         onContextMenu={(e) => {
           e.preventDefault();
           handleMessageLongPress(message);
         }}
         onTouchStart={(e) => {
+          handleSwipeStart(e, message.id);
           const timeout = setTimeout(() => {
             handleMessageLongPress(message);
           }, 500);
           (e.currentTarget as any).dataset.timeout = timeout.toString();
         }}
+        onTouchMove={(e) => {
+          handleSwipeMove(e, message.id);
+        }}
         onTouchEnd={(e) => {
           const timeout = (e.currentTarget as any).dataset.timeout;
           if (timeout) clearTimeout(Number(timeout));
+          handleSwipeEnd(message);
         }}
       >
         {!isOwn && (
@@ -943,8 +1018,25 @@ const Chat = () => {
               isOwn
                 ? `bg-primary text-primary-foreground rounded-br-md ${message.status === 'failed' ? 'opacity-60' : ''}`
                 : 'bg-card border border-border/50 rounded-bl-md'
-            }`}
+            } ${highlightedMessageId === message.id ? 'ring-2 ring-blue-400 bg-blue-50' : ''}`}
           >
+            {/* Reply Header */}
+            {message.reply_to_message && (
+              <div 
+                className={`mb-2 pb-2 border-l-4 pl-2 cursor-pointer hover:opacity-80 transition-opacity ${
+                  isOwn ? 'border-primary-foreground/30' : 'border-primary/30'
+                }`}
+                onClick={() => message.reply_to_message_id && scrollToMessage(message.reply_to_message_id)}
+              >
+                <p className={`text-[10px] font-semibold ${isOwn ? 'text-primary-foreground/70' : 'text-primary'}`}>
+                  {message.reply_to_message.sender_id === user?.id ? 'You' : conversation?.other_user?.name}
+                </p>
+                <p className={`text-[11px] line-clamp-1 ${isOwn ? 'text-primary-foreground/60' : 'text-muted-foreground'}`}>
+                  {message.reply_to_message.body}
+                </p>
+              </div>
+            )}
+            
             <p className="text-sm whitespace-pre-wrap break-words select-none leading-relaxed">{message.body}</p>
             {message.status === 'failed' && message.error && (
               <p className="text-[10px] text-destructive mt-1 italic">{message.error}</p>
@@ -1052,6 +1144,28 @@ const Chat = () => {
         </div>
         <div ref={messagesEndRef} />
       </div>
+
+      {/* Reply Preview */}
+      {replyToMessage && (
+        <div className="border-t bg-muted/30 p-3">
+          <div className="flex items-center gap-3 max-w-2xl mx-auto">
+            <div className="flex-1 pl-3 border-l-4 border-primary">
+              <p className="text-xs font-semibold text-primary">
+                Replying to {replyToMessage.sender_id === user?.id ? 'yourself' : conversation?.other_user?.name}
+              </p>
+              <p className="text-xs text-muted-foreground line-clamp-1">{replyToMessage.body}</p>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setReplyToMessage(null)}
+              className="rounded-full hover:bg-destructive/10 hover:text-destructive h-8 w-8"
+            >
+              <X className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Product Attachment Preview */}
       {attachedProduct && (
