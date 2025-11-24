@@ -186,6 +186,32 @@ const StorePage = () => {
 
         {/* Premium Hero Section */}
         <div className="px-4 pt-6">
+          {/* Verified Banner for Premium Stores */}
+          {hasVerifiedBadge && (
+            <div className="mb-6">
+              <Card className="bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 border-0 shadow-2xl overflow-hidden">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-3">
+                        <img 
+                          src={verifiedBadge} 
+                          alt="Verified" 
+                          className="h-12 w-12 object-contain"
+                        />
+                      </div>
+                      <div className="text-white">
+                        <h3 className="text-xl font-bold mb-1">Verified Store</h3>
+                        <p className="text-sm text-blue-100">This seller has been verified by 360Mall</p>
+                      </div>
+                    </div>
+                    <Shield className="h-16 w-16 text-white/30" />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
           {/* Premium Banner */}
           <div className="flex items-center justify-center mb-6">
             <Badge className="bg-primary text-primary-foreground px-6 py-2 rounded-full shadow-lg text-sm font-bold">
@@ -474,6 +500,32 @@ const StorePage = () => {
           </Button>
         </div>
       </div>
+
+      {/* Verified Banner for Standard Stores */}
+      {hasVerifiedBadge && (
+        <div className="px-4 pt-4 -mt-16 relative z-20">
+          <Card className="bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 border-0 shadow-xl">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="bg-white/20 backdrop-blur-sm rounded-xl p-2">
+                  <img 
+                    src={verifiedBadge} 
+                    alt="Verified" 
+                    className="h-9 w-9 object-contain"
+                  />
+                </div>
+                <div className="text-white flex-1">
+                  <h3 className="text-base font-bold mb-0.5 flex items-center gap-1.5">
+                    <CheckCircle className="h-4 w-4 fill-current" />
+                    Verified Store
+                  </h3>
+                  <p className="text-xs text-blue-100">This seller has been verified by 360Mall</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Store Info */}
       <div className="px-4 -mt-20 relative z-10 mb-6">

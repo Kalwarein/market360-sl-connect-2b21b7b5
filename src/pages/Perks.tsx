@@ -61,26 +61,26 @@ const Perks = () => {
       id: '1',
       icon: Award,
       title: 'Verified Badge',
-      description: 'Display a verified checkmark next to your store name',
-      price: 45,
-      features: ['Verified checkmark badge', 'Increased buyer trust', 'Priority in search', 'Visible everywhere'],
+      description: 'Display a verified checkmark next to your store name everywhere',
+      price: 75,
+      features: ['Verified checkmark badge', 'Increased buyer trust', 'Priority in search', 'Enhanced product cards'],
       gradient: 'from-blue-500 to-blue-600',
       iconBg: 'bg-blue-100 dark:bg-blue-900/30',
       iconColor: 'text-blue-600 dark:text-blue-400',
-      duration: '30 days',
+      duration: '17 days',
       perkType: 'verified_badge'
     },
     {
       id: '2',
       icon: Zap,
       title: 'Boosted Visibility',
-      description: 'Get 3x more views with boosted store visibility',
-      price: 60,
-      features: ['3x visibility boost', 'Higher in search results', 'Featured in recommendations', 'Analytics tracking'],
+      description: 'Always appear at the top of store listings',
+      price: 90,
+      features: ['Top position in listings', '5x visibility boost', 'Featured placement', 'Analytics tracking'],
       gradient: 'from-purple-500 to-purple-600',
       iconBg: 'bg-purple-100 dark:bg-purple-900/30',
       iconColor: 'text-purple-600 dark:text-purple-400',
-      duration: '14 days',
+      duration: '17 days',
       perkType: 'boosted_visibility'
     },
     {
@@ -88,12 +88,12 @@ const Perks = () => {
       icon: Star,
       title: 'Top of Category',
       description: 'Pin your store at the top of your category',
-      price: 75,
+      price: 110,
       features: ['Always at top', 'Category dominance', 'Maximum exposure', 'Premium placement'],
       gradient: 'from-amber-500 to-amber-600',
       iconBg: 'bg-amber-100 dark:bg-amber-900/30',
       iconColor: 'text-amber-600 dark:text-amber-400',
-      duration: '7 days',
+      duration: '17 days',
       perkType: 'top_of_category'
     },
     {
@@ -101,12 +101,12 @@ const Perks = () => {
       icon: TrendingUp,
       title: 'Trending Placement',
       description: 'Feature your store in the Trending section',
-      price: 85,
+      price: 120,
       features: ['Trending badge', 'Homepage feature', 'Hot seller status', 'Impulse buyer traffic'],
       gradient: 'from-rose-500 to-rose-600',
       iconBg: 'bg-rose-100 dark:bg-rose-900/30',
       iconColor: 'text-rose-600 dark:text-rose-400',
-      duration: '7 days',
+      duration: '17 days',
       perkType: 'trending_placement'
     },
     {
@@ -114,12 +114,12 @@ const Perks = () => {
       icon: Sparkles,
       title: 'Product Highlights',
       description: 'Add glowing frames around your product listings',
-      price: 55,
+      price: 85,
       features: ['Glowing product frames', 'Eye-catching design', 'Stand out from competition', 'All products highlighted'],
       gradient: 'from-emerald-500 to-emerald-600',
       iconBg: 'bg-emerald-100 dark:bg-emerald-900/30',
       iconColor: 'text-emerald-600 dark:text-emerald-400',
-      duration: '14 days',
+      duration: '17 days',
       perkType: 'product_highlights'
     },
     {
@@ -127,12 +127,12 @@ const Perks = () => {
       icon: Crown,
       title: 'Premium Theme',
       description: 'Unlock exclusive premium store theme designs',
-      price: 65,
+      price: 95,
       features: ['Premium UI theme', 'Luxury appearance', 'Custom colors', 'Professional look'],
       gradient: 'from-violet-500 to-violet-600',
       iconBg: 'bg-violet-100 dark:bg-violet-900/30',
       iconColor: 'text-violet-600 dark:text-violet-400',
-      duration: '30 days',
+      duration: '17 days',
       perkType: 'premium_theme'
     },
     {
@@ -140,12 +140,12 @@ const Perks = () => {
       icon: Megaphone,
       title: 'Featured Spotlight',
       description: 'Get featured as a pop-up banner across the marketplace',
-      price: 100,
+      price: 150,
       features: ['Full-screen banner', 'Maximum visibility', 'Homepage takeover', 'Ultimate promotion'],
       gradient: 'from-red-500 to-red-600',
       iconBg: 'bg-red-100 dark:bg-red-900/30',
       iconColor: 'text-red-600 dark:text-red-400',
-      duration: '3 days',
+      duration: '17 days',
       perkType: 'featured_spotlight'
     }
   ];
@@ -228,10 +228,8 @@ const Perks = () => {
     setPurchasing(true);
     
     try {
-      // Calculate expiry date
-      const daysToAdd = selectedPerk.duration.includes('30') ? 30 : 
-                       selectedPerk.duration.includes('14') ? 14 : 
-                       selectedPerk.duration.includes('7') ? 7 : 3;
+      // Calculate expiry date - all perks now last 17 days
+      const daysToAdd = 17;
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + daysToAdd);
 
@@ -381,63 +379,115 @@ const Perks = () => {
         </div>
       )}
 
-      {/* Perks Grid */}
-      <div className="px-6 space-y-4">
-        {perks.map((perk) => {
+      {/* Professional Perks Grid */}
+      <div className="px-6 space-y-6">
+        {perks.map((perk, index) => {
           const isActivated = activatedPerks.includes(perk.perkType);
+          const isPopular = index === 1 || index === 0; // Boosted Visibility and Verified Badge
           
           return (
             <Card 
               key={perk.id} 
-              className={`overflow-hidden transition-all hover:shadow-lg ${
-                isActivated ? 'border-2 border-primary' : ''
-              }`}
+              className={`overflow-hidden transition-all duration-500 hover:shadow-2xl group relative ${
+                isActivated ? 'border-2 border-primary shadow-lg' : 'border'
+              } ${isPopular ? 'ring-2 ring-primary/30' : ''}`}
             >
-              <CardHeader className="pb-4">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-start gap-3">
-                    <div className={`h-12 w-12 rounded-xl ${perk.iconBg} flex items-center justify-center flex-shrink-0`}>
-                      <perk.icon className={`h-6 w-6 ${perk.iconColor}`} />
+              {/* Popular badge */}
+              {isPopular && !isActivated && (
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-20">
+                  <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold px-4 py-1.5 shadow-lg border-0">
+                    ⭐ MOST POPULAR
+                  </Badge>
+                </div>
+              )}
+
+              {/* Active badge */}
+              {isActivated && (
+                <div className="absolute -top-3 right-6 z-20">
+                  <Badge className="bg-gradient-to-r from-emerald-500 to-green-500 text-white font-bold px-4 py-1.5 shadow-lg border-0">
+                    <CheckCircle2 className="h-4 w-4 mr-1" />
+                    ACTIVE
+                  </Badge>
+                </div>
+              )}
+
+              {/* Gradient Header */}
+              <div className={`h-2 bg-gradient-to-r ${perk.gradient}`} />
+
+              <CardHeader className="pb-4 pt-6 px-6">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-start gap-4 flex-1">
+                    {/* Icon with animated background */}
+                    <div className={`relative h-16 w-16 rounded-2xl ${perk.iconBg} flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300`}>
+                      <div className={`absolute inset-0 bg-gradient-to-r ${perk.gradient} opacity-0 group-hover:opacity-20 rounded-2xl transition-opacity`} />
+                      <perk.icon className={`h-8 w-8 ${perk.iconColor} relative z-10`} />
                     </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <CardTitle className="text-lg">{perk.title}</CardTitle>
-                        {isActivated && (
-                          <Badge variant="default" className="bg-primary">
-                            <CheckCircle2 className="h-3 w-3 mr-1" />
-                            Active
-                          </Badge>
-                        )}
-                      </div>
-                      <p className="text-sm text-muted-foreground mt-1">{perk.description}</p>
+                    
+                    <div className="flex-1 min-w-0">
+                      <CardTitle className="text-xl font-bold mb-1 group-hover:text-primary transition-colors">
+                        {perk.title}
+                      </CardTitle>
+                      <p className="text-sm text-muted-foreground leading-relaxed">
+                        {perk.description}
+                      </p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className={`text-2xl font-bold bg-gradient-to-r ${perk.gradient} bg-clip-text text-transparent`}>
-                      SLL {perk.price}
+                  
+                  <div className="text-right flex-shrink-0">
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-sm text-muted-foreground font-medium">SLL</span>
+                      <p className={`text-3xl font-black bg-gradient-to-r ${perk.gradient} bg-clip-text text-transparent`}>
+                        {perk.price}
+                      </p>
+                    </div>
+                    <p className="text-xs text-muted-foreground font-medium mt-1 flex items-center justify-end gap-1">
+                      <span className="inline-block w-2 h-2 rounded-full bg-primary animate-pulse" />
+                      {perk.duration}
                     </p>
-                    <p className="text-xs text-muted-foreground">{perk.duration}</p>
                   </div>
                 </div>
               </CardHeader>
               
-              <CardContent className="pt-0">
-                <div className="grid grid-cols-2 gap-2 mb-4">
+              <CardContent className="pt-0 px-6 pb-6">
+                {/* Features Grid */}
+                <div className="grid grid-cols-2 gap-3 mb-5">
                   {perk.features.map((feature, index) => (
-                    <div key={index} className="flex items-center gap-2 text-sm">
-                      <CheckCircle2 className="h-4 w-4 text-primary flex-shrink-0" />
-                      <span className="text-muted-foreground">{feature}</span>
+                    <div key={index} className="flex items-start gap-2 text-sm group/feature">
+                      <CheckCircle2 className="h-4 w-4 text-primary flex-shrink-0 mt-0.5 group-hover/feature:scale-110 transition-transform" />
+                      <span className="text-muted-foreground group-hover/feature:text-foreground transition-colors leading-tight">
+                        {feature}
+                      </span>
                     </div>
                   ))}
                 </div>
                 
+                {/* Action Button */}
                 <Button
-                  className={`w-full bg-gradient-to-r ${perk.gradient} text-white hover:opacity-90`}
+                  className={`w-full h-12 text-base font-bold bg-gradient-to-r ${perk.gradient} text-white hover:opacity-90 hover:scale-[1.02] active:scale-95 transition-all duration-300 shadow-lg hover:shadow-xl ${
+                    isActivated ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
                   onClick={() => handlePurchaseClick(perk)}
                   disabled={!storeId || isActivated}
                 >
-                  {isActivated ? 'Already Active' : 'Purchase Now'}
+                  {isActivated ? (
+                    <>
+                      <CheckCircle2 className="h-5 w-5 mr-2" />
+                      Already Active
+                    </>
+                  ) : (
+                    <>
+                      <Crown className="h-5 w-5 mr-2" />
+                      Activate Now
+                    </>
+                  )}
                 </Button>
+
+                {/* Value proposition */}
+                {!isActivated && (
+                  <p className="text-center text-xs text-muted-foreground mt-3">
+                    💎 Premium feature • {perk.duration} of maximum visibility
+                  </p>
+                )}
               </CardContent>
             </Card>
           );
