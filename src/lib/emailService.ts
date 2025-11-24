@@ -31,8 +31,12 @@ interface EmailData {
 
 export const sendEmail = async (type: EmailType, to: string, data: EmailData, userId?: string) => {
   try {
-    // Check if user has email notifications enabled
-    if (userId) {
+    // Critical notifications that should ALWAYS be sent regardless of user preferences
+    const criticalNotifications = ['new_order_seller', 'order_confirmation'];
+    const isCritical = criticalNotifications.includes(type);
+
+    // Check if user has email notifications enabled (skip for critical notifications)
+    if (userId && !isCritical) {
       const { data: profile } = await supabase
         .from('profiles')
         .select('notification_preferences')
@@ -48,7 +52,7 @@ export const sendEmail = async (type: EmailType, to: string, data: EmailData, us
       }
     }
 
-    console.log(`Sending ${type} email to ${to}`);
+    console.log(`Sending ${type} email to ${to}${isCritical ? ' (CRITICAL - bypassing preferences)' : ''}`);
     
     const { data: response, error } = await supabase.functions.invoke('send-email', {
       body: {
