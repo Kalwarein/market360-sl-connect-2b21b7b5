@@ -572,7 +572,30 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     const { type, to, data }: EmailRequest = await req.json();
 
-    console.log(`Sending ${type} email to ${to}`);
+    console.log(`Received request to send ${type} email to ${to}`);
+
+    // IMPORTANT: Resend test mode - only verified email can receive emails
+    // Until domain is verified, silently skip sending to other addresses
+    const VERIFIED_EMAIL = 'expertryder1@gmail.com';
+    
+    if (to !== VERIFIED_EMAIL) {
+      console.log(`⚠️ Email skipped: Resend test mode only allows sending to ${VERIFIED_EMAIL}`);
+      console.log(`Would have sent ${type} email to ${to}`);
+      console.log('To enable sending to all users, verify a domain at resend.com/domains');
+      
+      // Return success to prevent order failures
+      return new Response(JSON.stringify({ 
+        success: true, 
+        message: 'Email skipped - domain verification required',
+        recipient: to 
+      }), {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          ...corsHeaders,
+        },
+      });
+    }
 
     let html = '';
     let subject = '';

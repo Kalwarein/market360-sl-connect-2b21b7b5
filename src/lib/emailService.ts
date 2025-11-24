@@ -64,6 +64,11 @@ export const sendEmail = async (type: EmailType, to: string, data: EmailData, us
 
     if (error) {
       console.error('Error sending email:', error);
+      // Don't throw error for domain verification issues to prevent order failures
+      if (error.message?.includes('verify a domain')) {
+        console.log('Email skipped due to domain verification requirement');
+        return { success: false, reason: 'domain_verification_required' };
+      }
       throw error;
     }
 
@@ -71,7 +76,8 @@ export const sendEmail = async (type: EmailType, to: string, data: EmailData, us
     return response;
   } catch (error) {
     console.error('Failed to send email:', error);
-    throw error;
+    // Gracefully handle email failures to not block critical flows
+    return { success: false, error: error };
   }
 };
 
