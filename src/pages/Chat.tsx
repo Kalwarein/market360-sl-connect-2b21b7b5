@@ -371,6 +371,23 @@ const Chat = () => {
     setAttachedProduct(null);
     setIsSending(true);
 
+    // Create optimistic message to show instantly
+    const optimisticMessageId = `temp-${Date.now()}`;
+    const optimisticMessage: Message = {
+      id: optimisticMessageId,
+      sender_id: user!.id,
+      body: messageText || (productAttachment ? 'Shared a product' : ''),
+      attachments: productAttachment ? [JSON.stringify(productAttachment)] : undefined,
+      created_at: new Date().toISOString(),
+      read_at: undefined,
+      delivered_at: undefined,
+      status: 'sent',
+      message_type: 'text',
+    };
+
+    // Add optimistic message immediately to UI
+    setMessages(prev => [...prev, optimisticMessage]);
+
     try {
       const messageData: any = {
         conversation_id: conversationId,
@@ -394,6 +411,9 @@ const Chat = () => {
         .single();
 
       if (error) throw error;
+
+      // Remove optimistic message, real-time subscription will add the real one
+      setMessages(prev => prev.filter(m => m.id !== optimisticMessageId));
 
       // Auto-update to delivered if other user is online
       if (otherUserId && isUserOnline(otherUserId) && insertedMessage) {
@@ -451,6 +471,8 @@ const Chat = () => {
     } catch (error) {
       console.error('Error sending message:', error);
       toast.error('Failed to send message');
+      // Remove optimistic message on error
+      setMessages(prev => prev.filter(m => m.id !== optimisticMessageId));
       // Restore message on error
       setNewMessage(messageText);
       setAttachedProduct(productAttachment);

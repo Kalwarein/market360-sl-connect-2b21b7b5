@@ -107,7 +107,24 @@ const Notifications = () => {
     if (!notification.read_at) {
       await markAsRead(notification.id);
     }
-    // If notification has a link_url (like order arrival), navigate there directly
+    
+    // Handle seller application approval notifications
+    if (notification.title.includes('Seller Application Approved') || 
+        notification.body.includes('seller application has been approved')) {
+      navigate('/become-seller');
+      return;
+    }
+    
+    // Handle order notifications
+    if (notification.type === 'order' && notification.body.includes('Order #')) {
+      const orderMatch = notification.body.match(/Order #(\S+)/);
+      if (orderMatch) {
+        navigate(`/orders`);
+        return;
+      }
+    }
+    
+    // If notification has a link_url, navigate there directly
     if (notification.link_url) {
       navigate(notification.link_url);
     } else {
