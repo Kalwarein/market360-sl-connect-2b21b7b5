@@ -1,9 +1,13 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ShoppingCart, MessageSquare, Store, CheckCircle, TrendingUp, Sparkles, Zap } from 'lucide-react';
+import { ShoppingCart, MessageSquare, Store, CheckCircle, TrendingUp, Sparkles, Zap, Heart } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useStorePerks } from '@/hooks/useStorePerks';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { useState, useEffect } from 'react';
+import { useToast } from '@/hooks/use-toast';
 
 interface ProductCardProps {
   id: string;
@@ -29,7 +33,91 @@ export const ProductCard = ({
   onChat,
 }: ProductCardProps) => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { toast } = useToast();
   const { hasVerifiedBadge } = useStorePerks(store_id || null);
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [favoriteLoading, setFavoriteLoading] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      checkFavoriteStatus();
+    }
+  }, [user, id]);
+
+  const checkFavoriteStatus = async () => {
+    if (!user) return;
+
+    try {
+      const { data } = await supabase
+        .from('favorites')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('product_id', id)
+        .single();
+
+      setIsFavorite(!!data);
+    } catch (error) {
+      // Not favorited
+      setIsFavorite(false);
+    }
+  };
+
+  const toggleFavorite = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    if (!user) {
+      toast({
+        title: 'Sign in required',
+        description: 'Please sign in to add favorites',
+      });
+      return;
+    }
+
+    setFavoriteLoading(true);
+
+    try {
+      if (isFavorite) {
+        const { error } = await supabase
+          .from('favorites')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('product_id', id);
+
+        if (error) throw error;
+
+        setIsFavorite(false);
+        toast({
+          title: 'Removed from favorites',
+          description: 'Product removed from your wishlist',
+        });
+      } else {
+        const { error } = await supabase
+          .from('favorites')
+          .insert({
+            user_id: user.id,
+            product_id: id,
+          });
+
+        if (error) throw error;
+
+        setIsFavorite(true);
+        toast({
+          title: 'Added to favorites',
+          description: 'Product added to your wishlist',
+        });
+      }
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update favorites',
+        variant: 'destructive',
+      });
+    } finally {
+      setFavoriteLoading(false);
+    }
+  };
 
   return (
     <Card 
@@ -89,6 +177,27 @@ export const ProductCard = ({
               Hot
             </Badge>
           )}
+
+          {/* Favorite Button - Top Left */}
+          <Button
+            size="icon"
+            variant="secondary"
+            className={`absolute top-2 left-2 h-9 w-9 rounded-full shadow-lg backdrop-blur-md border border-border/50 z-10 transition-all duration-300 ${
+              isFavorite 
+                ? 'bg-red-500/90 hover:bg-red-600' 
+                : 'bg-white/90 hover:bg-white'
+            }`}
+            onClick={toggleFavorite}
+            disabled={favoriteLoading}
+          >
+            <Heart 
+              className={`h-4 w-4 transition-all ${
+                isFavorite 
+                  ? 'fill-white text-white' 
+                  : 'text-foreground'
+              }`}
+            />
+          </Button>
 
           {/* Quick Actions */}
           <div className="absolute bottom-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
