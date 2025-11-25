@@ -1,19 +1,19 @@
 // Sierra Leone location data for district and region selection
 
 export const SIERRA_LEONE_REGIONS = [
-  'Eastern Province',
-  'Northern Province', 
-  'Southern Province',
-  'Western Area'
+  'Eastern',
+  'Northern', 
+  'Southern',
+  'Western'
 ] as const;
 
 export const SIERRA_LEONE_DISTRICTS: Record<typeof SIERRA_LEONE_REGIONS[number], string[]> = {
-  'Eastern Province': [
+  'Eastern': [
     'Kailahun',
     'Kenema',
     'Kono'
   ],
-  'Northern Province': [
+  'Northern': [
     'Bombali',
     'Falaba',
     'Koinadugu',
@@ -21,13 +21,14 @@ export const SIERRA_LEONE_DISTRICTS: Record<typeof SIERRA_LEONE_REGIONS[number],
     'Karene',
     'Tonkolili'
   ],
-  'Southern Province': [
+  'Southern': [
     'Bo',
     'Bonthe',
     'Moyamba',
     'Pujehun'
   ],
-  'Western Area': [
+  'Western': [
+    'Freetown',
     'Western Area Rural',
     'Western Area Urban'
   ]
