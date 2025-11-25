@@ -9,6 +9,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ArrowLeft, MapPin, MessageCircle, Star, Package, Crown, Share2, Shield, Zap, Award, CheckCircle } from 'lucide-react';
 import { useStorePerks } from '@/hooks/useStorePerks';
 import { ShareStoreDialog } from '@/components/ShareStoreDialog';
+import { StoreReviewSubmissionModal } from '@/components/StoreReviewSubmissionModal';
+import { ReviewStatistics } from '@/components/ReviewStatistics';
+import { StoreReviewList } from '@/components/StoreReviewList';
 import { toast } from 'sonner';
 import verifiedBadge from '@/assets/verified-badge.png';
 
@@ -42,6 +45,8 @@ const StorePage = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [reviews, setReviews] = useState<any[]>([]);
   const [contacting, setContacting] = useState(false);
   const { 
     hasVerifiedBadge, 
@@ -663,6 +668,28 @@ const StorePage = () => {
         </Card>
       </div>
 
+      {/* Reviews Section */}
+      <div className="px-4 space-y-4 mt-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-bold">Store Reviews</h2>
+          {user && (
+            <Button 
+              onClick={() => setShowReviewModal(true)}
+              className="gap-2 bg-gradient-to-r from-primary to-secondary"
+            >
+              <Star className="h-4 w-4" />
+              Write Review
+            </Button>
+          )}
+        </div>
+
+        <ReviewStatistics reviews={reviews} />
+        <StoreReviewList 
+          storeId={storeId || ''} 
+          onReviewsLoaded={setReviews}
+        />
+      </div>
+
       {products.length === 0 ? (
         <div className="px-4">
           <Card className="border-border/50 shadow-sm">
@@ -726,12 +753,23 @@ const StorePage = () => {
 
       {/* Share Dialog */}
       {store && (
-        <ShareStoreDialog
-          open={shareDialogOpen}
-          onOpenChange={setShareDialogOpen}
-          store={store}
-          productCount={products.length}
-        />
+        <>
+          <ShareStoreDialog
+            open={shareDialogOpen}
+            onOpenChange={setShareDialogOpen}
+            store={store}
+            productCount={products.length}
+          />
+          
+          <StoreReviewSubmissionModal
+            open={showReviewModal}
+            onOpenChange={setShowReviewModal}
+            storeId={store.id}
+            onReviewSubmitted={() => {
+              setReviews([]);
+            }}
+          />
+        </>
       )}
     </div>
   );
