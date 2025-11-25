@@ -17,7 +17,6 @@ import ProductTags from '@/components/ProductTags';
 import { CategoryCarousel } from '@/components/CategoryCard';
 import { ShareDialog } from '@/components/ShareDialog';
 import { useStorePerks } from '@/hooks/useStorePerks';
-import { ReviewsSection } from '@/components/ReviewsSection';
 
 interface Product {
   id: string;
@@ -624,9 +623,6 @@ const ProductDetails = () => {
             </div>
           </CardContent>
         </Card>
-
-        {/* Reviews Section */}
-        <ReviewsSection productId={id!} />
       </div>
       </div>
 
