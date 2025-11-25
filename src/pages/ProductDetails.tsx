@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, MessageSquare, ShoppingCart, Share2, Store as StoreIcon, Shield, ChevronRight, CheckCircle } from 'lucide-react';
+import { ArrowLeft, MessageSquare, ShoppingCart, Share2, Store as StoreIcon, Shield, ChevronRight, CheckCircle, Star } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import ProductImageCarousel from '@/components/ProductImageCarousel';
@@ -17,6 +17,9 @@ import ProductTags from '@/components/ProductTags';
 import { CategoryCarousel } from '@/components/CategoryCard';
 import { ShareDialog } from '@/components/ShareDialog';
 import { useStorePerks } from '@/hooks/useStorePerks';
+import { ReviewSubmissionModal } from '@/components/ReviewSubmissionModal';
+import { ReviewStatistics } from '@/components/ReviewStatistics';
+import { ReviewList } from '@/components/ReviewList';
 
 interface Product {
   id: string;
@@ -73,6 +76,8 @@ const ProductDetails = () => {
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [showShareDialog, setShowShareDialog] = useState(false);
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [reviews, setReviews] = useState<any[]>([]);
   
   // Get store perks
   const { hasVerifiedBadge } = useStorePerks(product?.stores?.id || null);
@@ -607,6 +612,28 @@ const ProductDetails = () => {
           </div>
         )}
 
+        {/* Reviews Section */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold">Reviews & Ratings</h2>
+            {user && (
+              <Button 
+                onClick={() => setShowReviewModal(true)}
+                className="gap-2 bg-gradient-to-r from-primary to-secondary"
+              >
+                <Star className="h-4 w-4" />
+                Write Review
+              </Button>
+            )}
+          </div>
+
+          <ReviewStatistics reviews={reviews} />
+          <ReviewList 
+            productId={product.id} 
+            onReviewsLoaded={setReviews}
+          />
+        </div>
+
         <Card className="shadow-sm cursor-pointer hover:shadow-md transition-all bg-primary/5 border-primary/20" onClick={() => navigate('/security-info')}>
           <CardContent className="p-4">
             <div className="flex items-start gap-3">
@@ -677,11 +704,23 @@ const ProductDetails = () => {
       )}
 
       {product && (
-        <ShareDialog 
-          open={showShareDialog} 
-          onOpenChange={setShowShareDialog}
-          product={product}
-        />
+        <>
+          <ShareDialog 
+            open={showShareDialog} 
+            onOpenChange={setShowShareDialog}
+            product={product}
+          />
+          
+          <ReviewSubmissionModal
+            open={showReviewModal}
+            onOpenChange={setShowReviewModal}
+            productId={product.id}
+            onReviewSubmitted={() => {
+              // Trigger review list refresh
+              setReviews([]);
+            }}
+          />
+        </>
       )}
     </div>
   );
