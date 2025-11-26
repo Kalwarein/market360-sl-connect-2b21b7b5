@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,6 +30,18 @@ const Onboarding = () => {
     bio: '',
     interests: '',
   });
+
+  // Pre-fill form with Google OAuth data if available
+  useEffect(() => {
+    if (user?.user_metadata) {
+      const metadata = user.user_metadata;
+      
+      setFormData(prev => ({
+        ...prev,
+        full_name: metadata.full_name || metadata.name || prev.full_name,
+      }));
+    }
+  }, [user]);
 
   // Calculate days in selected month
   const daysInMonth = useMemo(() => {
@@ -84,22 +96,30 @@ const Onboarding = () => {
 
       console.log('Updating profile for user:', user.id);
 
+      // Include avatar from Google OAuth if available
+      const updateData: any = {
+        full_name: formData.full_name,
+        date_of_birth: dateOfBirth,
+        gender: formData.gender,
+        street_address: formData.street_address,
+        city: formData.city,
+        region: formData.region,
+        school_name: formData.school_name,
+        university_name: formData.university_name,
+        occupation: formData.occupation,
+        bio: formData.bio,
+        interests: interestsArray,
+        onboarding_completed: true,
+      };
+
+      // If user has avatar from Google OAuth, save it
+      if (user.user_metadata?.avatar_url || user.user_metadata?.picture) {
+        updateData.avatar_url = user.user_metadata.avatar_url || user.user_metadata.picture;
+      }
+
       const { data, error } = await supabase
         .from('profiles')
-        .update({
-          full_name: formData.full_name,
-          date_of_birth: dateOfBirth,
-          gender: formData.gender,
-          street_address: formData.street_address,
-          city: formData.city,
-          region: formData.region,
-          school_name: formData.school_name,
-          university_name: formData.university_name,
-          occupation: formData.occupation,
-          bio: formData.bio,
-          interests: interestsArray,
-          onboarding_completed: true,
-        })
+        .update(updateData)
         .eq('id', user.id)
         .select();
 
