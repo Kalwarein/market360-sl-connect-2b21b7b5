@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { Mail, Lock, User, Eye, EyeOff, ArrowLeft, Leaf } from 'lucide-react';
+import { FaGoogle } from 'react-icons/fa';
 import { z } from 'zod';
 
 const signUpSchema = z.object({
@@ -30,8 +31,9 @@ const Auth = () => {
     password: '',
     name: '',
   });
-  const { signUp, signIn, user } = useAuth();
+  const { signUp, signIn, signInWithGoogle, user } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   // Update isSignUp based on URL mode parameter
   useEffect(() => {
@@ -100,6 +102,21 @@ const Auth = () => {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    try {
+      setGoogleLoading(true);
+      const { error } = await signInWithGoogle();
+      
+      if (error) {
+        toast.error(error.message || 'Failed to sign in with Google');
+      }
+    } catch (err) {
+      toast.error('Failed to sign in with Google');
+    } finally {
+      setGoogleLoading(false);
     }
   };
 
@@ -210,6 +227,26 @@ const Auth = () => {
               {loading ? 'Please wait...' : isSignUp ? 'Register' : 'Login'}
             </Button>
           </form>
+
+          <div className="mt-6 relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-border" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
+            </div>
+          </div>
+
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleGoogleSignIn}
+            disabled={googleLoading}
+            className="w-full h-12 rounded-2xl mt-6 border-2 hover:bg-muted/50 transition-all"
+          >
+            <FaGoogle className="h-5 w-5 mr-2" />
+            {googleLoading ? 'Signing in...' : 'Sign in with Google'}
+          </Button>
 
           {!isSignUp && (
             <div className="mt-6 text-center">
