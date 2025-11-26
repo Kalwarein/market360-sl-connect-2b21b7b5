@@ -14,7 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, MapPin, Wallet, AlertCircle, CreditCard, Package } from "lucide-react";
 import { NumericInput } from "@/components/NumericInput";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { SIERRA_LEONE_REGIONS, getDistrictsByRegion } from "@/lib/sierraLeoneData";
+import { SIERRA_LEONE_REGIONS, getAllDistricts } from "@/lib/sierraLeoneData";
 import { sendOrderConfirmationEmail, sendNewOrderSellerEmail } from "@/lib/emailService";
 
 export default function Checkout() {
@@ -525,9 +525,9 @@ export default function Checkout() {
                 <Label htmlFor="region">Region *</Label>
                 <Select
                   value={deliveryInfo.region}
-                  onValueChange={(value) => {
-                    setDeliveryInfo({ ...deliveryInfo, region: value, city: "" });
-                  }}
+                  onValueChange={(value) =>
+                    setDeliveryInfo({ ...deliveryInfo, region: value })
+                  }
                 >
                   <SelectTrigger className="bg-background">
                     <SelectValue placeholder="Select Region" />
@@ -548,13 +548,12 @@ export default function Checkout() {
                   onValueChange={(value) =>
                     setDeliveryInfo({ ...deliveryInfo, city: value })
                   }
-                  disabled={!deliveryInfo.region}
                 >
                   <SelectTrigger className="bg-background">
-                    <SelectValue placeholder={deliveryInfo.region ? "Select District" : "Select Region first"} />
+                    <SelectValue placeholder="Select any city or district" />
                   </SelectTrigger>
                   <SelectContent className="bg-background border border-border shadow-lg z-50 max-h-[300px]">
-                    {deliveryInfo.region && getDistrictsByRegion(deliveryInfo.region as any).map((district) => (
+                    {getAllDistricts().map((district) => (
                       <SelectItem key={district} value={district}>
                         {district}
                       </SelectItem>
