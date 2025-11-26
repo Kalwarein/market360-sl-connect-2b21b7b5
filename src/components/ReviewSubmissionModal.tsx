@@ -60,7 +60,19 @@ export const ReviewSubmissionModal = ({ open, onOpenChange, productId, onReviewS
           verified_purchase: verifiedPurchase,
         });
 
-      if (error) throw error;
+      if (error) {
+        // Check if it's a duplicate review error
+        if (error.code === '23505') {
+          toast({
+            title: 'Already Reviewed',
+            description: 'You have already reviewed this product. You can edit your existing review instead.',
+            variant: 'destructive',
+          });
+        } else {
+          throw error;
+        }
+        return;
+      }
 
       toast({
         title: 'Review Submitted',
@@ -76,7 +88,7 @@ export const ReviewSubmissionModal = ({ open, onOpenChange, productId, onReviewS
       console.error('Error submitting review:', error);
       toast({
         title: 'Error',
-        description: 'Failed to submit review',
+        description: 'Failed to submit review. Please try again.',
         variant: 'destructive',
       });
     } finally {
