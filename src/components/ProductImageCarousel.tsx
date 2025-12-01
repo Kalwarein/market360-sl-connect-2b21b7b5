@@ -1,47 +1,25 @@
-import { useState, useEffect, useRef } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { ChevronLeft, ChevronRight, ZoomIn } from 'lucide-react';
 import { Button } from './ui/button';
 
 interface ProductImageCarouselProps {
   images: string[];
+  onImageClick?: (index: number) => void;
 }
 
-const ProductImageCarousel = ({ images }: ProductImageCarouselProps) => {
+const ProductImageCarousel = ({ images, onImageClick }: ProductImageCarouselProps) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
   const [touchStart, setTouchStart] = useState(0);
   const [touchEnd, setTouchEnd] = useState(0);
   const [imageLoadStates, setImageLoadStates] = useState<Record<number, boolean>>({});
   const [imageErrorStates, setImageErrorStates] = useState<Record<number, boolean>>({});
-  const [imageDimensions, setImageDimensions] = useState<Record<number, { width: number; height: number }>>({});
-  const [containerHeight, setContainerHeight] = useState(400);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    // Initialize first image height if dimensions are already loaded
-    if (imageDimensions[0] && containerRef.current) {
-      updateContainerHeight(0);
-    }
-  }, [imageDimensions]);
-
-  const updateContainerHeight = (index: number) => {
-    const dimensions = imageDimensions[index];
-    if (dimensions && containerRef.current) {
-      const containerWidth = containerRef.current.offsetWidth;
-      const aspectRatio = dimensions.height / dimensions.width;
-      const calculatedHeight = containerWidth * aspectRatio;
-      // Clamp height between 300px and 700px
-      const finalHeight = Math.min(Math.max(calculatedHeight, 300), 700);
-      setContainerHeight(finalHeight);
-    }
-  };
 
   const handlePrevious = () => {
     if (isAnimating) return;
     setIsAnimating(true);
     const newIndex = currentIndex === 0 ? images.length - 1 : currentIndex - 1;
     setCurrentIndex(newIndex);
-    updateContainerHeight(newIndex);
     setTimeout(() => setIsAnimating(false), 500);
   };
 
@@ -50,7 +28,6 @@ const ProductImageCarousel = ({ images }: ProductImageCarouselProps) => {
     setIsAnimating(true);
     const newIndex = currentIndex === images.length - 1 ? 0 : currentIndex + 1;
     setCurrentIndex(newIndex);
-    updateContainerHeight(newIndex);
     setTimeout(() => setIsAnimating(false), 500);
   };
 
@@ -58,7 +35,6 @@ const ProductImageCarousel = ({ images }: ProductImageCarouselProps) => {
     if (isAnimating) return;
     setIsAnimating(true);
     setCurrentIndex(index);
-    updateContainerHeight(index);
     setTimeout(() => setIsAnimating(false), 500);
   };
 
@@ -88,27 +64,8 @@ const ProductImageCarousel = ({ images }: ProductImageCarouselProps) => {
     setTouchEnd(0);
   };
 
-  const handleImageLoad = (index: number, event: React.SyntheticEvent<HTMLImageElement>) => {
-    const img = event.currentTarget;
-    const naturalWidth = img.naturalWidth;
-    const naturalHeight = img.naturalHeight;
-    
-    setImageDimensions(prev => ({ 
-      ...prev, 
-      [index]: { width: naturalWidth, height: naturalHeight }
-    }));
-    
+  const handleImageLoad = (index: number) => {
     setImageLoadStates(prev => ({ ...prev, [index]: true }));
-    
-    // Update container height when current image loads
-    if (index === currentIndex && containerRef.current) {
-      const containerWidth = containerRef.current.offsetWidth;
-      const aspectRatio = naturalHeight / naturalWidth;
-      const calculatedHeight = containerWidth * aspectRatio;
-      // Clamp height between 300px and 700px for reasonable display
-      const finalHeight = Math.min(Math.max(calculatedHeight, 300), 700);
-      setContainerHeight(finalHeight);
-    }
   };
 
   const handleImageError = (index: number, imageUrl: string) => {
@@ -118,7 +75,7 @@ const ProductImageCarousel = ({ images }: ProductImageCarouselProps) => {
 
   if (!images || images.length === 0) {
     return (
-      <div className="relative w-full rounded-2xl overflow-hidden bg-muted flex items-center justify-center h-96">
+      <div className="relative w-full aspect-square bg-muted flex items-center justify-center">
         <p className="text-muted-foreground">No images available</p>
       </div>
     );
@@ -126,12 +83,7 @@ const ProductImageCarousel = ({ images }: ProductImageCarouselProps) => {
 
   return (
     <div 
-      ref={containerRef}
-      className="relative w-full overflow-hidden bg-muted"
-      style={{ 
-        height: `${containerHeight}px`,
-        transition: 'height 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
-      }}
+      className="relative w-full aspect-square bg-muted overflow-hidden"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
@@ -141,9 +93,10 @@ const ProductImageCarousel = ({ images }: ProductImageCarouselProps) => {
         {images.map((image, index) => (
           <div
             key={index}
-            className={`absolute inset-0 transition-opacity duration-500 ${
+            className={`absolute inset-0 transition-opacity duration-500 flex items-center justify-center ${
               index === currentIndex ? 'opacity-100 z-10' : 'opacity-0 z-0'
             }`}
+            onClick={() => onImageClick?.(index)}
           >
             {!imageLoadStates[index] && !imageErrorStates[index] && (
               <div className="absolute inset-0 flex items-center justify-center bg-muted">
@@ -161,21 +114,22 @@ const ProductImageCarousel = ({ images }: ProductImageCarouselProps) => {
               <img
                 src={image}
                 alt={`Product ${index + 1}`}
-                className="w-full h-full object-contain"
-                onLoad={(e) => handleImageLoad(index, e)}
+                className="w-full h-full object-contain cursor-pointer"
+                onLoad={() => handleImageLoad(index)}
                 onError={() => handleImageError(index, image)}
                 style={{ display: imageLoadStates[index] ? 'block' : 'none' }}
               />
             )}
-            {/* Shimmer effect */}
-            {index === currentIndex && imageLoadStates[index] && !imageErrorStates[index] && (
-              <div className="absolute inset-0 animate-shimmer pointer-events-none">
-                <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent animate-slide" />
-              </div>
-            )}
           </div>
         ))}
       </div>
+
+      {/* Zoom Icon Indicator */}
+      {onImageClick && (
+        <div className="absolute top-4 right-4 z-20 bg-black/50 rounded-full p-2">
+          <ZoomIn className="h-5 w-5 text-white" />
+        </div>
+      )}
 
       {/* Navigation Buttons */}
       {images.length > 1 && (
@@ -215,38 +169,6 @@ const ProductImageCarousel = ({ images }: ProductImageCarouselProps) => {
           ))}
         </div>
       )}
-
-      {/* Add shimmer animation to tailwind */}
-      <style>{`
-        @keyframes shimmer {
-          0% {
-            opacity: 0;
-          }
-          50% {
-            opacity: 1;
-          }
-          100% {
-            opacity: 0;
-          }
-        }
-        
-        @keyframes slide {
-          0% {
-            transform: translateX(-100%);
-          }
-          100% {
-            transform: translateX(100%);
-          }
-        }
-        
-        .animate-shimmer {
-          animation: shimmer 3s ease-in-out infinite;
-        }
-        
-        .animate-slide {
-          animation: slide 3s ease-in-out infinite;
-        }
-      `}</style>
     </div>
   );
 };

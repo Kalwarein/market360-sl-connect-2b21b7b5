@@ -2,13 +2,12 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
-import BottomNav from '@/components/BottomNav';
 
 const Terms = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-40 bg-card border-b shadow-sm">
         <div className="container mx-auto px-4 h-16 flex items-center gap-4">
           <Button
@@ -133,8 +132,6 @@ const Terms = () => {
           </CardContent>
         </Card>
       </div>
-
-      <BottomNav />
     </div>
   );
 };
