@@ -152,8 +152,8 @@ const App = () => (
           <Route path="/seller/order/:orderId" element={<ProtectedRoute><SellerOrderDetail /></ProtectedRoute>} />
               <Route path="/admin-broadcast" element={<AdminBroadcast />} />
               <Route path="/about" element={<ProtectedRoute><About /></ProtectedRoute>} />
-              <Route path="/terms" element={<ProtectedRoute><Terms /></ProtectedRoute>} />
-              <Route path="/privacy" element={<ProtectedRoute><Privacy /></ProtectedRoute>} />
+              <Route path="/terms" element={<Terms />} />
+              <Route path="/privacy" element={<Privacy />} />
               <Route path="/security-info" element={<SecurityInfo />} />
               <Route path="/how-to-top-up" element={<ProtectedRoute><HowToTopUp /></ProtectedRoute>} />
               <Route path="/product-management/:id" element={<ProtectedRoute><ProductManagement /></ProtectedRoute>} />
