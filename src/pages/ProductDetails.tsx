@@ -20,6 +20,7 @@ import { useStorePerks } from '@/hooks/useStorePerks';
 import { ReviewSubmissionModal } from '@/components/ReviewSubmissionModal';
 import { ReviewStatistics } from '@/components/ReviewStatistics';
 import { ReviewList } from '@/components/ReviewList';
+import { ImageZoomModal } from '@/components/ImageZoomModal';
 
 interface Product {
   id: string;
@@ -77,6 +78,8 @@ const ProductDetails = () => {
   const [loading, setLoading] = useState(true);
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
+  const [showZoomModal, setShowZoomModal] = useState(false);
+  const [zoomImageIndex, setZoomImageIndex] = useState(0);
   const [reviews, setReviews] = useState<any[]>([]);
   
   // Get store perks
@@ -249,6 +252,11 @@ const ProductDetails = () => {
     setShowShareDialog(true);
   };
 
+  const handleImageClick = (index: number) => {
+    setZoomImageIndex(index);
+    setShowZoomModal(true);
+  };
+
   const isSeller = user?.id === product?.stores.owner_id;
 
   useEffect(() => {
@@ -281,84 +289,88 @@ const ProductDetails = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-32">
-      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b p-4">
-        <div className="flex items-center justify-between">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+    <div className="min-h-screen bg-background flex flex-col">
+      {/* Fixed Header */}
+      <div className="sticky top-0 z-30 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
+        <div className="container mx-auto px-4 py-3 flex items-center justify-between max-w-screen-xl">
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="rounded-full">
             <ArrowLeft className="h-5 w-5" />
           </Button>
           {user && (
-            <div className="flex items-center gap-2">
-              <Button 
-                variant="default" 
-                size="sm"
-                onClick={handleShare}
-                className="gap-2 bg-gradient-to-r from-primary to-secondary hover:opacity-90 transition-all shadow-sm"
-              >
-                <Share2 className="h-4 w-4" />
-                <span className="hidden sm:inline">Share</span>
-              </Button>
-            </div>
+            <Button 
+              variant="default" 
+              size="sm"
+              onClick={handleShare}
+              className="gap-2 bg-gradient-to-r from-primary to-secondary hover:opacity-90 transition-all shadow-sm rounded-full"
+            >
+              <Share2 className="h-4 w-4" />
+              <span className="hidden sm:inline">Share</span>
+            </Button>
           )}
         </div>
       </div>
 
-      <div className="space-y-4">
-        <div className="-mx-4 sm:mx-0">
-          <ProductImageCarousel images={product.images} />
-        </div>
-        
-        <div className="px-4 space-y-4">
-          <div className="space-y-2">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex-1">
-              <h1 className="text-2xl font-bold leading-tight">{product.title}</h1>
-              
-              {/* Store Name with Verified Badge */}
-              {product.stores && (
-                <div 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigate(`/store/${product.stores.id}`);
-                  }}
-                  className="flex items-center gap-2 mt-2 cursor-pointer hover:opacity-80 transition-opacity"
-                >
-                  <StoreIcon className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground font-medium">
-                    {product.stores.store_name}
-                  </span>
-                  {hasVerifiedBadge && (
-                    <div className="flex items-center gap-1">
-                      <CheckCircle className="h-4 w-4 text-primary fill-primary" />
-                      <span className="text-xs font-semibold text-primary">Verified</span>
+      {/* Scrollable Content Area */}
+      <div className="flex-1 overflow-y-auto pb-32">
+        <div className="container mx-auto max-w-screen-xl">
+          {/* Product Image - Full Width */}
+          <div className="w-full">
+            <ProductImageCarousel images={product.images} onImageClick={handleImageClick} />
+          </div>
+          
+          {/* Product Content with Padding */}
+          <div className="px-4 py-6 space-y-6">
+            {/* Product Title and Store */}
+            <div className="space-y-2">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1">
+                  <h1 className="text-2xl font-bold leading-tight">{product.title}</h1>
+                  
+                  {/* Store Name with Verified Badge */}
+                  {product.stores && (
+                    <div 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/store/${product.stores.id}`);
+                      }}
+                      className="flex items-center gap-2 mt-2 cursor-pointer hover:opacity-80 transition-opacity"
+                    >
+                      <StoreIcon className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground font-medium">
+                        {product.stores.store_name}
+                      </span>
+                      {hasVerifiedBadge && (
+                        <div className="flex items-center gap-1">
+                          <CheckCircle className="h-4 w-4 text-primary fill-primary" />
+                          <span className="text-xs font-semibold text-primary">Verified</span>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
-              )}
+                
+                <Badge variant="secondary" className="shrink-0">
+                  {product.category}
+                </Badge>
+              </div>
+              
+              <div className="flex items-baseline gap-2">
+                <span className="text-3xl font-bold text-primary">
+                  Le {product.price.toLocaleString()}
+                </span>
+                <span className="text-sm text-muted-foreground">
+                  MOQ: {product.moq} units
+                </span>
+              </div>
+              
+              <p className="text-sm text-muted-foreground">
+                Product Code: {product.product_code}
+              </p>
             </div>
-            
-            <Badge variant="secondary" className="shrink-0">
-              {product.category}
-            </Badge>
-          </div>
-          
-          <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-bold text-primary">
-              Le {product.price.toLocaleString()}
-            </span>
-            <span className="text-sm text-muted-foreground">
-              MOQ: {product.moq} units
-            </span>
-          </div>
-          
-          <p className="text-sm text-muted-foreground">
-            Product Code: {product.product_code}
-          </p>
-        </div>
 
-        <Separator />
+            <Separator />
 
-        <ProductPerks perks={product.perks} />
+            <ProductPerks perks={product.perks} />
 
         {/* Target Audience */}
         {product.target_audience && product.target_audience.length > 0 && (
@@ -634,75 +646,92 @@ const ProductDetails = () => {
           />
         </div>
 
-        <Card className="shadow-sm cursor-pointer hover:shadow-md transition-all bg-primary/5 border-primary/20" onClick={() => navigate('/security-info')}>
-          <CardContent className="p-4">
-            <div className="flex items-start gap-3">
-              <div className="p-2 rounded-lg bg-primary/10">
-                <Shield className="h-5 w-5 text-primary" />
-              </div>
-              <div className="flex-1">
-                <h3 className="font-semibold">Market360 Secure Shopping</h3>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Buyer protection, verified sellers, and secure payments
-                </p>
-              </div>
-              <ChevronRight className="h-5 w-5 text-muted-foreground" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+            <Card className="shadow-sm cursor-pointer hover:shadow-md transition-all bg-primary/5 border-primary/20" onClick={() => navigate('/security-info')}>
+              <CardContent className="p-4">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <Shield className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-semibold">Market360 Secure Shopping</h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Buyer protection, verified sellers, and secure payments
+                    </p>
+                  </div>
+                  <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       </div>
 
+      {/* Fixed Bottom Action Bar */}
       {!user ? (
-        <div className="fixed bottom-0 left-0 right-0 bg-background border-t p-4 space-y-3 z-20">
-          <p className="text-center text-sm text-muted-foreground mb-2">
-            Sign up to chat with sellers and make purchases
-          </p>
-          <div className="flex gap-3">
-            <Button 
-              variant="outline" 
-              className="flex-1 rounded-xl shadow-sm" 
-              onClick={() => navigate('/auth')}
-            >
-              Sign In
-            </Button>
-            <Button 
-              className="flex-1 rounded-xl shadow-md bg-gradient-to-r from-primary to-secondary" 
-              onClick={() => navigate('/auth')}
-            >
-              Create Account
-            </Button>
+        <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur border-t shadow-lg z-40 rounded-t-3xl">
+          <div className="container mx-auto max-w-screen-xl px-4 py-4 space-y-3">
+            <p className="text-center text-sm text-muted-foreground">
+              Sign up to chat with sellers and make purchases
+            </p>
+            <div className="flex gap-3">
+              <Button 
+                variant="outline" 
+                className="flex-1 rounded-xl shadow-sm" 
+                onClick={() => navigate('/auth')}
+              >
+                Sign In
+              </Button>
+              <Button 
+                className="flex-1 rounded-xl shadow-md bg-gradient-to-r from-primary to-secondary" 
+                onClick={() => navigate('/auth')}
+              >
+                Create Account
+              </Button>
+            </div>
           </div>
         </div>
       ) : (
-        <>
-          {!product.inquiry_only && (
-            <div className="fixed bottom-0 left-0 right-0 bg-background border-t p-4 flex gap-3 z-20">
-              <Button variant="outline" className="flex-1" onClick={() => handleChat(false)}>
-                <MessageSquare className="h-4 w-4 mr-2" />
-                Chat
-              </Button>
-              <Button variant="outline" className="flex-1" onClick={() => handleChat(true)}>
-                Enquiry
-              </Button>
-              <Button className="flex-1" onClick={handleAddToCart}>
-                <ShoppingCart className="h-4 w-4 mr-2" />
-                Add
-              </Button>
-            </div>
-          )}
-          
-          {product.inquiry_only && (
-            <div className="fixed bottom-0 left-0 right-0 bg-background border-t p-4 z-20">
-              <Button className="w-full" onClick={() => handleChat(true)}>
+        <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur border-t shadow-lg z-40 rounded-t-3xl">
+          <div className="container mx-auto max-w-screen-xl px-4 py-4">
+            {!product.inquiry_only ? (
+              <div className="flex gap-3">
+                <Button 
+                  variant="outline" 
+                  className="flex-1 rounded-xl shadow-sm" 
+                  onClick={() => handleChat(false)}
+                >
+                  <MessageSquare className="h-4 w-4 mr-2" />
+                  Chat
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="flex-1 rounded-xl shadow-sm" 
+                  onClick={() => handleChat(true)}
+                >
+                  Enquiry
+                </Button>
+                <Button 
+                  className="flex-1 rounded-xl shadow-md bg-gradient-to-r from-primary to-secondary" 
+                  onClick={handleAddToCart}
+                >
+                  <ShoppingCart className="h-4 w-4 mr-2" />
+                  Add
+                </Button>
+              </div>
+            ) : (
+              <Button 
+                className="w-full rounded-xl shadow-md bg-gradient-to-r from-primary to-secondary" 
+                onClick={() => handleChat(true)}
+              >
                 <MessageSquare className="h-4 w-4 mr-2" />
                 Enquire Now
               </Button>
-            </div>
-          )}
-        </>
+            )}
+          </div>
+        </div>
       )}
 
+      {/* Modals */}
       {product && (
         <>
           <ShareDialog 
@@ -716,9 +745,15 @@ const ProductDetails = () => {
             onOpenChange={setShowReviewModal}
             productId={product.id}
             onReviewSubmitted={() => {
-              // Trigger review list refresh
               setReviews([]);
             }}
+          />
+
+          <ImageZoomModal
+            open={showZoomModal}
+            onOpenChange={setShowZoomModal}
+            images={product.images}
+            initialIndex={zoomImageIndex}
           />
         </>
       )}
