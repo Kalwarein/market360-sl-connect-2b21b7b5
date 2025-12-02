@@ -44,6 +44,22 @@ const Auth = () => {
     }
   }, [mode]);
 
+  // Check for OAuth errors in URL
+  useEffect(() => {
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const queryParams = new URLSearchParams(window.location.search);
+    
+    const errorDescription = hashParams.get('error_description') || queryParams.get('error_description');
+    const error = hashParams.get('error') || queryParams.get('error');
+    
+    if (error || errorDescription) {
+      const message = errorDescription || error || 'Authentication failed';
+      toast.error(`Google Sign-In failed: ${message}`);
+      // Clean up URL
+      window.history.replaceState({}, document.title, '/auth');
+    }
+  }, []);
+
   // Redirect authenticated users to home (with delay to ensure session is established)
   useEffect(() => {
     if (user && !authLoading && !isProcessingOAuth) {

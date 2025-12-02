@@ -35,6 +35,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                              hashParams.has('error') ||
                              queryParams.has('error');
     
+    // Check for OAuth error in URL (e.g., invalid_client)
+    const errorDescription = hashParams.get('error_description') || queryParams.get('error_description');
+    const error = hashParams.get('error') || queryParams.get('error');
+    
+    if (error) {
+      console.error('OAuth error:', error, errorDescription);
+      setIsProcessingOAuth(false);
+      // Clean up URL params
+      window.history.replaceState({}, document.title, window.location.pathname);
+      return;
+    }
+    
     if (hasOAuthCallback) {
       setIsProcessingOAuth(true);
     }
