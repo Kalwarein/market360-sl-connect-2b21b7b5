@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { Mail, Lock, User, Eye, EyeOff, ArrowLeft, Leaf } from 'lucide-react';
+import { Mail, Lock, User, Eye, EyeOff, ArrowLeft, Leaf, Loader2 } from 'lucide-react';
 import { FaGoogle } from 'react-icons/fa';
 import { z } from 'zod';
 
@@ -31,7 +31,7 @@ const Auth = () => {
     password: '',
     name: '',
   });
-  const { signUp, signIn, signInWithGoogle, user } = useAuth();
+  const { signUp, signIn, signInWithGoogle, user, loading: authLoading, isProcessingOAuth } = useAuth();
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
 
@@ -44,12 +44,28 @@ const Auth = () => {
     }
   }, [mode]);
 
-  // Redirect authenticated users to home
+  // Redirect authenticated users to home (with delay to ensure session is established)
   useEffect(() => {
-    if (user) {
-      navigate('/', { replace: true });
+    if (user && !authLoading && !isProcessingOAuth) {
+      // Small delay to ensure session is fully established
+      const timer = setTimeout(() => {
+        navigate('/', { replace: true });
+      }, 100);
+      return () => clearTimeout(timer);
     }
-  }, [user, navigate]);
+  }, [user, authLoading, isProcessingOAuth, navigate]);
+
+  // Show loading screen while processing OAuth callback
+  if (isProcessingOAuth || (authLoading && !user)) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-accent/5">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
+          <p className="text-muted-foreground">Signing you in...</p>
+        </div>
+      </div>
+    );
+  }
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
