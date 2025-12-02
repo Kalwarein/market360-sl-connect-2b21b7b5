@@ -1,12 +1,13 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  isProcessingOAuth: boolean;
   signUp: (email: string, password: string, name: string) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signInWithGoogle: () => Promise<{ error: any }>;
@@ -19,18 +20,65 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isProcessingOAuth, setIsProcessingOAuth] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Check for OAuth callback parameters in URL
+  useEffect(() => {
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const queryParams = new URLSearchParams(window.location.search);
+    
+    // Check if this is an OAuth callback (has access_token or code in URL)
+    const hasOAuthCallback = hashParams.has('access_token') || 
+                             queryParams.has('code') || 
+                             hashParams.has('error') ||
+                             queryParams.has('error');
+    
+    if (hasOAuthCallback) {
+      setIsProcessingOAuth(true);
+    }
+  }, [location]);
 
   useEffect(() => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.email);
+        
         setSession(session);
         setUser(session?.user ?? null);
+        setIsProcessingOAuth(false);
         
-        // Check moderation status when user logs in
-        if (session?.user) {
+        // Handle successful sign in from OAuth
+        if (event === 'SIGNED_IN' && session?.user) {
+          // Check if user profile exists, create if not (for Google OAuth users)
           setTimeout(async () => {
+            const { data: existingProfile } = await supabase
+              .from('profiles')
+              .select('id')
+              .eq('id', session.user.id)
+              .maybeSingle();
+            
+            if (!existingProfile) {
+              // Create profile for new Google OAuth user
+              const { error: profileError } = await supabase
+                .from('profiles')
+                .insert({
+                  id: session.user.id,
+                  email: session.user.email || '',
+                  name: session.user.user_metadata?.full_name || session.user.user_metadata?.name || '',
+                  full_name: session.user.user_metadata?.full_name || session.user.user_metadata?.name || '',
+                  avatar_url: session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture || null,
+                  onboarding_completed: false,
+                });
+              
+              if (profileError) {
+                console.error('Error creating profile:', profileError);
+              }
+            }
+            
+            // Check moderation status
             const { data: moderation } = await supabase
               .from('user_moderation')
               .select('*')
@@ -41,23 +89,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               .maybeSingle();
 
             if (moderation) {
-              // Check if suspension has expired
               if (moderation.type === 'suspension' && moderation.expires_at) {
                 const expiresAt = new Date(moderation.expires_at);
                 if (expiresAt < new Date()) {
-                  // Suspension expired, deactivate it
                   await supabase
                     .from('user_moderation')
                     .update({ is_active: false })
                     .eq('id', moderation.id);
                 } else {
-                  // Suspension still active, redirect
                   navigate('/moderation');
+                  return;
                 }
               } else {
-                // Ban is active, redirect
                 navigate('/moderation');
+                return;
               }
+            }
+            
+            // Redirect to home after successful OAuth login
+            if (location.pathname === '/auth') {
+              navigate('/', { replace: true });
             }
           }, 0);
         }
@@ -66,12 +117,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     );
 
-    // Check for existing session
+    // Check for existing session on mount
     supabase.auth.getSession().then(async ({ data: { session } }) => {
+      console.log('Initial session check:', session?.user?.email);
+      
       setSession(session);
       setUser(session?.user ?? null);
       
-      // Check moderation status for existing session
       if (session?.user) {
         const { data: moderation } = await supabase
           .from('user_moderation')
@@ -83,31 +135,28 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           .maybeSingle();
 
         if (moderation) {
-          // Check if suspension has expired
           if (moderation.type === 'suspension' && moderation.expires_at) {
             const expiresAt = new Date(moderation.expires_at);
             if (expiresAt < new Date()) {
-              // Suspension expired, deactivate it
               await supabase
                 .from('user_moderation')
                 .update({ is_active: false })
                 .eq('id', moderation.id);
             } else {
-              // Suspension still active, redirect
               navigate('/moderation');
             }
           } else {
-            // Ban is active, redirect
             navigate('/moderation');
           }
         }
       }
       
       setLoading(false);
+      setIsProcessingOAuth(false);
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, [navigate, location.pathname]);
 
   const signUp = async (email: string, password: string, name: string) => {
     const redirectUrl = `${window.location.origin}/`;
@@ -140,12 +189,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const signInWithGoogle = async () => {
+    setIsProcessingOAuth(true);
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/auth`
+        redirectTo: `${window.location.origin}/auth`,
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        }
       }
     });
+    
+    if (error) {
+      setIsProcessingOAuth(false);
+    }
     
     return { error };
   };
@@ -155,7 +213,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signUp, signIn, signInWithGoogle, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, isProcessingOAuth, signUp, signIn, signInWithGoogle, signOut }}>
       {children}
     </AuthContext.Provider>
   );
