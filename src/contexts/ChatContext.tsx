@@ -65,7 +65,8 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
     if (user) {
       loadFromCache();
       refreshConversations();
-      setupRealtimeSubscription();
+      const cleanup = setupRealtimeSubscription();
+      return cleanup;
     }
   }, [user]);
 
@@ -207,23 +208,45 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const setupRealtimeSubscription = () => {
+    console.log('[ChatContext] Setting up real-time subscriptions');
+    
+    // Use unique channel IDs to avoid conflicts
+    const channelSuffix = `${user?.id}-${Date.now()}`;
+    
     const messagesChannel = supabase
-      .channel('messages-realtime')
+      .channel(`messages-list-realtime-${channelSuffix}`)
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'INSERT',
           schema: 'public',
           table: 'messages',
         },
-        () => {
+        (payload) => {
+          console.log('[ChatContext] New message received:', payload.new);
+          // Refresh conversations to update last message and unread count
           refreshConversations();
         }
       )
-      .subscribe();
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'messages',
+        },
+        (payload) => {
+          console.log('[ChatContext] Message updated:', payload.new);
+          // Update read status in conversations
+          refreshConversations();
+        }
+      )
+      .subscribe((status) => {
+        console.log('[ChatContext] Messages channel status:', status);
+      });
 
     const conversationsChannel = supabase
-      .channel('conversations-realtime')
+      .channel(`conversations-list-realtime-${channelSuffix}`)
       .on(
         'postgres_changes',
         {
@@ -231,15 +254,18 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
           schema: 'public',
           table: 'conversations',
         },
-        () => {
+        (payload) => {
+          console.log('[ChatContext] Conversation changed:', payload);
           refreshConversations();
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('[ChatContext] Conversations channel status:', status);
+      });
 
     // Listen for profile updates (online status changes)
     const profilesChannel = supabase
-      .channel('profiles-presence-realtime')
+      .channel(`profiles-presence-realtime-${channelSuffix}`)
       .on(
         'postgres_changes',
         {
@@ -249,6 +275,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
         },
         (payload) => {
           const updatedProfile = payload.new as any;
+          console.log('[ChatContext] Profile updated:', updatedProfile.id);
           
           // Update the conversation with the new online status
           setConversations(prev => 
@@ -270,9 +297,12 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
           );
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('[ChatContext] Profiles channel status:', status);
+      });
 
     return () => {
+      console.log('[ChatContext] Cleaning up real-time subscriptions');
       supabase.removeChannel(messagesChannel);
       supabase.removeChannel(conversationsChannel);
       supabase.removeChannel(profilesChannel);

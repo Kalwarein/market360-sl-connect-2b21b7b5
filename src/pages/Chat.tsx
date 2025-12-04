@@ -104,11 +104,17 @@ const Chat = () => {
     };
   }, [conversationId, user]);
 
+  // Real-time subscription for messages
   useEffect(() => {
-    if (!conversationId) return;
+    if (!conversationId || !user?.id) return;
 
+    console.log('[Chat] Setting up real-time subscription for conversation:', conversationId);
+
+    // Unique channel name to avoid conflicts
+    const channelId = `chat-messages-${conversationId}-${user.id}-${Date.now()}`;
+    
     const messagesChannel = supabase
-      .channel(`messages-${conversationId}`)
+      .channel(channelId)
       .on(
         'postgres_changes',
         {
@@ -118,28 +124,44 @@ const Chat = () => {
           filter: `conversation_id=eq.${conversationId}`,
         },
         (payload) => {
+          console.log('[Chat] Received new message via realtime:', payload.new);
           const newMessage = payload.new as Message;
           
           // Only add if it's not already in the list (to avoid duplicates from optimistic updates)
           setMessages((prev) => {
-            const exists = prev.some(m => m.id === newMessage.id);
-            if (exists) return prev;
+            // Check if message exists (either by ID or by optimistic temp ID pattern)
+            const exists = prev.some(m => 
+              m.id === newMessage.id || 
+              (m.isOptimistic && m.body === newMessage.body && m.sender_id === newMessage.sender_id)
+            );
+            
+            if (exists) {
+              // Replace optimistic message with real one
+              return prev.map(m => {
+                if (m.isOptimistic && m.body === newMessage.body && m.sender_id === newMessage.sender_id) {
+                  return { ...newMessage, status: 'sent' as const };
+                }
+                return m;
+              });
+            }
+            
+            console.log('[Chat] Adding new message to state');
             return [...prev, newMessage];
           });
           
           // Auto-mark as delivered if it's not our message
           if (newMessage.sender_id !== user?.id) {
-            setTimeout(() => {
-              supabase
-                .from('messages')
-                .update({ 
-                  status: 'delivered',
-                  delivered_at: new Date().toISOString()
-                })
-                .eq('id', newMessage.id)
-                .then(() => {});
-              markMessagesAsRead();
-            }, 100);
+            supabase
+              .from('messages')
+              .update({ 
+                status: 'delivered',
+                delivered_at: new Date().toISOString()
+              })
+              .eq('id', newMessage.id)
+              .then(() => {
+                console.log('[Chat] Marked message as delivered');
+              });
+            markMessagesAsRead();
           }
         }
       )
@@ -152,6 +174,7 @@ const Chat = () => {
           filter: `conversation_id=eq.${conversationId}`,
         },
         (payload) => {
+          console.log('[Chat] Message updated via realtime:', payload.new);
           setMessages((prev) =>
             prev.map((msg) =>
               msg.id === payload.new.id ? { ...msg, ...payload.new } as Message : msg
@@ -159,11 +182,32 @@ const Chat = () => {
           );
         }
       )
-      .subscribe();
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'messages',
+          filter: `conversation_id=eq.${conversationId}`,
+        },
+        (payload) => {
+          console.log('[Chat] Message deleted via realtime:', payload.old);
+          setMessages((prev) => prev.filter((msg) => msg.id !== (payload.old as any).id));
+        }
+      )
+      .subscribe((status) => {
+        console.log('[Chat] Messages channel subscription status:', status);
+        if (status === 'CHANNEL_ERROR') {
+          console.error('[Chat] Channel error, attempting to reconnect...');
+          // Force reload messages on error
+          loadMessages();
+        }
+      });
 
     // Listen for conversation deletions
+    const conversationChannelId = `chat-conv-${conversationId}-${user.id}`;
     const conversationChannel = supabase
-      .channel(`conversation-${conversationId}`)
+      .channel(conversationChannelId)
       .on(
         'postgres_changes',
         {
@@ -180,7 +224,8 @@ const Chat = () => {
       .subscribe();
 
     // Typing indicator channel for this conversation
-    const typingChannel = supabase.channel(`typing-${conversationId}`, {
+    const typingChannelId = `typing-${conversationId}`;
+    const typingChannel = supabase.channel(typingChannelId, {
       config: { presence: { key: user?.id } },
     });
 
@@ -214,19 +259,21 @@ const Chat = () => {
         });
       })
       .subscribe(async (status) => {
+        console.log('[Chat] Typing channel status:', status);
         if (status === 'SUBSCRIBED') {
           await typingChannel.track({ user_id: user?.id, typing: false });
         }
       });
 
     return () => {
+      console.log('[Chat] Cleaning up real-time subscriptions');
       typingChannel.untrack().then(() => {
         supabase.removeChannel(messagesChannel);
         supabase.removeChannel(conversationChannel);
         supabase.removeChannel(typingChannel);
       });
     };
-  }, [conversationId, user]);
+  }, [conversationId, user?.id]);
 
   useEffect(() => {
     scrollToBottom();
