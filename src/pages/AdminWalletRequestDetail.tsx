@@ -6,9 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, CheckCircle, XCircle, ArrowUpCircle, ArrowDownCircle, Phone, Calendar, User, Mail } from 'lucide-react';
+import { ArrowLeft, CheckCircle, XCircle, ArrowDownCircle, ArrowUpCircle, Phone, Calendar, User, Mail, ImageIcon } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { format } from 'date-fns';
 import {
   AlertDialog,
@@ -40,7 +40,6 @@ interface WalletRequest {
 const AdminWalletRequestDetail = () => {
   const { requestId } = useParams();
   const navigate = useNavigate();
-  const { toast } = useToast();
   const [request, setRequest] = useState<WalletRequest | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionType, setActionType] = useState<'approve' | 'reject' | null>(null);
@@ -74,12 +73,8 @@ const AdminWalletRequestDetail = () => {
       } as WalletRequest);
     } catch (error) {
       console.error('Error loading request:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load request details',
-        variant: 'destructive',
-      });
-      navigate('/admin-wallet-requests');
+      toast.error('Failed to load request details');
+      navigate('/admin/wallet-requests');
     } finally {
       setLoading(false);
     }
@@ -100,19 +95,11 @@ const AdminWalletRequestDetail = () => {
 
       if (error) throw error;
 
-      toast({
-        title: 'Success',
-        description: `Request ${actionType === 'approve' ? 'approved' : 'rejected'} successfully`,
-      });
-
-      navigate('/admin-wallet-requests');
+      toast.success(`Request ${actionType === 'approve' ? 'approved' : 'rejected'} successfully`);
+      navigate('/admin/wallet-requests');
     } catch (error) {
       console.error('Error processing request:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to process request',
-        variant: 'destructive',
-      });
+      toast.error('Failed to process request');
     } finally {
       setProcessing(false);
       setActionType(null);
@@ -133,51 +120,62 @@ const AdminWalletRequestDetail = () => {
     return null;
   }
 
-  const statusColor = 
-    request.status === 'approved' ? 'bg-green-500' :
-    request.status === 'rejected' ? 'bg-red-500' :
-    'bg-yellow-500';
-
-  const statusIcon = 
-    request.status === 'approved' ? <CheckCircle className="h-4 w-4" /> :
-    request.status === 'rejected' ? <XCircle className="h-4 w-4" /> :
-    null;
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'processing':
+        return <Badge className="bg-yellow-500 text-white">Processing</Badge>;
+      case 'approved':
+        return <Badge className="bg-green-500 text-white">Approved</Badge>;
+      case 'rejected':
+        return <Badge className="bg-red-500 text-white">Failed</Badge>;
+      default:
+        return <Badge variant="secondary">{status}</Badge>;
+    }
+  };
 
   // Only withdrawals have 2% fee, deposits get full amount
   const feeAmount = request.type === 'withdrawal' ? request.amount * 0.02 : 0;
   const finalAmount = request.type === 'deposit' 
-    ? request.amount // Full amount for deposits
-    : request.amount - feeAmount; // Amount after fee for withdrawals
+    ? request.amount
+    : request.amount - feeAmount;
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      <div className="bg-background border-b border-border p-6">
+      <div className="bg-card border-b border-border p-6 sticky top-0 z-10">
         <Button
           variant="ghost"
           size="sm"
           className="mb-4"
-          onClick={() => navigate('/admin-wallet-requests')}
+          onClick={() => navigate('/admin/wallet-requests')}
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back to Requests
         </Button>
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Request Details</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Request ID: {request.id.slice(0, 8)}...
-            </p>
+          <div className="flex items-center gap-3">
+            {request.type === 'deposit' ? (
+              <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                <ArrowDownCircle className="h-6 w-6 text-green-600" />
+              </div>
+            ) : (
+              <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                <ArrowUpCircle className="h-6 w-6 text-red-500" />
+              </div>
+            )}
+            <div>
+              <h1 className="text-2xl font-bold capitalize">{request.type} Request</h1>
+              <p className="text-sm text-muted-foreground">
+                ID: {request.id.slice(0, 8)}...
+              </p>
+            </div>
           </div>
-          <Badge className={`${statusColor} text-white flex items-center gap-1`}>
-            {statusIcon}
-            {request.status.toUpperCase()}
-          </Badge>
+          {getStatusBadge(request.status)}
         </div>
       </div>
 
-      <div className="p-6 space-y-6">
+      <div className="p-6 space-y-6 max-w-2xl mx-auto">
         {/* User Information */}
-        <Card className="shadow-sm border-border">
+        <Card className="border-2">
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <User className="h-5 w-5 text-primary" />
@@ -185,70 +183,65 @@ const AdminWalletRequestDetail = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               <User className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-medium">Name:</span>
-              <span className="text-sm">{request.profiles?.name || 'Unknown User'}</span>
+              <span className="text-sm text-muted-foreground">Name:</span>
+              <span className="font-medium">{request.profiles?.name || 'Unknown'}</span>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               <Mail className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-medium">Email:</span>
-              <span className="text-sm">{request.profiles?.email}</span>
+              <span className="text-sm text-muted-foreground">Email:</span>
+              <span className="font-medium">{request.profiles?.email}</span>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               <Phone className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-medium">Phone:</span>
-              <span className="text-sm">{request.phone_number}</span>
+              <span className="text-sm text-muted-foreground">Phone:</span>
+              <span className="font-medium">{request.phone_number}</span>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               <Calendar className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-medium">Submitted:</span>
-              <span className="text-sm">{format(new Date(request.created_at), 'MMM dd, yyyy HH:mm')}</span>
+              <span className="text-sm text-muted-foreground">Submitted:</span>
+              <span className="font-medium">
+                {format(new Date(request.created_at), 'MMM dd, yyyy • HH:mm')}
+              </span>
             </div>
           </CardContent>
         </Card>
 
         {/* Transaction Details */}
-        <Card className="shadow-sm border-border">
+        <Card className="border-2">
           <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              {request.type === 'deposit' ? (
-                <ArrowUpCircle className="h-5 w-5 text-green-500" />
-              ) : (
-                <ArrowDownCircle className="h-5 w-5 text-red-500" />
-              )}
-              Transaction Details
-            </CardTitle>
+            <CardTitle className="text-lg">Transaction Details</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="bg-muted/30 p-4 rounded-lg space-y-2">
+          <CardContent>
+            <div className="bg-muted/50 p-4 rounded-xl space-y-3">
               <div className="flex justify-between items-center">
-                <span className="text-sm font-medium">Type:</span>
-                <span className="text-sm font-semibold uppercase">{request.type}</span>
+                <span className="text-muted-foreground">Type</span>
+                <span className="font-semibold uppercase">{request.type}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm font-medium">Requested Amount:</span>
-                <span className="text-sm font-semibold">Le {request.amount.toLocaleString()}</span>
+                <span className="text-muted-foreground">Amount</span>
+                <span className="font-bold text-xl">SLL {request.amount.toLocaleString()}</span>
               </div>
-              {request.type === 'withdrawal' && feeAmount > 0 && (
+              {request.type === 'withdrawal' && (
                 <div className="flex justify-between items-center text-muted-foreground">
-                  <span className="text-sm">Transaction Fee (2%):</span>
-                  <span className="text-sm">- Le {feeAmount.toLocaleString()}</span>
+                  <span>Fee (2%)</span>
+                  <span>- SLL {feeAmount.toLocaleString()}</span>
                 </div>
               )}
               {request.type === 'deposit' && (
                 <div className="flex justify-between items-center text-green-600">
-                  <span className="text-sm font-medium">Transaction Fee:</span>
-                  <span className="text-sm font-bold">✓ No Fee (0%)</span>
+                  <span>Fee</span>
+                  <span className="font-semibold">✓ No Fee</span>
                 </div>
               )}
-              <div className="border-t border-border pt-2 mt-2">
+              <div className="border-t pt-3 mt-3">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm font-semibold">
-                    {request.type === 'deposit' ? 'Amount to Credit:' : 'Amount to Send:'}
+                  <span className="font-semibold">
+                    {request.type === 'deposit' ? 'Amount to Credit' : 'Amount to Send'}
                   </span>
-                  <span className="text-lg font-bold text-primary">
-                    Le {finalAmount.toLocaleString()}
+                  <span className="text-2xl font-bold text-primary">
+                    SLL {finalAmount.toLocaleString()}
                   </span>
                 </div>
               </div>
@@ -256,63 +249,70 @@ const AdminWalletRequestDetail = () => {
           </CardContent>
         </Card>
 
-        {/* Proof of Payment */}
-        {request.screenshot_url && (
-          <Card className="shadow-sm border-border">
-            <CardHeader>
-              <CardTitle className="text-lg">Proof of Payment</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <img
-                src={request.screenshot_url}
-                alt="Payment proof"
-                className="w-full rounded-lg border border-border"
-              />
-              <a
-                href={request.screenshot_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm text-primary hover:underline mt-2 inline-block"
-              >
-                Open in new tab
-              </a>
-            </CardContent>
-          </Card>
-        )}
+        {/* Payment Evidence */}
+        <Card className="border-2">
+          <CardHeader>
+            <CardTitle className="text-lg">Payment Evidence</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {request.screenshot_url ? (
+              <div>
+                <img
+                  src={request.screenshot_url}
+                  alt="Payment evidence"
+                  className="w-full rounded-xl border-2"
+                />
+                <a
+                  href={request.screenshot_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-primary hover:underline mt-3 inline-block"
+                >
+                  Open full size →
+                </a>
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <ImageIcon className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                <p>No evidence uploaded</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-        {/* Admin Notes (if any) */}
+        {/* Admin Notes */}
         {request.admin_notes && (
-          <Card className="shadow-sm border-border">
+          <Card className="border-2">
             <CardHeader>
               <CardTitle className="text-lg">Admin Notes</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground">{request.admin_notes}</p>
+              <p className="text-muted-foreground">{request.admin_notes}</p>
             </CardContent>
           </Card>
         )}
 
-        {/* Action Buttons - Only show if pending */}
-        {request.status === 'pending' && (
-          <div className="flex gap-3 pt-4">
+        {/* Action Buttons */}
+        {request.status === 'processing' && (
+          <div className="flex gap-4 pt-4">
             <Button
-              className="flex-1"
+              className="flex-1 h-14 rounded-xl font-bold"
               size="lg"
               onClick={() => setActionType('approve')}
               disabled={processing}
             >
               <CheckCircle className="h-5 w-5 mr-2" />
-              Approve Request
+              Approve
             </Button>
             <Button
               variant="destructive"
-              className="flex-1"
+              className="flex-1 h-14 rounded-xl font-bold"
               size="lg"
               onClick={() => setActionType('reject')}
               disabled={processing}
             >
               <XCircle className="h-5 w-5 mr-2" />
-              Reject Request
+              Reject
             </Button>
           </div>
         )}
@@ -320,7 +320,7 @@ const AdminWalletRequestDetail = () => {
 
       {/* Action Dialog */}
       <AlertDialog open={!!actionType} onOpenChange={() => setActionType(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent className="max-w-md">
           <AlertDialogHeader>
             <AlertDialogTitle>
               {actionType === 'approve' ? 'Approve Request' : 'Reject Request'}
@@ -328,20 +328,20 @@ const AdminWalletRequestDetail = () => {
             <AlertDialogDescription>
               {actionType === 'approve'
                 ? request.type === 'deposit'
-                  ? `This will credit Le ${finalAmount.toLocaleString()} (full amount, no fees) to the user's wallet.`
-                  : `This will send Le ${finalAmount.toLocaleString()} to the user after deducting the 2% transaction fee.`
+                  ? `This will credit SLL ${finalAmount.toLocaleString()} to the user's wallet.`
+                  : `This will send SLL ${finalAmount.toLocaleString()} to the user (after 2% fee).`
                 : 'This will reject the request and notify the user.'}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="py-4">
             <Label htmlFor="notes" className="text-sm font-medium">
-              {actionType === 'approve' ? 'Notes (Optional)' : 'Rejection Reason (Optional)'}
+              {actionType === 'approve' ? 'Notes (Optional)' : 'Reason (Optional)'}
             </Label>
             <Textarea
               id="notes"
               value={adminNotes}
               onChange={(e) => setAdminNotes(e.target.value)}
-              placeholder={actionType === 'approve' ? 'Add any notes...' : 'Explain why this request is being rejected...'}
+              placeholder={actionType === 'approve' ? 'Add any notes...' : 'Why is this being rejected?'}
               className="mt-2"
               rows={3}
             />
