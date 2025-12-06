@@ -64,30 +64,37 @@ Deno.serve(async (req) => {
       wallet = newWallet as { id: string; balance_leones: number }
     }
 
-    const walletId = wallet!.id
-    const walletBalance = Number(wallet!.balance_leones)
-
     const nowIso = new Date().toISOString()
-
     const newStatus = action === 'approve' ? 'approved' : 'rejected'
+
+    // Update request status
     const { error: updReqErr } = await supabaseClient
       .from('wallet_requests')
-      .update({ status: newStatus, admin_notes: adminNotes ?? null, reviewed_at: nowIso, reviewed_by: user.id })
+      .update({ 
+        status: newStatus, 
+        admin_notes: adminNotes ?? null, 
+        reviewed_at: nowIso, 
+        reviewed_by: user.id 
+      })
       .eq('id', requestId)
+    
     if (updReqErr) throw updReqErr
 
     let walletDelta = 0
-
+    let notificationTitle = ''
+    let notificationBody = ''
 
     if (action === 'approve') {
       if (request.type === 'deposit') {
         // No fee on deposits - full amount credited
-        const depositAmount = Number(request.amount);
-        walletDelta = depositAmount;
+        const depositAmount = Number(request.amount)
+        walletDelta = depositAmount
+
         const { error: wUpdErr } = await supabaseClient
           .from('wallets')
           .update({ balance_leones: Number(wallet.balance_leones) + depositAmount })
           .eq('id', wallet.id)
+        
         if (wUpdErr) throw wUpdErr
 
         const { error: txErr } = await supabaseClient.from('transactions').insert({
@@ -95,18 +102,28 @@ Deno.serve(async (req) => {
           amount: depositAmount,
           type: 'deposit',
           status: 'completed',
-          reference: `DEP-${request.id}`,
-          metadata: { original_amount: request.amount, fee_percentage: 0, wallet_request_id: request.id, processed_by: user.id }
+          reference: `DEP-${request.id.slice(0, 8)}`,
+          metadata: { 
+            original_amount: request.amount, 
+            fee_percentage: 0, 
+            wallet_request_id: request.id, 
+            processed_by: user.id 
+          }
         })
         if (txErr) throw txErr
+
+        notificationTitle = 'Deposit Approved! 💰'
+        notificationBody = `SLL ${depositAmount.toLocaleString()} has been added to your wallet.`
+
       } else if (request.type === 'withdrawal') {
         const net = Number(request.amount) * 0.98
-        // Deduct the full requested amount from wallet; user receives net
         walletDelta = -Number(request.amount)
+
         const { error: wUpdErr } = await supabaseClient
           .from('wallets')
           .update({ balance_leones: Number(wallet.balance_leones) - Number(request.amount) })
           .eq('id', wallet.id)
+        
         if (wUpdErr) throw wUpdErr
 
         const { error: txErr } = await supabaseClient.from('transactions').insert({
@@ -114,45 +131,67 @@ Deno.serve(async (req) => {
           amount: -Number(request.amount),
           type: 'withdrawal',
           status: 'completed',
-          reference: `WTH-${request.id}`,
-          metadata: { original_amount: request.amount, fee_percentage: 2, net_payout: net, wallet_request_id: request.id, processed_by: user.id }
+          reference: `WTH-${request.id.slice(0, 8)}`,
+          metadata: { 
+            original_amount: request.amount, 
+            fee_percentage: 2, 
+            net_payout: net, 
+            wallet_request_id: request.id, 
+            processed_by: user.id 
+          }
         })
         if (txErr) throw txErr
+
+        notificationTitle = 'Withdrawal Approved! 💸'
+        notificationBody = `SLL ${net.toLocaleString()} will be sent to your Orange Money. (2% fee applied)`
       }
+    } else {
+      // Rejected
+      notificationTitle = `${request.type === 'deposit' ? 'Deposit' : 'Withdrawal'} Failed`
+      notificationBody = adminNotes || 'Your request could not be processed. Please contact support.'
     }
 
-    // Notify user
+    // Send notification to user
     const { error: notifErr } = await supabaseClient.from('notifications').insert({
       user_id: request.user_id,
       type: 'system',
-      title: `Wallet ${request.type} ${newStatus}`,
-      body: adminNotes || (newStatus === 'approved' ? 'Your request was approved.' : 'Your request was rejected.'),
-      metadata: { wallet_request_id: request.id, wallet_delta: walletDelta }
+      title: notificationTitle,
+      body: notificationBody,
+      link_url: '/deposit-history',
+      metadata: { 
+        wallet_request_id: request.id, 
+        wallet_delta: walletDelta,
+        action: newStatus,
+        type: request.type
+      }
     })
+    
     if (notifErr) {
-      // Non-fatal
-      console.error('Notification error', notifErr)
+      console.error('Notification error:', notifErr)
     }
 
     // Audit log
     const { error: auditErr } = await supabaseClient.from('audit_logs').insert({
       actor_id: user.id,
-      action: 'wallet_request_' + newStatus,
+      action: `wallet_request_${newStatus}`,
       target_type: 'wallet_requests',
       target_id: request.id,
       description: `${request.type} ${newStatus} for user ${request.user_id}`,
-      metadata: { amount: request.amount }
+      metadata: { amount: request.amount, admin_notes: adminNotes }
     })
+    
     if (auditErr) {
-      console.error('Audit error', auditErr)
+      console.error('Audit error:', auditErr)
     }
+
+    console.log(`Wallet request ${requestId} ${newStatus} successfully`)
 
     return new Response(
       JSON.stringify({ success: true, status: newStatus }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
     )
   } catch (error) {
-    console.error(error)
+    console.error('Error processing wallet request:', error)
     const msg = error instanceof Error ? error.message : 'Unknown error'
     return new Response(
       JSON.stringify({ error: msg }),

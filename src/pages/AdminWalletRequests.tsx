@@ -4,9 +4,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Clock, CheckCircle, XCircle, ArrowUpCircle, ArrowDownCircle } from 'lucide-react';
+import { ArrowLeft, Clock, CheckCircle, XCircle, ArrowDownCircle, ArrowUpCircle, ImageIcon } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface WalletRequest {
   id: string;
@@ -14,10 +15,10 @@ interface WalletRequest {
   type: string;
   amount: number;
   phone_number: string;
-  screenshot_url: string;
+  screenshot_url: string | null;
   status: string;
   created_at: string;
-  admin_notes: string;
+  admin_notes: string | null;
   profiles: {
     name: string;
     email: string;
@@ -31,6 +32,26 @@ const AdminWalletRequests = () => {
 
   useEffect(() => {
     loadRequests();
+
+    // Subscribe to realtime updates
+    const channel = supabase
+      .channel('admin-wallet-requests')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'wallet_requests',
+        },
+        () => {
+          loadRequests();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const loadRequests = async () => {
@@ -58,11 +79,39 @@ const AdminWalletRequests = () => {
         })
       );
       
-      setRequests(requestsWithProfiles as any);
+      setRequests(requestsWithProfiles as WalletRequest[]);
     } catch (error) {
       console.error('Error loading requests:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'processing':
+        return (
+          <Badge className="bg-yellow-500 text-white">
+            <Clock className="h-3 w-3 mr-1" />
+            Processing
+          </Badge>
+        );
+      case 'approved':
+        return (
+          <Badge className="bg-green-500 text-white">
+            <CheckCircle className="h-3 w-3 mr-1" />
+            Approved
+          </Badge>
+        );
+      case 'rejected':
+        return (
+          <Badge className="bg-red-500 text-white">
+            <XCircle className="h-3 w-3 mr-1" />
+            Failed
+          </Badge>
+        );
+      default:
+        return <Badge variant="secondary">{status}</Badge>;
     }
   };
 
@@ -71,16 +120,72 @@ const AdminWalletRequests = () => {
       <div className="min-h-screen bg-background p-6">
         <Skeleton className="h-12 w-full mb-4" />
         <Skeleton className="h-32 w-full mb-4" />
+        <Skeleton className="h-32 w-full mb-4" />
       </div>
     );
   }
 
-  const pendingRequests = requests.filter((r) => r.status === 'pending');
-  const processedRequests = requests.filter((r) => r.status !== 'pending');
+  const processingRequests = requests.filter((r) => r.status === 'processing');
+  const processedRequests = requests.filter((r) => r.status !== 'processing');
+  const depositRequests = requests.filter((r) => r.type === 'deposit');
+  const withdrawalRequests = requests.filter((r) => r.type === 'withdrawal');
+
+  const RequestCard = ({ request }: { request: WalletRequest }) => (
+    <Card 
+      className="shadow-sm border-2 hover:shadow-md transition-all cursor-pointer"
+      onClick={() => navigate(`/admin-wallet-requests/${request.id}`)}
+    >
+      <CardContent className="p-4">
+        <div className="flex items-start justify-between mb-3">
+          <div className="flex items-center gap-3">
+            {request.screenshot_url ? (
+              <img 
+                src={request.screenshot_url} 
+                alt="Evidence" 
+                className="w-12 h-12 rounded-lg object-cover border"
+              />
+            ) : (
+              <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center">
+                <ImageIcon className="h-6 w-6 text-muted-foreground" />
+              </div>
+            )}
+            <div>
+              <div className="flex items-center gap-2">
+                {request.type === 'deposit' ? (
+                  <ArrowDownCircle className="h-4 w-4 text-green-600" />
+                ) : (
+                  <ArrowUpCircle className="h-4 w-4 text-red-500" />
+                )}
+                <span className="font-semibold capitalize">{request.type}</span>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {request.profiles?.name || 'Unknown User'}
+              </p>
+            </div>
+          </div>
+          {getStatusBadge(request.status)}
+        </div>
+        
+        <div className="flex items-center justify-between pt-3 border-t">
+          <div>
+            <p className="text-xl font-bold">
+              SLL {request.amount.toLocaleString()}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {format(new Date(request.created_at), 'MMM dd, yyyy • HH:mm')}
+            </p>
+          </div>
+          <Button variant="ghost" size="sm" className="text-primary">
+            Review →
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      <div className="bg-background border-b border-border p-6">
+      <div className="bg-card border-b border-border p-6 sticky top-0 z-10">
         <Button
           variant="ghost"
           size="sm"
@@ -90,148 +195,86 @@ const AdminWalletRequests = () => {
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back to Dashboard
         </Button>
-        <h1 className="text-2xl font-bold text-foreground">Wallet Requests</h1>
+        <h1 className="text-2xl font-bold text-foreground">Deposits & Withdrawals</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          {pendingRequests.length} pending requests
+          {processingRequests.length} pending review
         </p>
       </div>
 
-      <div className="p-6 space-y-6">
-        {/* Pending Requests */}
-        {pendingRequests.length > 0 && (
-          <div>
-            <h2 className="text-xl font-semibold mb-4 text-foreground">Pending Requests</h2>
-            <div className="space-y-4">
-              {pendingRequests.map((request) => (
-                <Card 
-                  key={request.id} 
-                  className="shadow-sm border-border hover:shadow-md transition-shadow cursor-pointer"
-                  onClick={() => navigate(`/admin-wallet-requests/${request.id}`)}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center gap-3">
-                        {request.type === 'deposit' ? (
-                          <ArrowUpCircle className="h-8 w-8 text-green-500" />
-                        ) : (
-                          <ArrowDownCircle className="h-8 w-8 text-red-500" />
-                        )}
-                        <div>
-                          <h3 className="font-semibold text-foreground">
-                            {request.profiles?.name || 'Unknown User'}
-                          </h3>
-                          <p className="text-sm text-muted-foreground">
-                            {request.profiles?.email}
-                          </p>
-                        </div>
-                      </div>
-                      <Badge className="bg-yellow-500 text-white flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        Pending
-                      </Badge>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2 mb-3">
-                      <div>
-                        <p className="text-xs text-muted-foreground">Amount</p>
-                        <p className="text-sm font-semibold text-foreground">
-                          Le {request.amount.toLocaleString()}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Phone</p>
-                        <p className="text-sm font-medium text-foreground">
-                          {request.phone_number}
-                        </p>
-                      </div>
-                      <div className="col-span-2">
-                        <p className="text-xs text-muted-foreground">Submitted</p>
-                        <p className="text-sm text-foreground">
-                          {format(new Date(request.created_at), 'MMM dd, yyyy HH:mm')}
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        )}
+      <div className="p-6 max-w-4xl mx-auto">
+        <Tabs defaultValue="pending" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-4 h-12">
+            <TabsTrigger value="pending" className="relative">
+              Pending
+              {processingRequests.length > 0 && (
+                <span className="ml-1 px-2 py-0.5 bg-yellow-500 text-white text-xs rounded-full">
+                  {processingRequests.length}
+                </span>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="deposits">Deposits</TabsTrigger>
+            <TabsTrigger value="withdrawals">Withdrawals</TabsTrigger>
+            <TabsTrigger value="all">All</TabsTrigger>
+          </TabsList>
 
-        {/* Processed Requests */}
-        {processedRequests.length > 0 && (
-          <div>
-            <h2 className="text-xl font-semibold mb-4 text-foreground">Processed Requests</h2>
-            <div className="space-y-4">
-              {processedRequests.map((request) => (
-                <Card 
-                  key={request.id} 
-                  className="shadow-sm border-border hover:shadow-md transition-shadow cursor-pointer opacity-70 hover:opacity-100"
-                  onClick={() => navigate(`/admin-wallet-requests/${request.id}`)}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center gap-3">
-                        {request.type === 'deposit' ? (
-                          <ArrowUpCircle className="h-8 w-8 text-green-500" />
-                        ) : (
-                          <ArrowDownCircle className="h-8 w-8 text-red-500" />
-                        )}
-                        <div>
-                          <h3 className="font-semibold text-foreground">
-                            {request.profiles?.name || 'Unknown User'}
-                          </h3>
-                          <p className="text-sm text-muted-foreground">
-                            {request.profiles?.email}
-                          </p>
-                        </div>
-                      </div>
-                      <Badge className={`${
-                        request.status === 'approved' 
-                          ? 'bg-green-500' 
-                          : 'bg-red-500'
-                      } text-white flex items-center gap-1`}>
-                        {request.status === 'approved' ? (
-                          <CheckCircle className="h-3 w-3" />
-                        ) : (
-                          <XCircle className="h-3 w-3" />
-                        )}
-                        {request.status.toUpperCase()}
-                      </Badge>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <p className="text-xs text-muted-foreground">Amount</p>
-                        <p className="text-sm font-semibold text-foreground">
-                          Le {request.amount.toLocaleString()}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Phone</p>
-                        <p className="text-sm font-medium text-foreground">
-                          {request.phone_number}
-                        </p>
-                      </div>
-                      <div className="col-span-2">
-                        <p className="text-xs text-muted-foreground">Submitted</p>
-                        <p className="text-sm text-foreground">
-                          {format(new Date(request.created_at), 'MMM dd, yyyy HH:mm')}
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        )}
+          <TabsContent value="pending" className="space-y-4">
+            {processingRequests.length === 0 ? (
+              <Card className="border-2 border-dashed">
+                <CardContent className="p-8 text-center text-muted-foreground">
+                  <CheckCircle className="h-12 w-12 mx-auto mb-4 text-green-500" />
+                  <p className="font-semibold">All caught up!</p>
+                  <p className="text-sm">No pending requests to review</p>
+                </CardContent>
+              </Card>
+            ) : (
+              processingRequests.map((request) => (
+                <RequestCard key={request.id} request={request} />
+              ))
+            )}
+          </TabsContent>
 
-        {pendingRequests.length === 0 && processedRequests.length === 0 && (
-          <Card className="shadow-sm border-border">
-            <CardContent className="p-8 text-center text-muted-foreground">
-              No wallet requests found.
-            </CardContent>
-          </Card>
-        )}
+          <TabsContent value="deposits" className="space-y-4">
+            {depositRequests.length === 0 ? (
+              <Card className="border-2 border-dashed">
+                <CardContent className="p-8 text-center text-muted-foreground">
+                  No deposit requests found
+                </CardContent>
+              </Card>
+            ) : (
+              depositRequests.map((request) => (
+                <RequestCard key={request.id} request={request} />
+              ))
+            )}
+          </TabsContent>
+
+          <TabsContent value="withdrawals" className="space-y-4">
+            {withdrawalRequests.length === 0 ? (
+              <Card className="border-2 border-dashed">
+                <CardContent className="p-8 text-center text-muted-foreground">
+                  No withdrawal requests found
+                </CardContent>
+              </Card>
+            ) : (
+              withdrawalRequests.map((request) => (
+                <RequestCard key={request.id} request={request} />
+              ))
+            )}
+          </TabsContent>
+
+          <TabsContent value="all" className="space-y-4">
+            {requests.length === 0 ? (
+              <Card className="border-2 border-dashed">
+                <CardContent className="p-8 text-center text-muted-foreground">
+                  No requests found
+                </CardContent>
+              </Card>
+            ) : (
+              requests.map((request) => (
+                <RequestCard key={request.id} request={request} />
+              ))
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
