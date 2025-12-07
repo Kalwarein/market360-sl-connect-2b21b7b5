@@ -46,7 +46,7 @@ const Sidebar = () => {
 
   const menuItems = [
     { icon: Home, label: 'Home', path: '/' },
-    { icon: Info, label: 'Adminstration Page', path: '/admin-auth' },
+    { icon: Info, label: 'About Us', path: '/about' },
     { icon: Shield, label: 'Security Info', path: '/security-info' },
     { icon: HelpCircle, label: 'Support', path: '/support' },
     { icon: Mail, label: 'Contact', path: '/contact' },
