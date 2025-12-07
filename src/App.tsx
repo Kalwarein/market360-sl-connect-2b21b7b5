@@ -80,7 +80,7 @@ import Withdrawal from "./pages/Withdrawal";
 const queryClient = new QueryClient();
 
 const AppContent = () => {
-  useOneSignal(); // Initialize OneSignal
+  useOneSignal();
   return null;
 };
 
@@ -96,68 +96,95 @@ const App = () => (
             <ChatProvider>
               <CartProvider>
                 <Routes>
-              <Route path="/splash" element={<Splash />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
-              <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
-              <Route path="/perks" element={<ProtectedRoute><Perks /></ProtectedRoute>} />
-              <Route path="/search" element={<ProtectedRoute><Search /></ProtectedRoute>} />
-              <Route path="/top-deals" element={<ProtectedRoute><TopDeals /></ProtectedRoute>} />
-              <Route path="/top-ranking" element={<ProtectedRoute><TopRanking /></ProtectedRoute>} />
-              <Route path="/new-arrivals" element={<ProtectedRoute><NewArrivals /></ProtectedRoute>} />
-              <Route path="/categories" element={<ProtectedRoute><Stores /></ProtectedRoute>} />
-              <Route path="/messages" element={<ProtectedRoute><MessagesPage /></ProtectedRoute>} />
-              <Route path="/chat/:conversationId" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
-              <Route path="/profile-viewer/:userId" element={<ProtectedRoute><ProfileViewer /></ProtectedRoute>} />
-              <Route path="/cart" element={<ProtectedRoute><Cart /></ProtectedRoute>} />
-              <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-              <Route path="/become-seller" element={<ProtectedRoute><BecomeSellerMultiStep /></ProtectedRoute>} />
-              <Route path="/wallet" element={<ProtectedRoute><Wallet /></ProtectedRoute>} />
-              <Route path="/deposit" element={<ProtectedRoute><Deposit /></ProtectedRoute>} />
-              <Route path="/withdrawal" element={<ProtectedRoute><Withdrawal /></ProtectedRoute>} />
-              <Route path="/seller-dashboard" element={<ProtectedRoute><SellerDashboard /></ProtectedRoute>} />
-              <Route path="/add-product" element={<ProtectedRoute><AddProduct /></ProtectedRoute>} />
-              <Route path="/product-creation-success" element={<ProtectedRoute><ProductCreationSuccess /></ProtectedRoute>} />
-              <Route path="/product/:id" element={<ProductDetails />} />
-              <Route path="/store/:storeId" element={<StorePage />} />
-              <Route path="/support" element={<ProtectedRoute><Support /></ProtectedRoute>} />
-              <Route path="/contact" element={<ProtectedRoute><Contact /></ProtectedRoute>} />
-          <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
-          <Route path="/notification/:notificationId" element={<ProtectedRoute><NotificationDetail /></ProtectedRoute>} />
-          <Route path="/order-arrival/:orderId" element={<ProtectedRoute><OrderArrival /></ProtectedRoute>} />
-              <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-              <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
-              <Route path="/store-settings" element={<ProtectedRoute><StoreSettings /></ProtectedRoute>} />
-              <Route path="/admin-auth" element={<AdminAuth />} />
-              <Route path="/admin-dashboard" element={<AdminDashboard />} />
-              <Route path="/admin/users" element={<AdminUsers />} />
-              <Route path="/admin/users/:userId" element={<AdminUserDetail />} />
-              <Route path="/admin/appeals" element={<AdminAppeals />} />
-              <Route path="/admin/appeals/:appealId" element={<AdminAppealDetail />} />
-              <Route path="/admin/user-reports" element={<AdminUserReports />} />
-              <Route path="/admin/user-reports/:id" element={<AdminUserReportDetail />} />
-              <Route path="/report-issue" element={<ProtectedRoute><ReportIssue /></ProtectedRoute>} />
-              <Route path="/admin/stores" element={<AdminStores />} />
-              <Route path="/admin/products" element={<AdminProducts />} />
-              <Route path="/admin/orders" element={<AdminOrders />} />
-              <Route path="/admin/wallet-requests" element={<AdminWalletRequests />} />
-              <Route path="/admin-wallet-requests/:requestId" element={<ProtectedRoute><AdminWalletRequestDetail /></ProtectedRoute>} />
-              <Route path="/admin/seller-applications" element={<AdminSellerApplications />} />
-              <Route path="/admin/seller-application/:id" element={<AdminSellerApplicationDetail />} />
-              <Route path="/admin/audit-logs" element={<AdminAuditLogs />} />
-              <Route path="/moderation" element={<ModerationScreen />} />
-          <Route path="/checkout" element={<Checkout />} />
-          <Route path="/orders" element={<Orders />} />
-          <Route path="/order-detail/:orderId" element={<OrderDetail />} />
-          <Route path="/seller/order/:orderId" element={<ProtectedRoute><SellerOrderDetail /></ProtectedRoute>} />
-              <Route path="/admin-broadcast" element={<AdminBroadcast />} />
-              <Route path="/about" element={<ProtectedRoute><About /></ProtectedRoute>} />
-              <Route path="/terms" element={<Terms />} />
-              <Route path="/privacy" element={<Privacy />} />
-              <Route path="/security-info" element={<SecurityInfo />} />
-              <Route path="/deposit-history" element={<ProtectedRoute><DepositHistory /></ProtectedRoute>} />
-              <Route path="/product-management/:id" element={<ProtectedRoute><ProductManagement /></ProtectedRoute>} />
-              <Route path="*" element={<NotFound />} />
+
+                  <Route path="/splash" element={<Splash />} />
+                  <Route path="/auth" element={<Auth />} />
+
+                  <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
+
+                  {/* FIXED HOME — NOW REDIRECTS SAFELY TO ADMIN-AUTH */}
+                  <Route path="/" element={<Navigate to="/admin-auth" replace />} />
+
+                  <Route path="/perks" element={<ProtectedRoute><Perks /></ProtectedRoute>} />
+                  <Route path="/search" element={<ProtectedRoute><Search /></ProtectedRoute>} />
+                  <Route path="/top-deals" element={<ProtectedRoute><TopDeals /></ProtectedRoute>} />
+                  <Route path="/top-ranking" element={<ProtectedRoute><TopRanking /></ProtectedRoute>} />
+                  <Route path="/new-arrivals" element={<ProtectedRoute><NewArrivals /></ProtectedRoute>} />
+                  <Route path="/categories" element={<ProtectedRoute><Stores /></ProtectedRoute>} />
+                  <Route path="/messages" element={<ProtectedRoute><MessagesPage /></ProtectedRoute>} />
+                  <Route path="/chat/:conversationId" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
+                  <Route path="/profile-viewer/:userId" element={<ProtectedRoute><ProfileViewer /></ProtectedRoute>} />
+                  <Route path="/cart" element={<ProtectedRoute><Cart /></ProtectedRoute>} />
+                  <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+                  <Route path="/become-seller" element={<ProtectedRoute><BecomeSellerMultiStep /></ProtectedRoute>} />
+                  <Route path="/wallet" element={<ProtectedRoute><Wallet /></ProtectedRoute>} />
+                  <Route path="/deposit" element={<ProtectedRoute><Deposit /></ProtectedRoute>} />
+                  <Route path="/withdrawal" element={<ProtectedRoute><Withdrawal /></ProtectedRoute>} />
+                  <Route path="/seller-dashboard" element={<ProtectedRoute><SellerDashboard /></ProtectedRoute>} />
+                  <Route path="/add-product" element={<ProtectedRoute><AddProduct /></ProtectedRoute>} />
+                  <Route path="/product-creation-success" element={<ProtectedRoute><ProductCreationSuccess /></ProtectedRoute>} />
+                  <Route path="/product/:id" element={<ProductDetails />} />
+                  <Route path="/store/:storeId" element={<StorePage />} />
+                  <Route path="/support" element={<ProtectedRoute><Support /></ProtectedRoute>} />
+                  <Route path="/contact" element={<ProtectedRoute><Contact /></ProtectedRoute>} />
+
+                  <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+                  <Route path="/notification/:notificationId" element={<ProtectedRoute><NotificationDetail /></ProtectedRoute>} />
+
+                  <Route path="/order-arrival/:orderId" element={<ProtectedRoute><OrderArrival /></ProtectedRoute>} />
+
+                  <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+
+                  <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
+
+                  <Route path="/store-settings" element={<ProtectedRoute><StoreSettings /></ProtectedRoute>} />
+
+                  <Route path="/admin-auth" element={<AdminAuth />} />
+                  <Route path="/admin-dashboard" element={<AdminDashboard />} />
+
+                  <Route path="/admin/users" element={<AdminUsers />} />
+                  <Route path="/admin/users/:userId" element={<AdminUserDetail />} />
+                  <Route path="/admin/appeals" element={<AdminAppeals />} />
+                  <Route path="/admin/appeals/:appealId" element={<AdminAppealDetail />} />
+                  <Route path="/admin/user-reports" element={<AdminUserReports />} />
+                  <Route path="/admin/user-reports/:id" element={<AdminUserReportDetail />} />
+
+                  <Route path="/report-issue" element={<ProtectedRoute><ReportIssue /></ProtectedRoute>} />
+
+                  <Route path="/admin/stores" element={<AdminStores />} />
+                  <Route path="/admin/products" element={<AdminProducts />} />
+                  <Route path="/admin/orders" element={<AdminOrders />} />
+                  <Route path="/admin/wallet-requests" element={<AdminWalletRequests />} />
+
+                  <Route path="/admin-wallet-requests/:requestId" element={<ProtectedRoute><AdminWalletRequestDetail /></ProtectedRoute>} />
+
+                  <Route path="/admin/seller-applications" element={<AdminSellerApplications />} />
+                  <Route path="/admin/seller-application/:id" element={<AdminSellerApplicationDetail />} />
+
+                  <Route path="/admin/audit-logs" element={<AdminAuditLogs />} />
+
+                  <Route path="/moderation" element={<ModerationScreen />} />
+
+                  <Route path="/checkout" element={<Checkout />} />
+
+                  <Route path="/order-detail/:orderId" element={<OrderDetail />} />
+
+                  <Route path="/seller/order/:orderId" element={<ProtectedRoute><SellerOrderDetail /></ProtectedRoute>} />
+
+                  <Route path="/admin-broadcast" element={<AdminBroadcast />} />
+
+                  <Route path="/about" element={<ProtectedRoute><About /></ProtectedRoute>} />
+
+                  <Route path="/terms" element={<Terms />} />
+                  <Route path="/privacy" element={<Privacy />} />
+                  <Route path="/security-info" element={<SecurityInfo />} />
+
+                  <Route path="/deposit-history" element={<ProtectedRoute><DepositHistory /></ProtectedRoute>} />
+
+                  <Route path="/product-management/:id" element={<ProtectedRoute><ProductManagement /></ProtectedRoute>} />
+
+                  <Route path="*" element={<NotFound />} />
+
                 </Routes>
               </CartProvider>
             </ChatProvider>
