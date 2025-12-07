@@ -185,7 +185,7 @@ const Deposit = () => {
           <Card className="border-2 border-border hover:border-primary/50 transition-all shadow-md">
             <CardContent className="p-6 space-y-3">
               <Label htmlFor="reference" className="text-base font-bold text-foreground flex items-center gap-2">
-                Orange Money Reference Number
+                Orange Money Transaction ID
                 <span className="text-destructive">*</span>
               </Label>
               <Input
@@ -198,7 +198,7 @@ const Deposit = () => {
                 required
               />
               <p className="text-sm text-muted-foreground flex items-center gap-2">
-                📱 Copy the reference number from your Orange Money SMS
+                📱 Copy the transaction Id number from your Orange Money SMS
               </p>
             </CardContent>
           </Card>
@@ -207,7 +207,7 @@ const Deposit = () => {
           <Card className="border-2 border-dashed border-border hover:border-primary/50 transition-all shadow-md">
             <CardContent className="p-6 space-y-3">
               <Label htmlFor="screenshot" className="text-base font-bold text-foreground">
-                Payment Proof (Optional)
+                Payment Proof
               </Label>
               <label className="flex flex-col items-center justify-center gap-4 p-8 cursor-pointer hover:bg-primary/5 rounded-2xl transition-all border-2 border-dashed border-border hover:border-primary group">
                 <div className="p-4 bg-primary/10 rounded-full group-hover:bg-primary/20 transition-colors">
