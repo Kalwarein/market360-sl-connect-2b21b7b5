@@ -263,7 +263,7 @@ const Sidebar = () => {
                 <div className="relative">
                   <button
                     className="admin-danger-btn w-full py-4 px-4 rounded-xl flex items-center justify-between group"
-                    onClick={() => { navigate('/admin'); setOpen(false); }}
+                    onClick={() => { navigate('/admin-auth'); setOpen(false); }}
                     onMouseEnter={handleAdminHover}
                   >
                     <div className="flex items-center gap-3 z-10">
