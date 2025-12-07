@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { LogOut, Edit2, Wallet, ShoppingBag, Bell, Store, Gift, Settings, Lock, FileText, Mail, Crown, ChevronRight, Camera, Headset } from 'lucide-react';
+import { LogOut, Edit2, Wallet, ShoppingBag, Bell, Store, Settings, Lock, FileText, Mail, ChevronRight, Camera, Headset } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import BottomNav from '@/components/BottomNav';
@@ -440,7 +440,7 @@ const Profile = () => {
         }
       `}</style>
 
-      <div className="min-h-screen bg-background dark:bg-background pb-20 flex flex-col">
+      <div className="min-h-screen bg-background dark:bg-background pb-20 flex flex-col overflow-hidden">
         {/* Header Section */}
         <div className="p-6 bg-card dark:bg-card border-b border-border shadow-sm">
           <div className="flex items-start justify-between mb-6">
@@ -545,16 +545,15 @@ const Profile = () => {
         </div>
 
         {/* Menu */}
-        <div className="p-6 space-y-3 flex-1">
+        <div className="p-4 space-y-2 flex-1">
           
           {/* 🔥 PERKS CARD WITH NEW IMAGE */}
           <div 
-            className="perks-card group p-5 flex items-center justify-between gap-4 rounded-2xl transition-smooth shadow-card hover:shadow-elevated"
+            className="perks-card group p-4 flex items-center justify-between gap-3 rounded-xl transition-smooth shadow-card hover:shadow-elevated"
             onClick={() => navigate('/perks')}
           >
-            <div className="flex items-center gap-4 flex-1">
-              
-              <div className="perks-image-container w-16 h-16 flex-shrink-0">
+            <div className="flex items-center gap-3 flex-1">
+              <div className="perks-image-container w-12 h-12 flex-shrink-0">
                 <img 
                   src="https://i.imghippo.com/files/lEJ5601RT.jpg"
                   alt="Premium Perks"
@@ -562,95 +561,81 @@ const Profile = () => {
                 />
                 <div className="perks-image-shimmer"></div>
               </div>
-
               <div className="text-green-900 dark:text-green-100 flex-1">
-                <h3 className="text-lg font-bold mb-1">Unlock Premium</h3>
-                <p className="text-sm text-green-700 dark:text-green-300">Get exclusive perks & benefits</p>
+                <h3 className="text-base font-bold">Unlock Premium</h3>
+                <p className="text-xs text-green-700 dark:text-green-300">Get exclusive perks</p>
               </div>
             </div>
-            <ChevronRight className="perks-arrow text-green-600 dark:text-green-400 flex-shrink-0" size={24} />
+            <ChevronRight className="perks-arrow text-green-600 dark:text-green-400 flex-shrink-0" size={20} />
           </div>
 
           {/* Wallet */}
-          <Card onClick={() => navigate('/wallet')} className="cursor-pointer hover:shadow-elevated transition-smooth rounded-2xl border-border/50 hover:border-primary/30">
-            <CardContent className="p-5 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="h-12 w-12 rounded-2xl bg-primary/10 dark:bg-primary/20 flex items-center justify-center">
-                  <Wallet className="h-6 w-6 text-primary dark:text-primary" />
+          <Card onClick={() => navigate('/wallet')} className="cursor-pointer hover:shadow-elevated transition-smooth rounded-xl border-border/50 hover:border-primary/30">
+            <CardContent className="p-3 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-primary/10 dark:bg-primary/20 flex items-center justify-center">
+                  <Wallet className="h-5 w-5 text-primary dark:text-primary" />
                 </div>
-                <span className="font-semibold text-foreground dark:text-foreground text-lg">My Wallet</span>
+                <span className="font-semibold text-foreground dark:text-foreground">My Wallet</span>
               </div>
-              <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
             </CardContent>
           </Card>
 
           {/* Orders */}
-          <Card onClick={() => navigate('/orders')} className="cursor-pointer hover:shadow-elevated transition-smooth rounded-2xl border-border/50 hover:border-secondary/30">
-            <CardContent className="p-5 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="h-12 w-12 rounded-2xl bg-secondary/10 dark:bg-secondary/20 flex items-center justify-center">
-                  <ShoppingBag className="h-6 w-6 text-secondary dark:text-secondary" />
+          <Card onClick={() => navigate('/orders')} className="cursor-pointer hover:shadow-elevated transition-smooth rounded-xl border-border/50 hover:border-secondary/30">
+            <CardContent className="p-3 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-secondary/10 dark:bg-secondary/20 flex items-center justify-center">
+                  <ShoppingBag className="h-5 w-5 text-secondary dark:text-secondary" />
                 </div>
-                <span className="font-semibold text-foreground dark:text-foreground text-lg">My Orders</span>
+                <span className="font-semibold text-foreground dark:text-foreground">My Orders</span>
               </div>
-              <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
             </CardContent>
           </Card>
 
           {/* Notifications */}
-          <Card onClick={() => { setHasUnreadNotif(false); navigate('/notifications'); }} className="cursor-pointer hover:shadow-elevated transition-smooth rounded-2xl border-border/50 hover:border-accent/30">
-            <CardContent className="p-5 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="h-12 w-12 rounded-2xl bg-accent/10 dark:bg-accent/20 flex items-center justify-center relative">
-                  <Bell className="h-6 w-6 text-accent dark:text-accent" />
+          <Card onClick={() => { setHasUnreadNotif(false); navigate('/notifications'); }} className="cursor-pointer hover:shadow-elevated transition-smooth rounded-xl border-border/50 hover:border-accent/30">
+            <CardContent className="p-3 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-accent/10 dark:bg-accent/20 flex items-center justify-center relative">
+                  <Bell className="h-5 w-5 text-accent dark:text-accent" />
                   {hasUnreadNotif && (
-                    <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive animate-pulse" />
+                    <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-destructive animate-pulse" />
                   )}
                 </div>
-                <span className="font-semibold text-foreground dark:text-foreground text-lg">Notifications</span>
+                <span className="font-semibold text-foreground dark:text-foreground">Notifications</span>
               </div>
-              {hasUnreadNotif && <Badge variant="destructive" className="rounded-lg">New</Badge>}
-            </CardContent>
-          </Card>
-
-          {/* Promotions */}
-          <Card onClick={() => navigate('/admin-auth')} className="cursor-pointer hover:shadow-elevated transition-smooth rounded-2xl border-border/50 hover:border-warning/30">
-            <CardContent className="p-5 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="h-12 w-12 rounded-2xl bg-warning/10 dark:bg-warning/20 flex items-center justify-center">
-                  <Gift className="h-6 w-6 text-warning dark:text-warning" />
-                </div>
-                <span className="font-semibold text-foreground dark:text-foreground text-lg">Gifts</span>
-              </div>
-              <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              {hasUnreadNotif && <Badge variant="destructive" className="rounded-lg text-xs">New</Badge>}
             </CardContent>
           </Card>
 
           {/* Settings */}
-          <Card onClick={() => navigate('/settings')} className="cursor-pointer hover:shadow-elevated transition-smooth rounded-2xl border-border/50 hover:border-muted/50">
-            <CardContent className="p-5 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="h-12 w-12 rounded-2xl bg-muted dark:bg-muted flex items-center justify-center">
-                  <Settings className="h-6 w-6 text-muted-foreground dark:text-muted-foreground" />
+          <Card onClick={() => navigate('/settings')} className="cursor-pointer hover:shadow-elevated transition-smooth rounded-xl border-border/50 hover:border-muted/50">
+            <CardContent className="p-3 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-muted dark:bg-muted flex items-center justify-center">
+                  <Settings className="h-5 w-5 text-muted-foreground dark:text-muted-foreground" />
                 </div>
-                <span className="font-semibold text-foreground dark:text-foreground text-lg">Settings</span>
+                <span className="font-semibold text-foreground dark:text-foreground">Settings</span>
               </div>
-              <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
             </CardContent>
           </Card>
 
           {/* Seller Options */}
           {isSeller ? (
-            <Card onClick={() => navigate('/seller-dashboard')} className="cursor-pointer hover:shadow-md transition-shadow bg-amber-50 border-amber-100">
-              <CardContent className="p-4 flex items-center justify-between">
+            <Card onClick={() => navigate('/seller-dashboard')} className="cursor-pointer hover:shadow-md transition-shadow bg-amber-50 border-amber-100 rounded-xl">
+              <CardContent className="p-3 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-amber-600 flex items-center justify-center relative">
+                  <div className="h-10 w-10 rounded-xl bg-amber-600 flex items-center justify-center relative">
                     <Store className="h-5 w-5 text-white" />
                     {hasPendingOrders && (
-                      <span className="absolute -top-1 -right-1 flex h-4 w-4">
+                      <span className="absolute -top-1 -right-1 flex h-3 w-3">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-4 w-4 bg-red-500 items-center justify-center">
-                          <span className="text-[8px] font-bold text-white">{pendingCount}</span>
+                        <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500 items-center justify-center">
+                          <span className="text-[6px] font-bold text-white">{pendingCount}</span>
                         </span>
                       </span>
                     )}
@@ -658,41 +643,41 @@ const Profile = () => {
                   <span className="font-medium text-gray-900">Manage Your Store</span>
                 </div>
                 {hasPendingOrders && (
-                  <Badge className="bg-red-500 text-white">
+                  <Badge className="bg-red-500 text-white text-xs">
                     {pendingCount} New
                   </Badge>
                 )}
               </CardContent>
             </Card>
           ) : sellerApplicationStatus === 'approved' ? (
-            <Card onClick={() => navigate('/seller-dashboard')} className="cursor-pointer hover:shadow-md transition-shadow bg-green-50 border-green-100">
-              <CardContent className="p-4 flex items-center justify-between">
+            <Card onClick={() => navigate('/seller-dashboard')} className="cursor-pointer hover:shadow-md transition-shadow bg-green-50 border-green-100 rounded-xl">
+              <CardContent className="p-3 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-green-600 flex items-center justify-center">
+                  <div className="h-10 w-10 rounded-xl bg-green-600 flex items-center justify-center">
                     <Store className="h-5 w-5 text-white" />
                   </div>
                   <span className="font-medium text-gray-900">Setup Your Store</span>
                 </div>
-                <Badge className="bg-green-600">Approved!</Badge>
+                <Badge className="bg-green-600 text-xs">Approved!</Badge>
               </CardContent>
             </Card>
           ) : sellerApplicationStatus === 'pending' ? (
-            <Card className="bg-gray-50 border-gray-200">
-              <CardContent className="p-4 flex items-center justify-between">
+            <Card className="bg-gray-50 border-gray-200 rounded-xl">
+              <CardContent className="p-3 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
+                  <div className="h-10 w-10 rounded-xl bg-gray-300 flex items-center justify-center">
                     <Store className="h-5 w-5 text-white" />
                   </div>
                   <span className="font-medium text-gray-900">Seller Application</span>
                 </div>
-                <Badge variant="secondary">Pending</Badge>
+                <Badge variant="secondary" className="text-xs">Pending</Badge>
               </CardContent>
             </Card>
           ) : (
-            <Card onClick={handleBecomeSellerClick} className="cursor-pointer hover:shadow-md transition-shadow relative">
-              <CardContent className="p-4 flex items-center justify-between">
+            <Card onClick={handleBecomeSellerClick} className="cursor-pointer hover:shadow-md transition-shadow relative rounded-xl">
+              <CardContent className="p-3 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center relative">
+                  <div className="h-10 w-10 rounded-xl bg-indigo-100 flex items-center justify-center relative">
                     <Store className="h-5 w-5 text-indigo-600" />
                     {shouldShowSellerBadge && (
                       <span className="absolute -top-1 -right-1 flex h-3 w-3">
@@ -713,7 +698,7 @@ const Profile = () => {
           {/* Logout Button */}
           <Button 
             variant="destructive" 
-            className="w-full mt-6 h-14 text-base font-semibold rounded-2xl shadow-lg hover:shadow-xl transition-smooth" 
+            className="w-full mt-4 h-12 text-base font-semibold rounded-xl shadow-lg hover:shadow-xl transition-smooth" 
             onClick={signOut}
           >
             <LogOut className="h-5 w-5 mr-2" />

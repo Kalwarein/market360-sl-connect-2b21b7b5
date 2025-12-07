@@ -1,14 +1,16 @@
-import { Menu, Home, HelpCircle, Mail, Shield, Info, FileText, Wallet, Moon, Sun } from 'lucide-react';
+import { Menu, Home, HelpCircle, Mail, Shield, Info, FileText, Moon, Sun, Lock } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from './ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from './ui/sheet';
 import { Separator } from './ui/separator';
+import { useUserRoles } from '@/hooks/useUserRoles';
 
 const Sidebar = () => {
   const [open, setOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
   const navigate = useNavigate();
+  const { isAdmin } = useUserRoles();
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme');
@@ -36,7 +38,6 @@ const Sidebar = () => {
   const menuItems = [
     { icon: Home, label: 'Home', path: '/' },
     { icon: Info, label: 'About Us', path: '/about' },
-    { icon: Wallet, label: 'How to Top Up', path: '/how-to-top-up' },
     { icon: Shield, label: 'Security Info', path: '/security-info' },
     { icon: HelpCircle, label: 'Support', path: '/support' },
     { icon: Mail, label: 'Contact', path: '/contact' },
@@ -98,6 +99,21 @@ const Sidebar = () => {
             )}
           </Button>
         </div>
+
+        {/* Admin Access - Only visible to admins */}
+        {isAdmin && (
+          <>
+            <Separator className="my-6" />
+            <Button
+              variant="default"
+              className="w-full justify-start bg-primary hover:bg-primary/90 rounded-xl"
+              onClick={() => { navigate('/admin'); setOpen(false); }}
+            >
+              <Lock className="h-5 w-5 mr-3" />
+              <span className="font-medium">Admin Dashboard</span>
+            </Button>
+          </>
+        )}
       </SheetContent>
     </Sheet>
   );
