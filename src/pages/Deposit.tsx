@@ -4,51 +4,25 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
-import { Upload, ArrowLeft, CheckCircle, Smartphone, Copy, Clock, ImageIcon } from 'lucide-react';
+import { Upload, AlertCircle, ArrowLeft, Info } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-
-const PAYMENT_NUMBER = '078444807';
 
 const Deposit = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [amount, setAmount] = useState('');
+  const [phone, setPhone] = useState('');
+  const [referenceNumber, setReferenceNumber] = useState('');
   const [screenshot, setScreenshot] = useState<File | null>(null);
-  const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [copied, setCopied] = useState(false);
-
-  const copyNumber = () => {
-    navigator.clipboard.writeText(PAYMENT_NUMBER);
-    setCopied(true);
-    toast.success('Number copied!');
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const handleScreenshotChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setScreenshot(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setScreenshotPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!amount) {
-      toast.error('Please enter an amount');
-      return;
-    }
-
-    if (!screenshot) {
-      toast.error('Payment evidence is required');
+    if (!amount || !phone || !referenceNumber) {
+      toast.error('Please fill all required fields');
       return;
     }
 
@@ -60,213 +34,219 @@ const Deposit = () => {
 
     try {
       setSubmitting(true);
+      let screenshotUrl = '';
 
-      // Upload screenshot
-      const fileExt = screenshot.name.split('.').pop();
-      const fileName = `deposit-${user?.id}-${Date.now()}.${fileExt}`;
-      const { error: uploadError } = await supabase.storage
-        .from('product-images')
-        .upload(fileName, screenshot);
+      if (screenshot) {
+        const fileExt = screenshot.name.split('.').pop();
+        const fileName = `deposit-${user?.id}-${Date.now()}.${fileExt}`;
+        const { error: uploadError } = await supabase.storage
+          .from('product-images')
+          .upload(fileName, screenshot);
 
-      if (uploadError) throw uploadError;
+        if (uploadError) throw uploadError;
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('product-images')
-        .getPublicUrl(fileName);
+        const { data: { publicUrl } } = supabase.storage
+          .from('product-images')
+          .getPublicUrl(fileName);
+        screenshotUrl = publicUrl;
+      }
 
-      // Create deposit with 'processing' status
       const { error } = await supabase.from('wallet_requests').insert({
         user_id: user?.id,
         type: 'deposit',
         amount: amountNum,
-        phone_number: PAYMENT_NUMBER,
-        screenshot_url: publicUrl,
-        status: 'processing',
+        phone_number: phone,
+        reference_number: referenceNumber,
+        screenshot_url: screenshotUrl,
       });
 
       if (error) throw error;
 
-      toast.success('Deposit recorded! Funds will reflect shortly.');
-      navigate('/deposit-history');
+      toast.success('Deposit request submitted successfully!');
+      navigate('/wallet');
     } catch (error) {
       console.error('Error submitting deposit:', error);
-      toast.error('Failed to submit deposit');
+      toast.error('Failed to submit deposit request');
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-accent/5 pb-24">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-card border-b border-border shadow-sm">
-        <div className="max-w-2xl mx-auto px-4 py-4 flex items-center gap-3">
+      <div className="sticky top-0 z-10 bg-card/95 backdrop-blur-lg border-b border-border/50 shadow-sm">
+        <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate('/wallet')}
+              className="rounded-full hover:bg-primary/10"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <div>
+              <h1 className="text-xl font-bold text-foreground">Top Up Wallet</h1>
+              <p className="text-sm text-muted-foreground">Add funds to your wallet</p>
+            </div>
+          </div>
           <Button
             variant="ghost"
-            size="icon"
-            onClick={() => navigate('/wallet')}
-            className="rounded-full"
+            size="sm"
+            onClick={() => navigate('/how-to-top-up')}
+            className="text-primary hover:text-primary-hover rounded-full"
           >
-            <ArrowLeft className="h-5 w-5" />
+            <Info className="h-4 w-4 mr-1" />
+            Guide
           </Button>
-          <div>
-            <h1 className="text-xl font-bold">Deposit Funds</h1>
-            <p className="text-sm text-muted-foreground">Add money to your wallet</p>
-          </div>
         </div>
       </div>
 
-      <div className="max-w-2xl mx-auto px-4 py-6">
+      {/* Content */}
+      <div className="max-w-2xl mx-auto px-4 py-8">
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Step 1: Send Money */}
-          <Card className="border-2 border-primary/30 bg-gradient-to-br from-primary/5 to-accent/5">
+          {/* Info Banner */}
+          <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 via-accent/5 to-primary/10 shadow-lg">
             <CardContent className="p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
-                  <span className="text-lg font-bold text-primary">1</span>
+              <div className="flex gap-4 items-start">
+                <div className="p-3 bg-primary/10 rounded-2xl">
+                  <AlertCircle className="h-6 w-6 text-primary" />
                 </div>
-                <h3 className="font-bold text-lg">Send Money via Orange Money</h3>
-              </div>
-              
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Smartphone className="h-4 w-4" />
-                  <span>Dial *144# → Send Money → Enter this number:</span>
-                </div>
-                
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 bg-card border-2 border-primary/50 rounded-xl px-4 py-3">
-                    <p className="text-2xl font-mono font-bold text-primary text-center">
-                      {PAYMENT_NUMBER}
+                <div className="space-y-3 flex-1">
+                  <h3 className="font-bold text-lg text-foreground">Orange Money Payment</h3>
+                  <ol className="space-y-2 text-sm text-muted-foreground leading-relaxed">
+                    <li className="flex gap-2">
+                      <span className="font-bold text-primary">1.</span>
+                      Send money to: <strong className="text-primary">078444807</strong>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="font-bold text-primary">2.</span>
+                      Save the Orange Money reference number from SMS
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="font-bold text-primary">3.</span>
+                      Enter details below and paste the reference number
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="font-bold text-primary">4.</span>
+                      Upload screenshot of SMS (optional but recommended)
+                    </li>
+                  </ol>
+                  <div className="mt-4 pt-4 border-t border-primary/20">
+                    <p className="text-sm font-bold text-green-600 flex items-center gap-2">
+                      ✓ No fees! Full amount will be credited to your wallet
                     </p>
                   </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    onClick={copyNumber}
-                    className="h-14 w-14 rounded-xl border-2"
-                  >
-                    {copied ? (
-                      <CheckCircle className="h-5 w-5 text-green-600" />
-                    ) : (
-                      <Copy className="h-5 w-5" />
-                    )}
-                  </Button>
                 </div>
-                
-                <p className="text-sm text-green-600 font-medium flex items-center gap-2">
-                  <CheckCircle className="h-4 w-4" />
-                  No fees - Full amount will be credited to your wallet
-                </p>
               </div>
             </CardContent>
           </Card>
 
-          {/* Step 2: Enter Amount */}
-          <Card className="border-2 border-border">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
-                  <span className="text-lg font-bold text-primary">2</span>
-                </div>
-                <h3 className="font-bold text-lg">Enter Amount Sent</h3>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="amount">Amount (SLL) *</Label>
-                <Input
-                  id="amount"
-                  type="number"
-                  placeholder="Enter amount you sent"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  className="h-14 text-xl font-bold rounded-xl border-2"
-                  required
-                />
-              </div>
+          {/* Amount Input */}
+          <Card className="border-2 border-border hover:border-primary/50 transition-all shadow-md">
+            <CardContent className="p-6 space-y-3">
+              <Label htmlFor="amount" className="text-base font-bold text-foreground flex items-center gap-2">
+                Amount (SLL)
+                <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="amount"
+                type="number"
+                placeholder="Enter amount"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                className="h-14 text-xl font-bold rounded-2xl border-2 focus:border-primary shadow-sm"
+                required
+              />
             </CardContent>
           </Card>
 
-          {/* Step 3: Upload Evidence */}
-          <Card className="border-2 border-border">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
-                  <span className="text-lg font-bold text-primary">3</span>
-                </div>
-                <h3 className="font-bold text-lg">Upload Payment Evidence *</h3>
-              </div>
-              
-              <p className="text-sm text-muted-foreground mb-4">
-                Screenshot the Orange Money confirmation SMS or receipt
+          {/* Phone Number */}
+          <Card className="border-2 border-border hover:border-primary/50 transition-all shadow-md">
+            <CardContent className="p-6 space-y-3">
+              <Label htmlFor="phone" className="text-base font-bold text-foreground flex items-center gap-2">
+                Phone Number
+                <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="phone"
+                type="tel"
+                placeholder="Enter phone number"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                className="h-14 rounded-2xl border-2 focus:border-primary shadow-sm"
+                required
+              />
+            </CardContent>
+          </Card>
+
+          {/* Reference Number */}
+          <Card className="border-2 border-border hover:border-primary/50 transition-all shadow-md">
+            <CardContent className="p-6 space-y-3">
+              <Label htmlFor="reference" className="text-base font-bold text-foreground flex items-center gap-2">
+                Orange Money Reference Number
+                <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="reference"
+                type="text"
+                placeholder="Paste reference number from SMS"
+                value={referenceNumber}
+                onChange={(e) => setReferenceNumber(e.target.value)}
+                className="h-14 rounded-2xl border-2 focus:border-primary shadow-sm font-mono"
+                required
+              />
+              <p className="text-sm text-muted-foreground flex items-center gap-2">
+                📱 Copy the reference number from your Orange Money SMS
               </p>
-              
-              <label className="block cursor-pointer">
-                {screenshotPreview ? (
-                  <div className="relative rounded-xl overflow-hidden border-2 border-primary/50">
-                    <img 
-                      src={screenshotPreview} 
-                      alt="Payment evidence" 
-                      className="w-full h-48 object-cover"
-                    />
-                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                      <p className="text-white font-medium">Click to change</p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="border-2 border-dashed border-primary/50 rounded-xl p-8 text-center hover:bg-primary/5 transition-colors">
-                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
-                      <ImageIcon className="h-8 w-8 text-primary" />
-                    </div>
-                    <p className="font-semibold text-foreground">
-                      Tap to upload screenshot
-                    </p>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Required for verification
-                    </p>
-                  </div>
-                )}
+            </CardContent>
+          </Card>
+
+          {/* Screenshot Upload */}
+          <Card className="border-2 border-dashed border-border hover:border-primary/50 transition-all shadow-md">
+            <CardContent className="p-6 space-y-3">
+              <Label htmlFor="screenshot" className="text-base font-bold text-foreground">
+                Payment Proof (Optional)
+              </Label>
+              <label className="flex flex-col items-center justify-center gap-4 p-8 cursor-pointer hover:bg-primary/5 rounded-2xl transition-all border-2 border-dashed border-border hover:border-primary group">
+                <div className="p-4 bg-primary/10 rounded-full group-hover:bg-primary/20 transition-colors">
+                  <Upload className="h-8 w-8 text-primary" />
+                </div>
+                <div className="text-center">
+                  <p className="font-semibold text-foreground">
+                    {screenshot ? screenshot.name : 'Click to upload screenshot'}
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Upload SMS screenshot for faster processing
+                  </p>
+                </div>
                 <input
                   type="file"
                   accept="image/*"
                   className="hidden"
-                  onChange={handleScreenshotChange}
-                  required
+                  onChange={(e) => setScreenshot(e.target.files?.[0] || null)}
                 />
               </label>
             </CardContent>
           </Card>
 
-          {/* Info Note */}
-          <div className="flex items-start gap-3 p-4 bg-blue-50 dark:bg-blue-950/30 rounded-xl border border-blue-200 dark:border-blue-800">
-            <Clock className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
-            <div className="text-sm">
-              <p className="font-semibold text-blue-900 dark:text-blue-100">
-                Processing Time
-              </p>
-              <p className="text-blue-700 dark:text-blue-300">
-                Deposits are typically processed within minutes. You'll receive a notification when funds are added.
-              </p>
-            </div>
-          </div>
-
           {/* Submit Button */}
-          <div className="flex gap-4">
+          <div className="flex gap-4 pt-4">
             <Button 
               type="button"
               variant="outline" 
               onClick={() => navigate('/wallet')}
-              className="flex-1 h-14 rounded-xl font-bold border-2"
+              className="flex-1 h-14 rounded-2xl font-bold text-base border-2 hover:bg-muted transition-all"
             >
               Cancel
             </Button>
             <Button 
               type="submit"
-              disabled={submitting || !amount || !screenshot}
-              className="flex-1 h-14 rounded-xl font-bold shadow-lg"
+              disabled={submitting}
+              className="flex-1 h-14 rounded-2xl font-bold text-base shadow-xl shadow-primary/40 hover:shadow-2xl hover:shadow-primary/50 transition-all bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90"
             >
-              {submitting ? 'Processing...' : 'Confirm Deposit'}
+              {submitting ? 'Submitting...' : 'Submit Request'}
             </Button>
           </div>
         </form>

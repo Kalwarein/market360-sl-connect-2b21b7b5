@@ -65,7 +65,7 @@ import TopDeals from "./pages/TopDeals";
 import TopRanking from "./pages/TopRanking";
 import NewArrivals from "./pages/NewArrivals";
 import ProductCreationSuccess from "./pages/ProductCreationSuccess";
-import DepositHistory from "./pages/DepositHistory";
+import HowToTopUp from "./pages/HowToTopUp";
 import ModerationScreen from "./pages/ModerationScreen";
 import AdminUserDetail from "./pages/AdminUserDetail";
 import AdminAppeals from "./pages/AdminAppeals";
@@ -155,7 +155,7 @@ const App = () => (
               <Route path="/terms" element={<Terms />} />
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/security-info" element={<SecurityInfo />} />
-              <Route path="/deposit-history" element={<ProtectedRoute><DepositHistory /></ProtectedRoute>} />
+              <Route path="/how-to-top-up" element={<ProtectedRoute><HowToTopUp /></ProtectedRoute>} />
               <Route path="/product-management/:id" element={<ProtectedRoute><ProductManagement /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
                 </Routes>
