@@ -32,6 +32,8 @@ interface Product {
   saves_count?: number;
   orders_count?: number;
   created_at?: string;
+  is_promoted?: boolean;
+  promoted_until?: string | null;
 }
 
 interface Order {

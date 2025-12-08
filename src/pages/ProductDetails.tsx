@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, MessageSquare, ShoppingCart, Share2, Store as StoreIcon, Shield, ChevronRight, CheckCircle, Star } from 'lucide-react';
+import { ArrowLeft, MessageSquare, ShoppingCart, Share2, Store as StoreIcon, Shield, ChevronRight, CheckCircle, Star, Edit, Crown, Sparkles } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import ProductImageCarousel from '@/components/ProductImageCarousel';
@@ -71,6 +71,8 @@ interface Product {
 const ProductDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isPreviewMode = searchParams.get('view') === 'preview';
   const { user } = useAuth();
   const { addToCart } = useCart();
   const { toast } = useToast();
@@ -81,6 +83,7 @@ const ProductDetails = () => {
   const [showZoomModal, setShowZoomModal] = useState(false);
   const [zoomImageIndex, setZoomImageIndex] = useState(0);
   const [reviews, setReviews] = useState<any[]>([]);
+  const [isPromoted, setIsPromoted] = useState(false);
   
   // Get store perks
   const { hasVerifiedBadge } = useStorePerks(product?.stores?.id || null);
@@ -118,6 +121,10 @@ const ProductDetails = () => {
       };
       
       setProduct(parsedData as any);
+      
+      // Check if product is promoted
+      const isActivelyPromoted = data.is_promoted && data.promoted_until && new Date(data.promoted_until) > new Date();
+      setIsPromoted(isActivelyPromoted);
 
       await supabase.from('product_views').insert({
         product_id: id,
@@ -258,12 +265,7 @@ const ProductDetails = () => {
   };
 
   const isSeller = user?.id === product?.stores.owner_id;
-
-  useEffect(() => {
-    if (isSeller && product) {
-      navigate(`/product-management/${product.id}`);
-    }
-  }, [isSeller, product]);
+  const isSellerPreview = isSeller && isPreviewMode;
 
   if (loading) {
     return (
@@ -712,9 +714,47 @@ const ProductDetails = () => {
             </div>
           </div>
         </div>
+      ) : isSellerPreview ? (
+        /* Seller Preview Mode - No buyer actions */
+        <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur border-t shadow-lg z-40 rounded-t-3xl">
+          <div className="container mx-auto max-w-screen-xl px-4 py-4">
+            {/* Promoted Badge */}
+            {isPromoted && (
+              <div className="flex items-center justify-center gap-2 mb-3 py-2 bg-gradient-to-r from-amber-100 to-orange-100 rounded-xl">
+                <Crown className="h-4 w-4 text-amber-600" />
+                <span className="text-sm font-medium text-amber-700">This product is promoted</span>
+                <Sparkles className="h-4 w-4 text-amber-600" />
+              </div>
+            )}
+            <div className="flex gap-3">
+              <Button 
+                variant="outline" 
+                className="flex-1 rounded-xl shadow-sm" 
+                onClick={() => navigate(`/product-management/${product.id}`)}
+              >
+                <Edit className="h-4 w-4 mr-2" />
+                Edit Product
+              </Button>
+              <Button 
+                className="flex-1 rounded-xl shadow-md" 
+                onClick={() => navigate('/seller-dashboard')}
+              >
+                Back to Dashboard
+              </Button>
+            </div>
+          </div>
+        </div>
       ) : (
         <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur border-t shadow-lg z-40 rounded-t-3xl">
           <div className="container mx-auto max-w-screen-xl px-4 py-4">
+            {/* Promoted Badge for buyers */}
+            {isPromoted && (
+              <div className="flex items-center justify-center gap-2 mb-3 py-2 bg-gradient-to-r from-amber-100 to-orange-100 rounded-xl">
+                <Crown className="h-4 w-4 text-amber-600" />
+                <span className="text-sm font-medium text-amber-700">Verified & Promoted Product</span>
+                <CheckCircle className="h-4 w-4 text-amber-600" />
+              </div>
+            )}
             {!product.inquiry_only ? (
               <div className="flex gap-3">
                 <Button 

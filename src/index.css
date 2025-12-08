@@ -259,6 +259,10 @@ All colors MUST be HSL.
     100% { background-position: 200% center; }
   }
 
+  .animate-shimmer {
+    animation: shimmer 2s linear infinite;
+  }
+
   /* Typewriter Effect for Premium Stores */
   @keyframes typewriter {
     from { width: 0; }
