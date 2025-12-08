@@ -34,6 +34,7 @@ const ProductManagement = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isProcessingDeletion, setIsProcessingDeletion] = useState(false);
   const [product, setProduct] = useState<any>(null);
   const [formData, setFormData] = useState({
     title: '',
@@ -70,6 +71,7 @@ const ProductManagement = () => {
   const [productHighlights, setProductHighlights] = useState<string[]>([]);
   const [seoKeywords, setSeoKeywords] = useState<string[]>([]);
   const [replacementAvailable, setReplacementAvailable] = useState(false);
+  const [scheduledDeletionAt, setScheduledDeletionAt] = useState<string | null>(null);
 
   useEffect(() => {
     loadProduct();
@@ -134,6 +136,7 @@ const ProductManagement = () => {
       setProductHighlights(Array.isArray(data.product_highlights) ? data.product_highlights as string[] : []);
       setSeoKeywords(Array.isArray(data.seo_keywords) ? data.seo_keywords as string[] : []);
       setReplacementAvailable(data.replacement_available || false);
+      setScheduledDeletionAt(data.scheduled_deletion_at || null);
     } catch (error) {
       console.error('Error loading product:', error);
       toast({
@@ -207,27 +210,71 @@ const ProductManagement = () => {
     }
   };
 
-  const handleDelete = async () => {
+  const handleScheduleDeletion = async () => {
+    setIsProcessingDeletion(true);
+    try {
+      const deletionTime = new Date();
+      deletionTime.setHours(deletionTime.getHours() + 48);
+      
+      const { error } = await supabase
+        .from('products')
+        .update({ 
+          scheduled_deletion_at: deletionTime.toISOString(),
+          published: false
+        })
+        .eq('id', id);
+      
+      if (error) throw error;
+      
+      setScheduledDeletionAt(deletionTime.toISOString());
+      setFormData(prev => ({ ...prev, published: false }));
+      
+      toast({
+        title: 'Deletion Scheduled',
+        description: 'Product will be permanently deleted in 48 hours. It is now hidden from buyers.',
+      });
+    } catch (error) {
+      console.error('Error scheduling deletion:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to schedule deletion',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsProcessingDeletion(false);
+      setShowDeleteDialog(false);
+    }
+  };
+
+  const handleCancelDeletion = async () => {
+    setIsProcessingDeletion(true);
     try {
       const { error } = await supabase
         .from('products')
-        .delete()
+        .update({ 
+          scheduled_deletion_at: null,
+          published: true
+        })
         .eq('id', id);
-
+      
       if (error) throw error;
-
+      
+      setScheduledDeletionAt(null);
+      setFormData(prev => ({ ...prev, published: true }));
+      
       toast({
-        title: 'Success',
-        description: 'Product deleted successfully',
+        title: 'Product Restored',
+        description: 'Product has been restored and is now visible to buyers.',
       });
-      navigate('/seller-dashboard');
     } catch (error) {
-      console.error('Error deleting product:', error);
+      console.error('Error cancelling deletion:', error);
       toast({
         title: 'Error',
-        description: 'Failed to delete product',
+        description: 'Failed to cancel deletion',
         variant: 'destructive',
       });
+    } finally {
+      setIsProcessingDeletion(false);
     }
   };
 
@@ -617,44 +664,86 @@ const ProductManagement = () => {
           </CardContent>
         </Card>
 
+        {/* Pending Deletion Banner */}
+        {scheduledDeletionAt && (
+          <Card className="bg-destructive/10 border-destructive/30 rounded-2xl">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-destructive/20 flex items-center justify-center">
+                  <Trash2 className="h-5 w-5 text-destructive" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-destructive">Scheduled for Deletion</h3>
+                  <p className="text-sm text-destructive/80">
+                    This product will be permanently deleted in {(() => {
+                      const now = new Date().getTime();
+                      const deletionTime = new Date(scheduledDeletionAt).getTime();
+                      const diff = deletionTime - now;
+                      if (diff <= 0) return 'shortly';
+                      const hours = Math.floor(diff / (1000 * 60 * 60));
+                      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                      return `${hours}h ${minutes}m`;
+                    })()}
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="rounded-full border-destructive text-destructive hover:bg-destructive hover:text-white"
+                  onClick={handleCancelDeletion}
+                  disabled={isProcessingDeletion}
+                >
+                  {isProcessingDeletion ? 'Restoring...' : 'Cancel Deletion'}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Action Buttons */}
         <div className="flex gap-3 sticky bottom-4">
           <Button 
             onClick={handleSave} 
-            disabled={saving} 
+            disabled={saving || !!scheduledDeletionAt} 
             className="flex-1 h-12 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-lg hover:shadow-xl transition-all"
           >
             <Save className="h-4 w-4 mr-2" />
             {saving ? 'Saving Changes...' : 'Save Changes'}
           </Button>
-          <Button
-            variant="destructive"
-            onClick={() => setShowDeleteDialog(true)}
-            className="flex-1 h-12 rounded-full font-semibold shadow-lg hover:shadow-xl transition-all"
-          >
-            <Trash2 className="h-4 w-4 mr-2" />
-            Delete Product
-          </Button>
+          {!scheduledDeletionAt && (
+            <Button
+              variant="destructive"
+              onClick={() => setShowDeleteDialog(true)}
+              className="flex-1 h-12 rounded-full font-semibold shadow-lg hover:shadow-xl transition-all"
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete Product
+            </Button>
+          )}
         </div>
       </div>
 
-      {/* Delete Confirmation Dialog */}
+      {/* Delete Confirmation Dialog - 48hr safe deletion */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent className="rounded-2xl">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-xl">Delete Product?</AlertDialogTitle>
-            <AlertDialogDescription className="text-base">
-              This action cannot be undone. The product will be permanently removed from
-              the platform and all associated data will be deleted.
+            <div className="mx-auto w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center mb-2">
+              <Trash2 className="h-6 w-6 text-destructive" />
+            </div>
+            <AlertDialogTitle className="text-xl text-center">Schedule Product Deletion?</AlertDialogTitle>
+            <AlertDialogDescription className="text-base text-center">
+              This product will be hidden from buyers immediately and permanently deleted in <strong>48 hours</strong>. 
+              You can cancel the deletion anytime before it's finalized.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="gap-2">
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
             <AlertDialogCancel className="rounded-full">Cancel</AlertDialogCancel>
             <AlertDialogAction 
-              onClick={handleDelete} 
+              onClick={handleScheduleDeletion} 
               className="bg-destructive hover:bg-destructive/90 rounded-full"
+              disabled={isProcessingDeletion}
             >
-              Delete Product
+              {isProcessingDeletion ? 'Processing...' : 'Schedule Deletion'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
