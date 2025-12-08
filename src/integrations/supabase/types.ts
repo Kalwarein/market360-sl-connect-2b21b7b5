@@ -480,6 +480,7 @@ export type Database = {
           images: string[]
           included_in_box: string[] | null
           inquiry_only: boolean | null
+          is_promoted: boolean | null
           material: string | null
           model_number: string | null
           moq: number | null
@@ -492,6 +493,7 @@ export type Database = {
           product_requirements: string | null
           product_type: string | null
           product_video_url: string | null
+          promoted_until: string | null
           published: boolean | null
           replacement_available: boolean | null
           safety_tags: string[] | null
@@ -529,6 +531,7 @@ export type Database = {
           images?: string[]
           included_in_box?: string[] | null
           inquiry_only?: boolean | null
+          is_promoted?: boolean | null
           material?: string | null
           model_number?: string | null
           moq?: number | null
@@ -541,6 +544,7 @@ export type Database = {
           product_requirements?: string | null
           product_type?: string | null
           product_video_url?: string | null
+          promoted_until?: string | null
           published?: boolean | null
           replacement_available?: boolean | null
           safety_tags?: string[] | null
@@ -578,6 +582,7 @@ export type Database = {
           images?: string[]
           included_in_box?: string[] | null
           inquiry_only?: boolean | null
+          is_promoted?: boolean | null
           material?: string | null
           model_number?: string | null
           moq?: number | null
@@ -590,6 +595,7 @@ export type Database = {
           product_requirements?: string | null
           product_type?: string | null
           product_video_url?: string | null
+          promoted_until?: string | null
           published?: boolean | null
           replacement_available?: boolean | null
           safety_tags?: string[] | null

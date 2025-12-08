@@ -57,6 +57,7 @@ import AdminBroadcast from "./pages/AdminBroadcast";
 import SecurityInfo from "./pages/SecurityInfo";
 import ProductManagement from "./pages/ProductManagement";
 import Perks from "./pages/Perks";
+import PromoteProduct from "./pages/PromoteProduct";
 import ProfileViewer from "./pages/ProfileViewer";
 import OrderArrival from "./pages/OrderArrival";
 import AdminSellerApplications from "./pages/AdminSellerApplications";
@@ -157,6 +158,7 @@ const App = () => (
               <Route path="/security-info" element={<SecurityInfo />} />
               <Route path="/how-to-top-up" element={<ProtectedRoute><HowToTopUp /></ProtectedRoute>} />
               <Route path="/product-management/:id" element={<ProtectedRoute><ProductManagement /></ProtectedRoute>} />
+              <Route path="/promote-product" element={<ProtectedRoute><PromoteProduct /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
                 </Routes>
               </CartProvider>

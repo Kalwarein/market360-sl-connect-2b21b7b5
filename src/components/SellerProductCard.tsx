@@ -261,9 +261,9 @@ export const SellerProductCard = ({
           isPendingDeletion,
           remainingTime,
         }}
-        onViewProduct={() => navigate(`/product/${id}`)}
-        onEditProduct={() => navigate(`/product/${id}/manage`)}
-        onPromoteProduct={() => navigate('/perks')}
+        onViewProduct={() => navigate(`/product/${id}?view=preview`)}
+        onEditProduct={() => navigate(`/product-management/${id}`)}
+        onPromoteProduct={() => navigate(`/promote-product?productId=${id}`)}
         onDeleteProduct={() => setShowDeleteDialog(true)}
         onCancelDeletion={() => setShowCancelDialog(true)}
       />
