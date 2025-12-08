@@ -667,7 +667,29 @@ const ProductDetails = () => {
       </div>
 
       {/* Fixed Bottom Action Bar */}
-      {!user ? (
+      {/* Hide action buttons if seller is viewing their own product */}
+      {product.stores.owner_id === user?.id ? (
+        <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur border-t shadow-lg z-40 rounded-t-3xl">
+          <div className="container mx-auto max-w-screen-xl px-4 py-4">
+            <div className="flex gap-3">
+              <Button 
+                variant="outline" 
+                className="flex-1 rounded-xl shadow-sm" 
+                onClick={() => navigate(`/product/${id}/manage`)}
+              >
+                <MessageSquare className="h-4 w-4 mr-2" />
+                Edit Product
+              </Button>
+              <Button 
+                className="flex-1 rounded-xl shadow-md bg-gradient-to-r from-primary to-secondary" 
+                onClick={() => navigate('/seller-dashboard')}
+              >
+                Back to Dashboard
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : !user ? (
         <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur border-t shadow-lg z-40 rounded-t-3xl">
           <div className="container mx-auto max-w-screen-xl px-4 py-4 space-y-3">
             <p className="text-center text-sm text-muted-foreground">
