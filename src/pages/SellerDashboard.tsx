@@ -11,6 +11,7 @@ import { useUserRoles } from '@/hooks/useUserRoles';
 import { useSellerNotifications } from '@/hooks/useSellerNotifications';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
+import { SellerProductCard } from '@/components/SellerProductCard';
 
 interface Store {
   id: string;
@@ -26,6 +27,11 @@ interface Product {
   images: string[];
   published: boolean;
   product_code: string;
+  scheduled_deletion_at?: string | null;
+  views_count?: number;
+  saves_count?: number;
+  orders_count?: number;
+  created_at?: string;
 }
 
 interface Order {
@@ -241,36 +247,23 @@ const SellerDashboard = () => {
                 </Card>
               ) : (
                 products.map((product) => (
-                  <Card
+                  <SellerProductCard
                     key={product.id}
-                    className="rounded-2xl shadow-sm border-border/50 hover:shadow-md transition-all cursor-pointer"
-                    onClick={() => navigate(`/product/${product.id}`)}
-                  >
-                    <CardContent className="p-4">
-                      <div className="flex gap-4">
-                        <div className="w-20 h-20 rounded-xl overflow-hidden bg-muted flex-shrink-0">
-                          {product.images[0] && (
-                            <img
-                              src={product.images[0]}
-                              alt={product.title}
-                              className="w-full h-full object-cover"
-                            />
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-foreground truncate">{product.title}</h3>
-                          <p className="text-sm text-muted-foreground">SKU: {product.product_code}</p>
-                          <p className="text-lg font-bold text-primary mt-1">SLL {product.price.toLocaleString()}</p>
-                          <Badge
-                            variant={product.published ? 'default' : 'secondary'}
-                            className="mt-2 rounded-full"
-                          >
-                            {product.published ? 'Published' : 'Draft'}
-                          </Badge>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                    id={product.id}
+                    title={product.title}
+                    price={product.price}
+                    image={product.images[0] || ''}
+                    images={product.images}
+                    productCode={product.product_code}
+                    storeId={store?.id}
+                    published={product.published}
+                    scheduledDeletionAt={product.scheduled_deletion_at}
+                    viewsCount={product.views_count || 0}
+                    savesCount={product.saves_count || 0}
+                    ordersCount={product.orders_count || 0}
+                    createdAt={product.created_at}
+                    onRefresh={loadDashboardData}
+                  />
                 ))
               )}
             </div>

@@ -483,6 +483,7 @@ export type Database = {
           material: string | null
           model_number: string | null
           moq: number | null
+          orders_count: number | null
           origin: string | null
           perks: Json | null
           price: number
@@ -494,6 +495,8 @@ export type Database = {
           published: boolean | null
           replacement_available: boolean | null
           safety_tags: string[] | null
+          saves_count: number | null
+          scheduled_deletion_at: string | null
           search_phrases: string[] | null
           seller_story: string | null
           seo_keywords: string[] | null
@@ -507,6 +510,7 @@ export type Database = {
           title: string
           updated_at: string
           variants: Json | null
+          views_count: number | null
           warranty: string | null
           warranty_type: string | null
         }
@@ -528,6 +532,7 @@ export type Database = {
           material?: string | null
           model_number?: string | null
           moq?: number | null
+          orders_count?: number | null
           origin?: string | null
           perks?: Json | null
           price: number
@@ -539,6 +544,8 @@ export type Database = {
           published?: boolean | null
           replacement_available?: boolean | null
           safety_tags?: string[] | null
+          saves_count?: number | null
+          scheduled_deletion_at?: string | null
           search_phrases?: string[] | null
           seller_story?: string | null
           seo_keywords?: string[] | null
@@ -552,6 +559,7 @@ export type Database = {
           title: string
           updated_at?: string
           variants?: Json | null
+          views_count?: number | null
           warranty?: string | null
           warranty_type?: string | null
         }
@@ -573,6 +581,7 @@ export type Database = {
           material?: string | null
           model_number?: string | null
           moq?: number | null
+          orders_count?: number | null
           origin?: string | null
           perks?: Json | null
           price?: number
@@ -584,6 +593,8 @@ export type Database = {
           published?: boolean | null
           replacement_available?: boolean | null
           safety_tags?: string[] | null
+          saves_count?: number | null
+          scheduled_deletion_at?: string | null
           search_phrases?: string[] | null
           seller_story?: string | null
           seo_keywords?: string[] | null
@@ -597,6 +608,7 @@ export type Database = {
           title?: string
           updated_at?: string
           variants?: Json | null
+          views_count?: number | null
           warranty?: string | null
           warranty_type?: string | null
         }
@@ -1283,6 +1295,7 @@ export type Database = {
         Args: never
         Returns: undefined
       }
+      delete_expired_products: { Args: never; Returns: undefined }
       has_active_moderation: { Args: { user_uuid: string }; Returns: boolean }
       has_role: {
         Args: {
