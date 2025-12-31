@@ -1,0 +1,14 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "co.median.android.krrzaep",
+      "sha256_cert_fingerprints": [
+        "46:9D:63:47:75:3D:5E:97:B3:73:C6:24:62:79:7F:A6:6F:09:02:C4:68:08:FB:01:F7:EC:D0:6E:51:7E:9D:DC"
+      ]
+    }
+  }
+]
