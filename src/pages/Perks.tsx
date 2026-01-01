@@ -7,17 +7,17 @@ import {
   ArrowLeft, 
   Crown, 
   Zap, 
-  TrendingUp, 
   Star, 
   Sparkles, 
   Megaphone,
   CheckCircle2,
   Wallet as WalletIcon,
   Award,
-  Flame,
   Clock,
-  Gift,
-  Info
+  Info,
+  Shield,
+  Palette,
+  Eye
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -32,7 +32,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { PerkSpinWheel } from '@/components/PerkSpinWheel';
 import { getRemainingDays } from '@/hooks/usePerkAnalytics';
 import { cn } from '@/lib/utils';
 
@@ -49,9 +48,7 @@ interface Perk {
   duration: string;
   durationDays: number;
   perkType: string;
-  hasSpin?: boolean;
-  spinMin?: number;
-  spinMax?: number;
+  category: 'trust' | 'visibility' | 'ui' | 'premium';
 }
 
 interface ActivePerkInfo {
@@ -69,154 +66,111 @@ const Perks = () => {
   const [loading, setLoading] = useState(true);
   const [selectedPerk, setSelectedPerk] = useState<Perk | null>(null);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [showSpinWheel, setShowSpinWheel] = useState(false);
   const [purchasing, setPurchasing] = useState(false);
   const [activatedPerks, setActivatedPerks] = useState<ActivePerkInfo[]>([]);
-  const [spinDuration, setSpinDuration] = useState<number | null>(null);
 
-  // Updated perks with new pricing and durations
+  // UPDATED PERKS - Removed Top of Category and Trending Placement
+  // Each perk has clear, non-overlapping responsibilities
   const perks: Perk[] = [
     {
       id: '1',
       icon: Award,
       title: 'Verified Badge',
-      description: 'Display a verified checkmark on your store, products, chat, and reviews',
+      description: 'Display "Verified Store" label everywhere - builds trust with buyers (NO visibility boost)',
       price: 29,
       features: [
-        'Verified badge everywhere', 
-        'Increased buyer trust', 
-        'Search ranking boost', 
-        'Priority in recommendations'
+        '"Verified Store" on all products', 
+        'Badge on store profile', 
+        'Trust indicator in chats', 
+        'Buyer confidence boost'
       ],
       gradient: 'from-blue-500 to-blue-600',
       iconBg: 'bg-blue-100 dark:bg-blue-900/30',
       iconColor: 'text-blue-600 dark:text-blue-400',
       duration: '30 days',
       durationDays: 30,
-      perkType: 'verified_badge'
+      perkType: 'verified_badge',
+      category: 'trust'
     },
     {
       id: '2',
-      icon: Zap,
+      icon: Eye,
       title: 'Boosted Visibility',
-      description: 'Silent power boost - higher ranking in all listings without visible badge',
+      description: 'Your store appears in "Premium Stores" section on the home page',
       price: 117,
       features: [
-        'Backend ranking boost', 
-        '5x visibility in feeds', 
-        'Priority in search', 
-        'Enhanced impressions'
+        'Premium Stores homepage section', 
+        'Store-level exposure', 
+        'Increased discoverability', 
+        'No badge required'
       ],
       gradient: 'from-purple-500 to-purple-600',
       iconBg: 'bg-purple-100 dark:bg-purple-900/30',
       iconColor: 'text-purple-600 dark:text-purple-400',
       duration: '90 days',
       durationDays: 90,
-      perkType: 'boosted_visibility'
+      perkType: 'boosted_visibility',
+      category: 'visibility'
     },
     {
       id: '3',
-      icon: Star,
-      title: 'Top of Category',
-      description: 'Pin your store/products at the top of your category listings',
-      price: 19,
-      features: [
-        'Top category placement', 
-        '"Top of Category" label', 
-        'Category dominance', 
-        'Maximum exposure'
-      ],
-      gradient: 'from-amber-500 to-amber-600',
-      iconBg: 'bg-amber-100 dark:bg-amber-900/30',
-      iconColor: 'text-amber-600 dark:text-amber-400',
-      duration: '15 days',
-      durationDays: 15,
-      perkType: 'top_of_category'
-    },
-    {
-      id: '4',
-      icon: TrendingUp,
-      title: 'Trending Placement',
-      description: 'Feature in trending sections with SPIN to reveal duration!',
-      price: 120,
-      features: [
-        'Trending badge', 
-        'Homepage feature', 
-        'Strong visibility boost', 
-        'Priority over boosted items'
-      ],
-      gradient: 'from-rose-500 to-rose-600',
-      iconBg: 'bg-rose-100 dark:bg-rose-900/30',
-      iconColor: 'text-rose-600 dark:text-rose-400',
-      duration: 'SPIN: 30-100 days',
-      durationDays: 0, // Determined by spin
-      perkType: 'trending_placement',
-      hasSpin: true,
-      spinMin: 30,
-      spinMax: 100
-    },
-    {
-      id: '5',
       icon: Sparkles,
       title: 'Product Highlights',
-      description: 'Add glowing frames and emphasis effects around your products',
+      description: 'Premium UI styling for your product cards and product details pages',
       price: 75,
       features: [
-        'Highlighted borders', 
-        'Glow effects', 
-        '"Highlighted" tag', 
-        'Increased click-through'
+        'Premium product card styling', 
+        'Enhanced product details page', 
+        'Professional typography', 
+        'Cleaner layouts'
       ],
       gradient: 'from-emerald-500 to-emerald-600',
       iconBg: 'bg-emerald-100 dark:bg-emerald-900/30',
       iconColor: 'text-emerald-600 dark:text-emerald-400',
       duration: '60 days',
       durationDays: 60,
-      perkType: 'product_highlights'
+      perkType: 'product_highlights',
+      category: 'ui'
     },
     {
-      id: '6',
-      icon: Crown,
+      id: '4',
+      icon: Palette,
       title: 'Premium Theme',
-      description: 'Unlock exclusive premium store themes with SPIN duration!',
+      description: 'Exclusive premium store page design with enhanced layouts and styling',
       price: 150,
       features: [
-        'Premium UI theme', 
-        'Enhanced layouts', 
-        'Custom brand colors', 
-        'Professional look'
+        'Premium store page layout', 
+        'Enhanced spacing & typography', 
+        'Professional design elements', 
+        'Stand out from basic stores'
       ],
       gradient: 'from-violet-500 to-violet-600',
       iconBg: 'bg-violet-100 dark:bg-violet-900/30',
       iconColor: 'text-violet-600 dark:text-violet-400',
-      duration: 'SPIN: 60-200 days',
-      durationDays: 0, // Determined by spin
+      duration: '90 days',
+      durationDays: 90,
       perkType: 'premium_theme',
-      hasSpin: true,
-      spinMin: 60,
-      spinMax: 200
+      category: 'ui'
     },
     {
-      id: '7',
+      id: '5',
       icon: Megaphone,
       title: 'Featured Spotlight',
-      description: 'Maximum visibility in spotlight sections with SPIN duration!',
+      description: 'MAXIMUM visibility - homepage banners, featured sections, spotlight badge',
       price: 170,
       features: [
-        'Homepage banners', 
-        'Spotlight sections', 
-        'Promotional carousels', 
-        'Ultimate visibility'
+        'Homepage spotlight banners', 
+        'Featured Spotlight badge', 
+        'Maximum exposure everywhere', 
+        'Priority over all other perks'
       ],
-      gradient: 'from-red-500 to-red-600',
+      gradient: 'from-red-500 to-orange-500',
       iconBg: 'bg-red-100 dark:bg-red-900/30',
       iconColor: 'text-red-600 dark:text-red-400',
-      duration: 'SPIN: 70-100 days',
-      durationDays: 0, // Determined by spin
+      duration: '60 days',
+      durationDays: 60,
       perkType: 'featured_spotlight',
-      hasSpin: true,
-      spinMin: 70,
-      spinMax: 100
+      category: 'premium'
     }
   ];
 
@@ -293,20 +247,6 @@ const Perks = () => {
     }
 
     setSelectedPerk(perk);
-    
-    if (perk.hasSpin) {
-      // Show spin wheel for spin-based perks
-      setShowSpinWheel(true);
-    } else {
-      // Show confirmation dialog for fixed-duration perks
-      setShowConfirmDialog(true);
-    }
-  };
-
-  const handleSpinComplete = (durationDays: number) => {
-    setSpinDuration(durationDays);
-    setShowSpinWheel(false);
-    // Show confirmation with the spin result
     setShowConfirmDialog(true);
   };
 
@@ -316,8 +256,7 @@ const Perks = () => {
     setPurchasing(true);
     
     try {
-      // Calculate expiry date
-      const daysToAdd = selectedPerk.hasSpin ? (spinDuration || selectedPerk.spinMin || 30) : selectedPerk.durationDays;
+      const daysToAdd = selectedPerk.durationDays;
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + daysToAdd);
 
@@ -351,8 +290,7 @@ const Perks = () => {
           metadata: {
             perk_type: selectedPerk.perkType,
             perk_name: selectedPerk.title,
-            duration_days: daysToAdd,
-            spin_result: selectedPerk.hasSpin ? spinDuration : null
+            duration_days: daysToAdd
           }
         });
 
@@ -369,7 +307,7 @@ const Perks = () => {
           metadata: {
             duration_days: daysToAdd,
             features: selectedPerk.features,
-            spin_result: selectedPerk.hasSpin ? spinDuration : null
+            category: selectedPerk.category
           }
         });
 
@@ -408,12 +346,20 @@ const Perks = () => {
       setPurchasing(false);
       setShowConfirmDialog(false);
       setSelectedPerk(null);
-      setSpinDuration(null);
     }
   };
 
   const getActivePerkInfo = (perkType: string): ActivePerkInfo | undefined => {
     return activatedPerks.find(p => p.perkType === perkType);
+  };
+
+  const getCategoryLabel = (category: Perk['category']) => {
+    switch (category) {
+      case 'trust': return { label: 'TRUST', color: 'bg-blue-500' };
+      case 'visibility': return { label: 'VISIBILITY', color: 'bg-purple-500' };
+      case 'ui': return { label: 'UI UPGRADE', color: 'bg-emerald-500' };
+      case 'premium': return { label: 'MAXIMUM POWER', color: 'bg-red-500' };
+    }
   };
 
   if (loading) {
@@ -438,10 +384,10 @@ const Perks = () => {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div className="flex-1">
-            <h1 className="text-lg font-bold">Premium Upgrades</h1>
-            <p className="text-sm text-muted-foreground">Boost your store with premium perks</p>
+            <h1 className="text-lg font-bold">Store Perks</h1>
+            <p className="text-sm text-muted-foreground">Upgrade your store with powerful perks</p>
           </div>
-          <Flame className="h-6 w-6 text-primary" />
+          <Crown className="h-6 w-6 text-primary" />
         </div>
       </div>
 
@@ -472,7 +418,7 @@ const Perks = () => {
         </Card>
       </div>
 
-      {/* Info Banner */}
+      {/* Info Banner - Seller Required */}
       {!storeId && (
         <div className="mx-6 mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
           <div className="flex items-start gap-3">
@@ -489,27 +435,40 @@ const Perks = () => {
         </div>
       )}
 
-      {/* Spin Perks Notice */}
-      <div className="mx-6 mb-6 p-4 bg-primary/10 border border-primary/20 rounded-xl">
+      {/* Perk Categories Explanation */}
+      <div className="mx-6 mb-6 p-4 bg-muted/50 border rounded-xl">
         <div className="flex items-start gap-3">
-          <Gift className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-          <div>
-            <p className="text-sm font-medium text-foreground">
-              🎰 Spin Perks Available!
-            </p>
-            <p className="text-sm text-muted-foreground mt-1">
-              Some perks have a spin wheel that determines your duration. Guaranteed minimum 20% of max!
-            </p>
+          <Info className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+          <div className="space-y-2">
+            <p className="text-sm font-medium">Each perk has a unique purpose:</p>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                <span>Trust - Build buyer confidence</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-purple-500"></div>
+                <span>Visibility - Store exposure</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
+                <span>UI - Premium styling</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                <span>Premium - Maximum power</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Professional Perks Grid */}
+      {/* Perks Grid */}
       <div className="px-6 space-y-6">
-        {perks.map((perk, index) => {
+        {perks.map((perk) => {
           const activePerk = getActivePerkInfo(perk.perkType);
           const isActivated = !!activePerk;
-          const isPopular = perk.perkType === 'verified_badge' || perk.perkType === 'boosted_visibility';
+          const categoryInfo = getCategoryLabel(perk.category);
           
           return (
             <Card 
@@ -517,27 +476,15 @@ const Perks = () => {
               className={cn(
                 "overflow-hidden transition-all duration-500 hover:shadow-2xl group relative",
                 isActivated && "border-2 border-primary shadow-lg",
-                isPopular && !isActivated && "ring-2 ring-primary/30"
+                perk.category === 'premium' && !isActivated && "ring-2 ring-red-500/30"
               )}
             >
-              {/* Spin badge for spin-based perks */}
-              {perk.hasSpin && !isActivated && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-20">
-                  <Badge className="bg-gradient-to-r from-rose-500 to-pink-500 text-white font-bold px-4 py-1.5 shadow-lg border-0">
-                    <Gift className="h-4 w-4 mr-1" />
-                    SPIN TO WIN
-                  </Badge>
-                </div>
-              )}
-
-              {/* Popular badge */}
-              {isPopular && !isActivated && !perk.hasSpin && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-20">
-                  <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold px-4 py-1.5 shadow-lg border-0">
-                    ⭐ MOST POPULAR
-                  </Badge>
-                </div>
-              )}
+              {/* Category Badge */}
+              <div className="absolute -top-3 left-6 z-20">
+                <Badge className={cn("text-white font-bold px-3 py-1 shadow-lg border-0 text-[10px]", categoryInfo.color)}>
+                  {categoryInfo.label}
+                </Badge>
+              </div>
 
               {/* Active badge with remaining days */}
               {isActivated && (
@@ -555,16 +502,12 @@ const Perks = () => {
               <CardHeader className="pb-4 pt-6 px-6">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-start gap-4 flex-1">
-                    {/* Icon with animated background */}
+                    {/* Icon */}
                     <div className={cn(
                       "relative h-16 w-16 rounded-2xl flex items-center justify-center flex-shrink-0",
                       "group-hover:scale-110 transition-transform duration-300",
                       perk.iconBg
                     )}>
-                      <div className={cn(
-                        "absolute inset-0 bg-gradient-to-r opacity-0 group-hover:opacity-20 rounded-2xl transition-opacity",
-                        perk.gradient
-                      )} />
                       <perk.icon className={cn("h-8 w-8 relative z-10", perk.iconColor)} />
                     </div>
                     
@@ -589,17 +532,8 @@ const Perks = () => {
                       </p>
                     </div>
                     <div className="text-xs text-muted-foreground font-medium mt-1 flex items-center justify-end gap-1">
-                      {perk.hasSpin ? (
-                        <>
-                          <Gift className="h-3 w-3 text-primary" />
-                          <span className="text-primary font-bold">{perk.duration}</span>
-                        </>
-                      ) : (
-                        <>
-                          <Clock className="h-3 w-3" />
-                          {perk.duration}
-                        </>
-                      )}
+                      <Clock className="h-3 w-3" />
+                      {perk.duration}
                     </div>
                   </div>
                 </div>
@@ -610,8 +544,8 @@ const Perks = () => {
                 <div className="grid grid-cols-2 gap-3 mb-5">
                   {perk.features.map((feature, idx) => (
                     <div key={idx} className="flex items-start gap-2 text-sm group/feature">
-                      <CheckCircle2 className="h-4 w-4 text-primary flex-shrink-0 mt-0.5 group-hover/feature:scale-110 transition-transform" />
-                      <span className="text-muted-foreground group-hover/feature:text-foreground transition-colors leading-tight">
+                      <CheckCircle2 className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
+                      <span className="text-muted-foreground leading-tight">
                         {feature}
                       </span>
                     </div>
@@ -635,11 +569,6 @@ const Perks = () => {
                       <CheckCircle2 className="h-5 w-5 mr-2" />
                       Active • {activePerk?.remainingDays} days left
                     </>
-                  ) : perk.hasSpin ? (
-                    <>
-                      <Gift className="h-5 w-5 mr-2" />
-                      Spin & Activate
-                    </>
                   ) : (
                     <>
                       <Crown className="h-5 w-5 mr-2" />
@@ -651,11 +580,7 @@ const Perks = () => {
                 {/* Value proposition */}
                 {!isActivated && (
                   <p className="text-center text-xs text-muted-foreground mt-3">
-                    {perk.hasSpin ? (
-                      <>🎰 Spin for {perk.spinMin}-{perk.spinMax} days • Min guaranteed: {Math.ceil((perk.spinMax || 100) * 0.2)} days</>
-                    ) : (
-                      <>💎 Premium feature • {perk.duration} of maximum visibility</>
-                    )}
+                    💎 {perk.duration} of {perk.category === 'premium' ? 'maximum power' : perk.category === 'trust' ? 'buyer trust' : perk.category === 'visibility' ? 'store exposure' : 'premium styling'}
                   </p>
                 )}
               </CardContent>
@@ -664,36 +589,11 @@ const Perks = () => {
         })}
       </div>
 
-      {/* Spin Wheel Modal */}
-      {selectedPerk?.hasSpin && (
-        <PerkSpinWheel
-          open={showSpinWheel}
-          onClose={() => {
-            setShowSpinWheel(false);
-            setSelectedPerk(null);
-          }}
-          onComplete={handleSpinComplete}
-          perkTitle={selectedPerk.title}
-          minDays={selectedPerk.spinMin || 30}
-          maxDays={selectedPerk.spinMax || 100}
-          perkColor={selectedPerk.gradient}
-        />
-      )}
-
       {/* Confirmation Dialog */}
       <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              {selectedPerk?.hasSpin && spinDuration ? (
-                <>
-                  <Gift className="h-5 w-5 text-primary" />
-                  Spin Result: {spinDuration} Days!
-                </>
-              ) : (
-                'Confirm Purchase'
-              )}
-            </AlertDialogTitle>
+            <AlertDialogTitle>Confirm Purchase</AlertDialogTitle>
             <AlertDialogDescription className="space-y-3">
               <p>
                 You are about to activate <strong>{selectedPerk?.title}</strong>
@@ -705,9 +605,7 @@ const Perks = () => {
                 </div>
                 <div className="flex justify-between text-sm">
                   <span>Duration:</span>
-                  <span className="font-bold text-primary">
-                    {selectedPerk?.hasSpin ? `${spinDuration} days` : selectedPerk?.duration}
-                  </span>
+                  <span className="font-bold text-primary">{selectedPerk?.duration}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span>New Balance:</span>
@@ -717,7 +615,7 @@ const Perks = () => {
                 </div>
               </div>
               <p className="text-sm">
-                This perk will activate immediately and enhance your store!
+                This perk will activate immediately!
               </p>
             </AlertDialogDescription>
           </AlertDialogHeader>
