@@ -79,6 +79,7 @@ import Deposit from "./pages/Deposit";
 import Withdrawal from "./pages/Withdrawal";
 import AdminStoreDetail from "./pages/AdminStoreDetail";
 import AdminUserWallet from "./pages/AdminUserWallet";
+import AdminStoreAppealDetail from "./pages/AdminStoreAppealDetail";
 
 const queryClient = new QueryClient();
 
@@ -137,6 +138,7 @@ const App = () => (
               <Route path="/admin/users/:userId" element={<AdminUserDetail />} />
               <Route path="/admin/appeals" element={<AdminAppeals />} />
               <Route path="/admin/appeals/:appealId" element={<AdminAppealDetail />} />
+              <Route path="/admin/store-appeals/:appealId" element={<AdminStoreAppealDetail />} />
               <Route path="/admin/user-reports" element={<AdminUserReports />} />
               <Route path="/admin/user-reports/:id" element={<AdminUserReportDetail />} />
               <Route path="/report-issue" element={<ProtectedRoute><ReportIssue /></ProtectedRoute>} />
