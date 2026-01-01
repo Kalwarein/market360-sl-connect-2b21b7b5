@@ -206,8 +206,25 @@ export const useOneSignal = () => {
       }
 
       if (window.OneSignalDeferred) {
-        window.OneSignalDeferred.push(async function(OneSignal: any) {
-          await OneSignal.Slidedown.promptPush();
+        window.OneSignalDeferred.push(async function (OneSignal: any) {
+          // OneSignal Web SDK v16+
+          if (OneSignal?.Notifications?.requestPermission) {
+            await OneSignal.Notifications.requestPermission();
+            return;
+          }
+
+          // Back-compat (older SDKs)
+          if (OneSignal?.Slidedown?.promptPush) {
+            await OneSignal.Slidedown.promptPush();
+            return;
+          }
+
+          if (typeof OneSignal?.showSlidedownPrompt === 'function') {
+            OneSignal.showSlidedownPrompt();
+            return;
+          }
+
+          console.warn('[OneSignal] No supported permission prompt method found');
         });
       }
     } catch (error) {
