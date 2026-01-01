@@ -12,6 +12,7 @@ import { ShareStoreDialog } from '@/components/ShareStoreDialog';
 import { StoreReviewSubmissionModal } from '@/components/StoreReviewSubmissionModal';
 import { ReviewStatistics } from '@/components/ReviewStatistics';
 import { StoreReviewList } from '@/components/StoreReviewList';
+import { StoreUpgradePopup } from '@/components/StoreUpgradePopup';
 import { toast } from 'sonner';
 import verifiedBadge from '@/assets/verified-badge.png';
 
@@ -48,6 +49,7 @@ const StorePage = () => {
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [reviews, setReviews] = useState<any[]>([]);
   const [contacting, setContacting] = useState(false);
+  const [showUpgradePopup, setShowUpgradePopup] = useState(false);
   const { 
     hasVerifiedBadge, 
     hasPremiumTheme, 
@@ -56,6 +58,9 @@ const StorePage = () => {
     hasProductHighlights,
     loading: perksLoading 
   } = useStorePerks(storeId);
+
+  // Check if current user is the store owner
+  const isStoreOwner = user && store?.owner_id === user.id;
 
   const handleContactSeller = async () => {
     if (!store || !user) return;
@@ -102,6 +107,20 @@ const StorePage = () => {
       loadStoreData();
     }
   }, [storeId]);
+
+  // Show upgrade popup for store owner
+  useEffect(() => {
+    if (isStoreOwner && !loading && store) {
+      // Check if user has seen the popup recently (24 hours)
+      const lastSeen = localStorage.getItem(`store_upgrade_popup_${storeId}`);
+      const now = Date.now();
+      const oneDay = 24 * 60 * 60 * 1000;
+      
+      if (!lastSeen || (now - parseInt(lastSeen)) > oneDay) {
+        setShowUpgradePopup(true);
+      }
+    }
+  }, [isStoreOwner, loading, store, storeId]);
 
   const loadStoreData = async () => {
     try {
@@ -767,6 +786,15 @@ const StorePage = () => {
             storeId={store.id}
             onReviewSubmitted={() => {
               setReviews([]);
+            }}
+          />
+
+          {/* Upgrade Popup for Store Owner */}
+          <StoreUpgradePopup
+            open={showUpgradePopup}
+            onClose={() => {
+              setShowUpgradePopup(false);
+              localStorage.setItem(`store_upgrade_popup_${storeId}`, Date.now().toString());
             }}
           />
         </>

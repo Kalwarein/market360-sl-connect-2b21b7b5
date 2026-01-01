@@ -3,8 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Bell, CheckCheck, BellRing } from 'lucide-react';
-import BottomNav from '@/components/BottomNav';
+import { Bell, CheckCheck, BellRing, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
@@ -135,17 +134,25 @@ const Notifications = () => {
   const unreadCount = notifications.filter(n => !n.read_at).length;
 
   return (
-    <div className="min-h-screen bg-surface pb-20">
+    <div className="min-h-screen bg-surface">
       {/* Modern Header */}
       <div className="bg-background border-b border-border sticky top-0 z-10 backdrop-blur-lg bg-background/95">
-        <div className="p-6">
+        <div className="p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-full"
+                onClick={() => navigate(-1)}
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
               <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
                 <Bell className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-foreground">Notifications</h1>
+                <h1 className="text-xl font-bold text-foreground">Notifications</h1>
                 {unreadCount > 0 && (
                   <p className="text-sm text-muted-foreground">{unreadCount} unread</p>
                 )}
@@ -289,8 +296,6 @@ const Notifications = () => {
           ))
         )}
       </div>
-
-      <BottomNav />
     </div>
   );
 };
