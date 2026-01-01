@@ -623,10 +623,10 @@ const StorePage = () => {
                     4.8
                   </Badge>
                   <Badge variant="outline" className="shadow-sm">{products.length} Products</Badge>
-                  {hasTrendingPlacement && (
-                    <Badge className="bg-rose-500 text-white shadow-md">
+                  {hasFeaturedSpotlight && (
+                    <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md">
                       <Zap className="h-3 w-3 mr-1" />
-                      Trending
+                      Featured
                     </Badge>
                   )}
                 </div>
