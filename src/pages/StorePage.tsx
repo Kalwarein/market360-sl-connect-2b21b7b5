@@ -13,6 +13,8 @@ import { StoreReviewSubmissionModal } from '@/components/StoreReviewSubmissionMo
 import { ReviewStatistics } from '@/components/ReviewStatistics';
 import { StoreReviewList } from '@/components/StoreReviewList';
 import { StoreUpgradePopup } from '@/components/StoreUpgradePopup';
+import { AdminStorePanel } from '@/components/AdminStorePanel';
+import { useUserRoles } from '@/hooks/useUserRoles';
 import { toast } from 'sonner';
 import verifiedBadge from '@/assets/verified-badge.png';
 
@@ -27,6 +29,9 @@ interface Store {
   country?: string;
   owner_id: string;
   created_at: string;
+  status?: string;
+  suspended_at?: string;
+  suspension_reason?: string;
 }
 
 interface Product {
@@ -57,6 +62,9 @@ const StorePage = () => {
     hasProductHighlights,
     loading: perksLoading 
   } = useStorePerks(storeId);
+
+  // Check user roles
+  const { isAdmin } = useUserRoles();
 
   // Check if current user is the store owner
   const isStoreOwner = user && store?.owner_id === user.id;
@@ -213,6 +221,13 @@ const StorePage = () => {
             Share
           </Button>
         </div>
+
+        {/* Admin Store Panel - Only visible to admins */}
+        {isAdmin && store && (
+          <div className="relative px-4 pt-4 z-10">
+            <AdminStorePanel store={store} onStatusChange={loadStoreData} />
+          </div>
+        )}
 
         {/* Premium Hero Section */}
         <div className="relative px-4 pt-6 z-10">
@@ -619,6 +634,13 @@ const StorePage = () => {
               </div>
             </CardContent>
           </Card>
+        </div>
+      )}
+
+      {/* Admin Store Panel - Only visible to admins */}
+      {isAdmin && store && (
+        <div className="px-4 pt-4 relative z-20">
+          <AdminStorePanel store={store} onStatusChange={loadStoreData} />
         </div>
       )}
 

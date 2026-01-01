@@ -21,6 +21,8 @@ import { ReviewSubmissionModal } from '@/components/ReviewSubmissionModal';
 import { ReviewStatistics } from '@/components/ReviewStatistics';
 import { ReviewList } from '@/components/ReviewList';
 import { ImageZoomModal } from '@/components/ImageZoomModal';
+import { AdminProductPanel } from '@/components/AdminProductPanel';
+import { useUserRoles } from '@/hooks/useUserRoles';
 
 interface Product {
   id: string;
@@ -60,6 +62,11 @@ interface Product {
   included_in_box: string[];
   custom_labels: string[];
   product_requirements: string;
+  created_at: string;
+  status?: string;
+  suspended_at?: string;
+  suspension_reason?: string;
+  store_id: string;
   stores: {
     id: string;
     store_name: string;
@@ -84,6 +91,9 @@ const ProductDetails = () => {
   const [zoomImageIndex, setZoomImageIndex] = useState(0);
   const [reviews, setReviews] = useState<any[]>([]);
   const [isPromoted, setIsPromoted] = useState(false);
+  
+  // Check if user is admin
+  const { isAdmin } = useUserRoles();
   
   // Get ALL store perks
   const { 
@@ -372,6 +382,25 @@ const ProductDetails = () => {
             </div>
           )}
         </div>
+        
+        {/* Admin Product Control Panel - Only visible to admins */}
+        {isAdmin && product && (
+          <div className="px-4 mt-4">
+            <AdminProductPanel 
+              product={{
+                id: product.id,
+                title: product.title,
+                store_id: product.store_id || product.stores?.id,
+                created_at: product.created_at || new Date().toISOString(),
+                status: product.status,
+                suspended_at: product.suspended_at,
+                suspension_reason: product.suspension_reason,
+              }}
+              storeName={product.stores?.store_name}
+              onStatusChange={loadProduct}
+            />
+          </div>
+        )}
         
         {/* Product Content - Edge to Edge with internal padding */}
         <div className={`py-6 space-y-4 ${isPremiumProduct ? 'px-0' : 'px-0'}`}>
