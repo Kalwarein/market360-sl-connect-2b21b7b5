@@ -178,3 +178,35 @@ export const notifyOrderCancelled = async (
     requireInteraction: false
   });
 };
+
+// Broadcast notification to all users
+export const sendBroadcastNotification = async (
+  title: string,
+  body: string,
+  linkUrl?: string,
+  imageUrl?: string
+) => {
+  try {
+    // Send broadcast push notification via OneSignal
+    const { error: pushError } = await supabase.functions.invoke('send-onesignal-notification', {
+      body: {
+        title,
+        body,
+        link_url: linkUrl,
+        image_url: imageUrl,
+        is_broadcast: true
+      }
+    });
+
+    if (pushError) {
+      console.error('[Broadcast] Failed to send push notification:', pushError);
+      return false;
+    }
+
+    console.log('[Broadcast] Push notification sent successfully');
+    return true;
+  } catch (error) {
+    console.error('[Broadcast] Error sending notification:', error);
+    return false;
+  }
+};
