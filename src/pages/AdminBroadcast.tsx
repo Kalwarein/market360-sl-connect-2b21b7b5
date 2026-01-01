@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { ArrowLeft, Send, Radio } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { sendBroadcastNotification } from '@/lib/notificationService';
 
 const AdminBroadcast = () => {
   const navigate = useNavigate();
@@ -57,7 +58,7 @@ const AdminBroadcast = () => {
 
       if (usersError) throw usersError;
 
-      // Create notifications for all users
+      // Create in-app notifications for all users
       const notifications = users.map(u => ({
         user_id: u.id,
         type: 'broadcast' as const,
@@ -73,9 +74,19 @@ const AdminBroadcast = () => {
 
       if (notifError) throw notifError;
 
+      // Send push notification via OneSignal (broadcast to all)
+      const pushSent = await sendBroadcastNotification(
+        formData.title,
+        formData.body,
+        formData.link_url || undefined,
+        formData.image_url || undefined
+      );
+
+      console.log('[AdminBroadcast] Push notification sent:', pushSent);
+
       toast({
         title: 'Broadcast Sent',
-        description: `Message sent to ${users.length} users`,
+        description: `Message sent to ${users.length} users${pushSent ? ' + push notification' : ''}`,
       });
 
       setFormData({
