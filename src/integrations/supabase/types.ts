@@ -385,6 +385,41 @@ export type Database = {
           },
         ]
       }
+      product_moderation: {
+        Row: {
+          action: string
+          admin_id: string
+          created_at: string
+          id: string
+          product_id: string
+          reason: string
+        }
+        Insert: {
+          action: string
+          admin_id: string
+          created_at?: string
+          id?: string
+          product_id: string
+          reason: string
+        }
+        Update: {
+          action?: string
+          admin_id?: string
+          created_at?: string
+          id?: string
+          product_id?: string
+          reason?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_moderation_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_reviews: {
         Row: {
           created_at: string | null
@@ -504,8 +539,12 @@ export type Database = {
           seo_keywords: string[] | null
           shipping_details: Json | null
           spin_images: string[] | null
+          status: string
           store_id: string
           support_contact: string | null
+          suspended_at: string | null
+          suspended_by: string | null
+          suspension_reason: string | null
           tags: string[] | null
           target_audience: string[] | null
           technical_specs: Json | null
@@ -555,8 +594,12 @@ export type Database = {
           seo_keywords?: string[] | null
           shipping_details?: Json | null
           spin_images?: string[] | null
+          status?: string
           store_id: string
           support_contact?: string | null
+          suspended_at?: string | null
+          suspended_by?: string | null
+          suspension_reason?: string | null
           tags?: string[] | null
           target_audience?: string[] | null
           technical_specs?: Json | null
@@ -606,8 +649,12 @@ export type Database = {
           seo_keywords?: string[] | null
           shipping_details?: Json | null
           spin_images?: string[] | null
+          status?: string
           store_id?: string
           support_contact?: string | null
+          suspended_at?: string | null
+          suspended_by?: string | null
+          suspension_reason?: string | null
           tags?: string[] | null
           target_audience?: string[] | null
           technical_specs?: Json | null
@@ -894,6 +941,41 @@ export type Database = {
         }
         Relationships: []
       }
+      store_moderation: {
+        Row: {
+          action: string
+          admin_id: string
+          created_at: string
+          id: string
+          reason: string
+          store_id: string
+        }
+        Insert: {
+          action: string
+          admin_id: string
+          created_at?: string
+          id?: string
+          reason: string
+          store_id: string
+        }
+        Update: {
+          action?: string
+          admin_id?: string
+          created_at?: string
+          id?: string
+          reason?: string
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_moderation_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       store_perks: {
         Row: {
           created_at: string
@@ -1031,7 +1113,11 @@ export type Database = {
           logo_url: string | null
           owner_id: string
           region: string | null
+          status: string
           store_name: string
+          suspended_at: string | null
+          suspended_by: string | null
+          suspension_reason: string | null
           updated_at: string
         }
         Insert: {
@@ -1044,7 +1130,11 @@ export type Database = {
           logo_url?: string | null
           owner_id: string
           region?: string | null
+          status?: string
           store_name: string
+          suspended_at?: string | null
+          suspended_by?: string | null
+          suspension_reason?: string | null
           updated_at?: string
         }
         Update: {
@@ -1057,7 +1147,11 @@ export type Database = {
           logo_url?: string | null
           owner_id?: string
           region?: string | null
+          status?: string
           store_name?: string
+          suspended_at?: string | null
+          suspended_by?: string | null
+          suspension_reason?: string | null
           updated_at?: string
         }
         Relationships: []

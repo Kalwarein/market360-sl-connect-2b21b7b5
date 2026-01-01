@@ -77,6 +77,8 @@ import ReportIssue from "./pages/ReportIssue";
 import Onboarding from "./pages/Onboarding";
 import Deposit from "./pages/Deposit";
 import Withdrawal from "./pages/Withdrawal";
+import AdminStoreDetail from "./pages/AdminStoreDetail";
+import AdminUserWallet from "./pages/AdminUserWallet";
 
 const queryClient = new QueryClient();
 
@@ -139,6 +141,8 @@ const App = () => (
               <Route path="/admin/user-reports/:id" element={<AdminUserReportDetail />} />
               <Route path="/report-issue" element={<ProtectedRoute><ReportIssue /></ProtectedRoute>} />
               <Route path="/admin/stores" element={<AdminStores />} />
+              <Route path="/admin/stores/:storeId" element={<AdminStoreDetail />} />
+              <Route path="/admin/users/:userId/wallet" element={<AdminUserWallet />} />
               <Route path="/admin/products" element={<AdminProducts />} />
               <Route path="/admin/orders" element={<AdminOrders />} />
               <Route path="/admin/wallet-requests" element={<AdminWalletRequests />} />
