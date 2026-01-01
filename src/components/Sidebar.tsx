@@ -1,4 +1,4 @@
-import { Menu, Home, HelpCircle, Mail, Shield, Info, FileText, Wallet, Moon, Sun } from 'lucide-react';
+import { Menu, Home, HelpCircle, Mail, Shield, Info, FileText, Wallet } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from './ui/button';
@@ -7,31 +7,30 @@ import { Separator } from './ui/separator';
 
 const Sidebar = () => {
   const [open, setOpen] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
   const navigate = useNavigate();
 
+  // Automatically follow system theme
   useEffect(() => {
-    const savedTheme = localStorage.getItem('theme');
-    const isDark = savedTheme === 'dark';
-    setDarkMode(isDark);
-    if (isDark) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    
+    const handleThemeChange = (e: MediaQueryListEvent | MediaQueryList) => {
+      if (e.matches) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    };
+    
+    // Set initial theme based on system preference
+    handleThemeChange(mediaQuery);
+    
+    // Listen for system theme changes
+    mediaQuery.addEventListener('change', handleThemeChange);
+    
+    return () => {
+      mediaQuery.removeEventListener('change', handleThemeChange);
+    };
   }, []);
-
-  const toggleDarkMode = () => {
-    const newMode = !darkMode;
-    setDarkMode(newMode);
-    if (newMode) {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
-    }
-  };
 
   const menuItems = [
     { icon: Home, label: 'Home', path: '/' },
@@ -79,25 +78,9 @@ const Sidebar = () => {
 
         <Separator className="my-6" />
 
-        <div className="space-y-2">
-          <Button
-            variant="outline"
-            className="w-full justify-start border-border hover:bg-primary/10 hover:text-primary hover:border-primary/30 rounded-xl transition-smooth"
-            onClick={toggleDarkMode}
-          >
-            {darkMode ? (
-              <>
-                <Sun className="h-5 w-5 mr-3" />
-                <span className="font-medium">Light Mode</span>
-              </>
-            ) : (
-              <>
-                <Moon className="h-5 w-5 mr-3" />
-                <span className="font-medium">Dark Mode</span>
-              </>
-            )}
-          </Button>
-        </div>
+        <p className="text-xs text-muted-foreground text-center">
+          Theme follows your device settings
+        </p>
       </SheetContent>
     </Sheet>
   );
