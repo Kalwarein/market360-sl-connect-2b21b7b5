@@ -13,12 +13,17 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { SellerProductCard } from '@/components/SellerProductCard';
 import { StoreUpgradePopup } from '@/components/StoreUpgradePopup';
+import { StoreModerationScreen } from '@/components/StoreModerationScreen';
 
 interface Store {
   id: string;
   store_name: string;
   logo_url?: string;
   banner_url?: string;
+  status?: string;
+  suspension_reason?: string;
+  suspended_at?: string;
+  suspension_expires_at?: string;
 }
 
 interface Product {
@@ -124,6 +129,20 @@ const SellerDashboard = () => {
         </div>
         <BottomNav />
       </div>
+    );
+  }
+
+  // Check if store is suspended or banned
+  const isStoreSuspended = store?.status === 'suspended';
+  const isStoreBanned = store?.status === 'banned';
+
+  // Show moderation screen if store is suspended or banned
+  if (store && (isStoreSuspended || isStoreBanned)) {
+    return (
+      <>
+        <StoreModerationScreen store={store} />
+        <BottomNav />
+      </>
     );
   }
 

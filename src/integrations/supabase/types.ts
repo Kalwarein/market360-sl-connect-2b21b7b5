@@ -976,6 +976,60 @@ export type Database = {
           },
         ]
       }
+      store_moderation_appeals: {
+        Row: {
+          admin_response: string | null
+          appeal_message: string
+          created_at: string
+          id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          store_id: string
+          store_moderation_id: string | null
+          user_id: string
+        }
+        Insert: {
+          admin_response?: string | null
+          appeal_message: string
+          created_at?: string
+          id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          store_id: string
+          store_moderation_id?: string | null
+          user_id: string
+        }
+        Update: {
+          admin_response?: string | null
+          appeal_message?: string
+          created_at?: string
+          id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          store_id?: string
+          store_moderation_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_moderation_appeals_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_moderation_appeals_store_moderation_id_fkey"
+            columns: ["store_moderation_id"]
+            isOneToOne: false
+            referencedRelation: "store_moderation"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       store_perks: {
         Row: {
           created_at: string
@@ -1117,6 +1171,7 @@ export type Database = {
           store_name: string
           suspended_at: string | null
           suspended_by: string | null
+          suspension_expires_at: string | null
           suspension_reason: string | null
           updated_at: string
         }
@@ -1134,6 +1189,7 @@ export type Database = {
           store_name: string
           suspended_at?: string | null
           suspended_by?: string | null
+          suspension_expires_at?: string | null
           suspension_reason?: string | null
           updated_at?: string
         }
@@ -1151,6 +1207,7 @@ export type Database = {
           store_name?: string
           suspended_at?: string | null
           suspended_by?: string | null
+          suspension_expires_at?: string | null
           suspension_reason?: string | null
           updated_at?: string
         }
