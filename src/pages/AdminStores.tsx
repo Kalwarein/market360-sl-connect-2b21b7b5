@@ -109,7 +109,7 @@ const AdminStores = () => {
             <Card
               key={store.id}
               className="shadow-md hover:shadow-lg transition-all cursor-pointer"
-              onClick={() => navigate(`/store/${store.id}`)}
+              onClick={() => navigate(`/admin/stores/${store.id}`)}
             >
               <CardContent className="p-4">
                 <div className="flex items-start gap-3 mb-3">
@@ -141,6 +141,8 @@ const AdminStores = () => {
             </Card>
           ))}
         </div>
+
+        {/* Note: Cards navigate to /admin/stores/:id for full admin controls */}
 
         {filteredStores.length === 0 && (
           <Card>

@@ -37,9 +37,9 @@ export const useUserRoles = () => {
   }, [user]);
 
   const hasRole = (role: UserRole) => roles.includes(role);
-  const isSeller = hasRole('seller');
-  const isAdmin = hasRole('admin');
-  const isBuyer = hasRole('buyer');
+  const isSeller = roles.includes('seller');
+  const isAdmin = roles.includes('admin');
+  const isBuyer = roles.includes('buyer');
 
   return {
     roles,
