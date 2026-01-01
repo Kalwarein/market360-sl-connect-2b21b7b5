@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { LogOut, Edit2, Wallet, ShoppingBag, Bell, Store, Gift, Settings, Lock, FileText, Mail, Crown, ChevronRight, Camera, Headset } from 'lucide-react';
+import { LogOut, Edit2, Wallet, ShoppingBag, Bell, Store, Shield, Settings, Lock, FileText, Mail, ChevronRight, Camera, Headset } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import BottomNav from '@/components/BottomNav';
@@ -14,17 +14,18 @@ import { useSellerNotifications } from '@/hooks/useSellerNotifications';
 import { toast } from 'sonner';
 import BecomeSellerModal from '@/components/BecomeSellerModal';
 import ImageCropModal from '@/components/ImageCropModal';
+import { LogoutConfirmationModal } from '@/components/LogoutConfirmationModal';
 
 const Profile = () => {
   const { user, signOut } = useAuth();
-  const { isSeller, loading: rolesLoading } = useUserRoles();
+  const { isSeller, isAdmin, loading: rolesLoading } = useUserRoles();
   const { hasPendingOrders, pendingCount } = useSellerNotifications();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [walletBalance, setWalletBalance] = useState<number | null>(null);
   const [walletLoading, setWalletLoading] = useState(true);
-  const [hasUnreadNotif, setHasUnreadNotif] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [sellerApplicationStatus, setSellerApplicationStatus] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -35,6 +36,7 @@ const Profile = () => {
   const [hasSeenSellerPromo, setHasSeenSellerPromo] = useState(false);
   const [showCropModal, setShowCropModal] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -111,7 +113,7 @@ const Profile = () => {
         .eq('user_id', user?.id)
         .is('read_at', null);
 
-      setHasUnreadNotif((count || 0) > 0);
+      setUnreadCount(count || 0);
     } catch (error) {
       console.error('Error loading notifications:', error);
     }
@@ -272,6 +274,11 @@ const Profile = () => {
     }
   };
 
+  const handleLogout = async () => {
+    setShowLogoutModal(false);
+    await signOut();
+  };
+
   const shouldShowSellerBadge = !isSeller && !sellerApplicationStatus && !hasSeenSellerPromo;
 
   if (loading || rolesLoading) {
@@ -288,162 +295,39 @@ const Profile = () => {
 
   return (
     <>
-      <style>{`
-        @keyframes shimmer {
-          0% {
-            background-position: -200% center;
-          }
-          100% {
-            background-position: 200% center;
-          }
-        }
-
-        @keyframes shimmer-overlay {
-          0% {
-            transform: translateX(-100%) skewX(-15deg);
-          }
-          100% {
-            transform: translateX(200%) skewX(-15deg);
-          }
-        }
-
-        @keyframes float {
-          0%, 100% {
-            transform: translateY(0px);
-          }
-          50% {
-            transform: translateY(-5px);
-          }
-        }
-
-        @keyframes pulse-glow {
-          0%, 100% {
-            box-shadow: 0 4px 15px -3px rgba(16, 185, 129, 0.2), 0 0 8px rgba(16, 185, 129, 0.1);
-          }
-          50% {
-            box-shadow: 0 6px 20px -3px rgba(16, 185, 129, 0.3), 0 0 12px rgba(16, 185, 129, 0.15);
-          }
-        }
-
-        .perks-card {
-          position: relative;
-          cursor: pointer;
-          overflow: hidden;
-          background: linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--primary) / 0.2) 50%, hsl(var(--primary)) 100%);
-          animation: pulse-glow 3s ease-in-out infinite;
-        }
-
-        .perks-card::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: 
-            repeating-linear-gradient(
-              45deg,
-              transparent,
-              transparent 2px,
-              rgba(16, 185, 129, 0.03) 2px,
-              rgba(16, 185, 129, 0.03) 4px
-            ),
-            linear-gradient(
-              90deg,
-              transparent 0%,
-              rgba(255, 255, 255, 0.4) 50%,
-              transparent 100%
-            );
-          background-size: 100% 100%, 200% 100%;
-          animation: shimmer 2.5s linear infinite;
-          pointer-events: none;
-        }
-
-        .perks-card::after {
-          content: '';
-          position: absolute;
-          top: -50%;
-          left: -50%;
-          width: 30%;
-          height: 200%;
-          background: linear-gradient(
-            90deg,
-            transparent,
-            rgba(255, 255, 255, 0.8),
-            transparent
-          );
-          animation: shimmer-overlay 3s ease-in-out infinite;
-          pointer-events: none;
-        }
-
-        .perks-card:hover {
-          transform: translateY(-2px);
-        }
-
-        .perks-card:hover::after {
-          animation: shimmer-overlay 1.5s ease-in-out infinite;
-        }
-
-        .perks-image-container {
-          position: relative;
-          overflow: hidden;
-          border-radius: 12px;
-        }
-
-        .perks-image {
-          display: block;
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          filter: brightness(1.1) saturate(1.2);
-        }
-
-        .perks-image-shimmer {
-          position: absolute;
-          top: -50%;
-          left: -50%;
-          width: 50%;
-          height: 200%;
-          background: linear-gradient(
-            90deg,
-            transparent,
-            rgba(255, 255, 255, 0.6),
-            transparent
-          );
-          animation: shimmer-overlay 2s ease-in-out infinite;
-          pointer-events: none;
-        }
-
-        .perks-icon-wrapper {
-          position: relative;
-          animation: float 3s ease-in-out infinite;
-        }
-
-        .perks-icon {
-          filter: drop-shadow(0 0 4px rgba(16, 185, 129, 0.3));
-        }
-
-        .perks-card:hover .perks-icon-wrapper {
-          animation: float 1.5s ease-in-out infinite;
-        }
-
-        .perks-card:hover .perks-icon {
-          filter: drop-shadow(0 0 6px rgba(16, 185, 129, 0.5));
-        }
-
-        .perks-arrow {
-          transition: transform 0.3s ease;
-        }
-
-        .perks-card:hover .perks-arrow {
-          transform: translateX(4px);
-        }
-      `}</style>
-
       <div className="min-h-screen bg-background dark:bg-background pb-20 flex flex-col">
-        {/* Header Section */}
+        {/* Header Section with Notifications and Logout */}
         <div className="p-6 bg-card dark:bg-card border-b border-border shadow-sm">
-          <div className="flex items-start justify-between mb-6">
+          {/* Top Header Row - Notifications & Logout */}
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-bold text-foreground">My Profile</h2>
+            <div className="flex items-center gap-2">
+              {/* Notification Bell */}
+              <button
+                onClick={() => navigate('/notifications')}
+                className="relative p-2 rounded-xl hover:bg-muted transition-colors"
+              >
+                <Bell className="h-6 w-6 text-muted-foreground" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 h-5 w-5 flex items-center justify-center rounded-full bg-destructive text-white text-xs font-bold">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </button>
+              
+              {/* Logout Button */}
+              <button
+                onClick={() => setShowLogoutModal(true)}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-destructive hover:bg-destructive/10 transition-colors"
+              >
+                <LogOut className="h-5 w-5" />
+                <span className="text-sm font-medium">Log Out</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Profile Info */}
+          <div className="flex items-start justify-between">
             <div className="flex items-center gap-4 flex-1">
               <div className="relative">
                 <Avatar className="h-24 w-24 rounded-full border-4 border-primary/20 shadow-lg ring-2 ring-background">
@@ -491,7 +375,7 @@ const Profile = () => {
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4 mt-6">
             <Card 
               className="cursor-pointer hover:shadow-elevated transition-smooth bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20 hover:border-primary/40 rounded-2xl group"
               onClick={() => navigate('/wallet')}
@@ -547,30 +431,6 @@ const Profile = () => {
         {/* Menu */}
         <div className="p-6 space-y-3 flex-1">
           
-          {/* 🔥 PERKS CARD WITH NEW IMAGE */}
-          <div 
-            className="perks-card group p-5 flex items-center justify-between gap-4 rounded-2xl transition-smooth shadow-card hover:shadow-elevated"
-            onClick={() => navigate('/perks')}
-          >
-            <div className="flex items-center gap-4 flex-1">
-              
-              <div className="perks-image-container w-16 h-16 flex-shrink-0">
-                <img 
-                  src="https://i.imghippo.com/files/lEJ5601RT.jpg"
-                  alt="Premium Perks"
-                  className="perks-image"
-                />
-                <div className="perks-image-shimmer"></div>
-              </div>
-
-              <div className="text-green-900 dark:text-green-100 flex-1">
-                <h3 className="text-lg font-bold mb-1">Unlock Premium</h3>
-                <p className="text-sm text-green-700 dark:text-green-300">Get exclusive perks & benefits</p>
-              </div>
-            </div>
-            <ChevronRight className="perks-arrow text-green-600 dark:text-green-400 flex-shrink-0" size={24} />
-          </div>
-
           {/* Wallet */}
           <Card onClick={() => navigate('/wallet')} className="cursor-pointer hover:shadow-elevated transition-smooth rounded-2xl border-border/50 hover:border-primary/30">
             <CardContent className="p-5 flex items-center justify-between">
@@ -597,34 +457,20 @@ const Profile = () => {
             </CardContent>
           </Card>
 
-          {/* Notifications */}
-          <Card onClick={() => { setHasUnreadNotif(false); navigate('/notifications'); }} className="cursor-pointer hover:shadow-elevated transition-smooth rounded-2xl border-border/50 hover:border-accent/30">
-            <CardContent className="p-5 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="h-12 w-12 rounded-2xl bg-accent/10 dark:bg-accent/20 flex items-center justify-center relative">
-                  <Bell className="h-6 w-6 text-accent dark:text-accent" />
-                  {hasUnreadNotif && (
-                    <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive animate-pulse" />
-                  )}
+          {/* Administration - Admin Only */}
+          {isAdmin && (
+            <Card onClick={() => navigate('/admin-auth')} className="cursor-pointer hover:shadow-elevated transition-smooth rounded-2xl border-border/50 hover:border-warning/30">
+              <CardContent className="p-5 flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="h-12 w-12 rounded-2xl bg-warning/10 dark:bg-warning/20 flex items-center justify-center">
+                    <Shield className="h-6 w-6 text-warning dark:text-warning" />
+                  </div>
+                  <span className="font-semibold text-foreground dark:text-foreground text-lg">Administration Page</span>
                 </div>
-                <span className="font-semibold text-foreground dark:text-foreground text-lg">Notifications</span>
-              </div>
-              {hasUnreadNotif && <Badge variant="destructive" className="rounded-lg">New</Badge>}
-            </CardContent>
-          </Card>
-
-          {/* Promotions */}
-          <Card onClick={() => navigate('/admin-auth')} className="cursor-pointer hover:shadow-elevated transition-smooth rounded-2xl border-border/50 hover:border-warning/30">
-            <CardContent className="p-5 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="h-12 w-12 rounded-2xl bg-warning/10 dark:bg-warning/20 flex items-center justify-center">
-                  <Gift className="h-6 w-6 text-warning dark:text-warning" />
-                </div>
-                <span className="font-semibold text-foreground dark:text-foreground text-lg">Gifts</span>
-              </div>
-              <ChevronRight className="h-5 w-5 text-muted-foreground" />
-            </CardContent>
-          </Card>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </CardContent>
+            </Card>
+          )}
 
           {/* Settings */}
           <Card onClick={() => navigate('/settings')} className="cursor-pointer hover:shadow-elevated transition-smooth rounded-2xl border-border/50 hover:border-muted/50">
@@ -641,7 +487,7 @@ const Profile = () => {
 
           {/* Seller Options */}
           {isSeller ? (
-            <Card onClick={() => navigate('/seller-dashboard')} className="cursor-pointer hover:shadow-md transition-shadow bg-amber-50 border-amber-100">
+            <Card onClick={() => navigate('/seller-dashboard')} className="cursor-pointer hover:shadow-md transition-shadow bg-amber-50 dark:bg-amber-900/20 border-amber-100 dark:border-amber-800">
               <CardContent className="p-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="h-10 w-10 rounded-full bg-amber-600 flex items-center justify-center relative">
@@ -655,7 +501,7 @@ const Profile = () => {
                       </span>
                     )}
                   </div>
-                  <span className="font-medium text-gray-900">Manage Your Store</span>
+                  <span className="font-medium text-foreground">Manage Your Store</span>
                 </div>
                 {hasPendingOrders && (
                   <Badge className="bg-red-500 text-white">
@@ -665,25 +511,25 @@ const Profile = () => {
               </CardContent>
             </Card>
           ) : sellerApplicationStatus === 'approved' ? (
-            <Card onClick={() => navigate('/seller-dashboard')} className="cursor-pointer hover:shadow-md transition-shadow bg-green-50 border-green-100">
+            <Card onClick={() => navigate('/seller-dashboard')} className="cursor-pointer hover:shadow-md transition-shadow bg-green-50 dark:bg-green-900/20 border-green-100 dark:border-green-800">
               <CardContent className="p-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="h-10 w-10 rounded-full bg-green-600 flex items-center justify-center">
                     <Store className="h-5 w-5 text-white" />
                   </div>
-                  <span className="font-medium text-gray-900">Setup Your Store</span>
+                  <span className="font-medium text-foreground">Setup Your Store</span>
                 </div>
                 <Badge className="bg-green-600">Approved!</Badge>
               </CardContent>
             </Card>
           ) : sellerApplicationStatus === 'pending' ? (
-            <Card className="bg-gray-50 border-gray-200">
+            <Card className="bg-muted/50 dark:bg-muted/20 border-border">
               <CardContent className="p-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
+                  <div className="h-10 w-10 rounded-full bg-muted-foreground/30 flex items-center justify-center">
                     <Store className="h-5 w-5 text-white" />
                   </div>
-                  <span className="font-medium text-gray-900">Seller Application</span>
+                  <span className="font-medium text-foreground">Seller Application</span>
                 </div>
                 <Badge variant="secondary">Pending</Badge>
               </CardContent>
@@ -692,8 +538,8 @@ const Profile = () => {
             <Card onClick={handleBecomeSellerClick} className="cursor-pointer hover:shadow-md transition-shadow relative">
               <CardContent className="p-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center relative">
-                    <Store className="h-5 w-5 text-indigo-600" />
+                  <div className="h-10 w-10 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center relative">
+                    <Store className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
                     {shouldShowSellerBadge && (
                       <span className="absolute -top-1 -right-1 flex h-3 w-3">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
@@ -701,7 +547,7 @@ const Profile = () => {
                       </span>
                     )}
                   </div>
-                  <span className="font-medium text-gray-900">Become a Seller</span>
+                  <span className="font-medium text-foreground">Become a Seller</span>
                 </div>
                 {shouldShowSellerBadge && (
                   <Badge className="bg-red-500 text-white text-xs">New</Badge>
@@ -709,16 +555,6 @@ const Profile = () => {
               </CardContent>
             </Card>
           )}
-
-          {/* Logout Button */}
-          <Button 
-            variant="destructive" 
-            className="w-full mt-6 h-14 text-base font-semibold rounded-2xl shadow-lg hover:shadow-xl transition-smooth" 
-            onClick={signOut}
-          >
-            <LogOut className="h-5 w-5 mr-2" />
-            Log Out
-          </Button>
         </div>
 
         {/* Footer */}
@@ -789,6 +625,13 @@ const Profile = () => {
             onCropComplete={handleCropComplete}
           />
         )}
+
+        {/* Logout Confirmation Modal */}
+        <LogoutConfirmationModal
+          open={showLogoutModal}
+          onClose={() => setShowLogoutModal(false)}
+          onConfirm={handleLogout}
+        />
       </div>
     </>
   );

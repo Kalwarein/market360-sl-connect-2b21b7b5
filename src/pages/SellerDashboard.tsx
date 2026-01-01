@@ -6,12 +6,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import BottomNav from '@/components/BottomNav';
-import { Plus, Package, ShoppingBag, MessageSquare, Settings, DollarSign, TrendingUp, CheckCircle2, Store } from 'lucide-react';
+import { Plus, Package, ShoppingBag, MessageSquare, Settings, DollarSign, TrendingUp, CheckCircle2, Store, Crown, ChevronRight } from 'lucide-react';
 import { useUserRoles } from '@/hooks/useUserRoles';
 import { useSellerNotifications } from '@/hooks/useSellerNotifications';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { SellerProductCard } from '@/components/SellerProductCard';
+import { StoreUpgradePopup } from '@/components/StoreUpgradePopup';
 
 interface Store {
   id: string;
@@ -57,6 +58,7 @@ const SellerDashboard = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showUpgradePopup, setShowUpgradePopup] = useState(false);
 
   useEffect(() => {
     if (!rolesLoading && !isSeller) {
@@ -68,6 +70,16 @@ const SellerDashboard = () => {
       loadDashboardData();
     }
   }, [user, isSeller, rolesLoading, navigate]);
+
+  // Show upgrade popup on first visit (once per session)
+  useEffect(() => {
+    if (store && !loading) {
+      const hasSeenPopup = sessionStorage.getItem(`seller_upgrade_popup_${store.id}`);
+      if (!hasSeenPopup) {
+        setShowUpgradePopup(true);
+      }
+    }
+  }, [store, loading]);
 
   const loadDashboardData = async () => {
     try {
@@ -351,6 +363,25 @@ const SellerDashboard = () => {
                 >
                   Edit Store Details
                 </Button>
+                
+                {/* Unlock Premium Button */}
+                <div 
+                  className="p-4 rounded-xl bg-gradient-to-r from-primary/10 to-accent/10 border border-primary/20 cursor-pointer hover:shadow-md transition-all"
+                  onClick={() => navigate('/perks')}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center">
+                        <Crown className="h-5 w-5 text-primary" />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-foreground">Unlock Premium</p>
+                        <p className="text-xs text-muted-foreground">Get verified badge & more</p>
+                      </div>
+                    </div>
+                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -358,6 +389,17 @@ const SellerDashboard = () => {
       </div>
 
       <BottomNav />
+
+      {/* Store Upgrade Popup */}
+      <StoreUpgradePopup
+        open={showUpgradePopup}
+        onClose={() => {
+          setShowUpgradePopup(false);
+          if (store) {
+            sessionStorage.setItem(`seller_upgrade_popup_${store.id}`, 'true');
+          }
+        }}
+      />
     </div>
   );
 };
