@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Package, MapPin, TrendingUp, Crown, Sparkles, Star, CheckCircle } from 'lucide-react';
+import { Package, MapPin, Crown, Sparkles, CheckCircle, Shield } from 'lucide-react';
 import { useStorePerks } from '@/hooks/useStorePerks';
 import verifiedBadge from '@/assets/verified-badge.png';
 
@@ -28,9 +28,7 @@ export const StoreCard = ({
   const { 
     hasVerifiedBadge, 
     hasPremiumTheme, 
-    hasTrendingPlacement,
-    hasFeaturedSpotlight,
-    hasTopOfCategory 
+    hasFeaturedSpotlight
   } = useStorePerks(id);
 
   const isFeatured = hasFeaturedSpotlight || hasPremiumTheme;
@@ -120,10 +118,10 @@ export const StoreCard = ({
                 <Package className="h-3 w-3 mr-1" />
                 {productCount} Products
               </Badge>
-              {hasTrendingPlacement && (
-                <Badge className="text-xs font-semibold px-3 py-1 bg-rose-500/10 text-rose-600 border border-rose-500/20 rounded-full">
-                  <TrendingUp className="h-3 w-3 mr-1" />
-                  Trending
+              {hasVerifiedBadge && (
+                <Badge className="text-xs font-semibold px-3 py-1 bg-blue-500/10 text-blue-600 border border-blue-500/20 rounded-full">
+                  <Shield className="h-3 w-3 mr-1" />
+                  Verified Store
                 </Badge>
               )}
               <Badge className="text-xs font-semibold px-3 py-1 bg-accent/10 text-accent border border-accent/20 rounded-full">
@@ -147,7 +145,7 @@ export const StoreCard = ({
       {hasVerifiedBadge && (
         <div className="absolute top-2 right-2 z-10">
           <div className="relative">
-            <div className="absolute inset-0 bg-amber-500/30 blur-md rounded-full" />
+            <div className="absolute inset-0 bg-blue-500/30 blur-md rounded-full" />
             <img 
               src={verifiedBadge} 
               alt="Verified" 
@@ -165,13 +163,6 @@ export const StoreCard = ({
           <div className="w-full h-full bg-gradient-to-r from-primary to-secondary" />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-        
-        {hasTopOfCategory && (
-          <Badge className="absolute top-2 left-2 bg-amber-500 text-white font-semibold">
-            <Star className="h-3 w-3 mr-1 fill-current" />
-            Top Seller
-          </Badge>
-        )}
       </div>
 
       {/* Store Info */}
@@ -191,7 +182,7 @@ export const StoreCard = ({
             {name}
           </h3>
           {hasVerifiedBadge && (
-            <CheckCircle className="h-4 w-4 text-amber-500 fill-amber-500 flex-shrink-0" />
+            <CheckCircle className="h-4 w-4 text-blue-500 fill-blue-500 flex-shrink-0" />
           )}
         </div>
 
@@ -207,10 +198,10 @@ export const StoreCard = ({
             <Package className="h-3 w-3 mr-1" />
             {productCount} Products
           </Badge>
-          {hasTrendingPlacement && (
-            <Badge className="bg-rose-500 text-white text-xs">
-              <TrendingUp className="h-3 w-3 mr-1" />
-              Trending
+          {hasVerifiedBadge && (
+            <Badge className="bg-blue-500/10 text-blue-600 text-xs border-0">
+              <Shield className="h-3 w-3 mr-1" />
+              Verified
             </Badge>
           )}
         </div>

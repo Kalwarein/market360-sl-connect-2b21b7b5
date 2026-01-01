@@ -72,12 +72,15 @@ export const useStorePerks = (storeId: string | null | undefined) => {
     perks,
     loading,
     hasPerk,
+    // Trust perk - NO visibility boost, just badge display
     hasVerifiedBadge: hasPerk('verified_badge'),
+    // Visibility perk - Store appears in Premium Stores section
     hasBoostedVisibility: hasPerk('boosted_visibility'),
-    hasTopOfCategory: hasPerk('top_of_category'),
-    hasTrendingPlacement: hasPerk('trending_placement'),
+    // UI perk - Premium styling for product cards and product details
     hasProductHighlights: hasPerk('product_highlights'),
+    // UI perk - Premium store page layout
     hasPremiumTheme: hasPerk('premium_theme'),
+    // Maximum power perk - Spotlight banners, badges, maximum visibility
     hasFeaturedSpotlight: hasPerk('featured_spotlight')
   };
 };

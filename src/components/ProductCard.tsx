@@ -1,9 +1,10 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ShoppingCart, MessageSquare, Store, CheckCircle, TrendingUp, Sparkles, Zap } from 'lucide-react';
+import { ShoppingCart, MessageSquare, Store, Shield, Sparkles, Crown, Star } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useStorePerks } from '@/hooks/useStorePerks';
+import { cn } from '@/lib/utils';
 
 interface ProductCardProps {
   id: string;
@@ -29,20 +30,44 @@ export const ProductCard = ({
   onChat,
 }: ProductCardProps) => {
   const navigate = useNavigate();
-  const { hasVerifiedBadge } = useStorePerks(store_id || null);
+  const { 
+    hasVerifiedBadge, 
+    hasProductHighlights, 
+    hasFeaturedSpotlight 
+  } = useStorePerks(store_id || null);
+
+  // Premium UI styling from Product Highlights or Featured Spotlight
+  const hasPremiumUI = hasProductHighlights || hasFeaturedSpotlight;
 
   return (
     <Card 
-      className={`group relative overflow-hidden cursor-pointer transition-all duration-500 hover:shadow-2xl hover:-translate-y-1 animate-fade-in ${
-        hasVerifiedBadge 
-          ? 'border-2 border-primary/40 shadow-xl bg-gradient-to-br from-primary/10 via-accent/5 to-transparent' 
-          : 'border border-border hover:border-primary/30 shadow-lg'
-      }`}
+      className={cn(
+        "group relative overflow-hidden cursor-pointer transition-all duration-500 hover:shadow-2xl hover:-translate-y-1 animate-fade-in",
+        // Featured Spotlight - Maximum visibility
+        hasFeaturedSpotlight && [
+          "border-2 border-red-400/50 shadow-xl",
+          "bg-gradient-to-br from-red-50/50 via-orange-50/30 to-transparent dark:from-red-950/30 dark:via-orange-950/20"
+        ],
+        // Product Highlights - Premium UI styling
+        hasPremiumUI && !hasFeaturedSpotlight && [
+          "border-2 border-emerald-400/40 shadow-xl",
+          "bg-gradient-to-br from-emerald-50/40 via-green-50/20 to-transparent dark:from-emerald-950/30 dark:via-green-950/20"
+        ],
+        // Verified Badge - Subtle trust indicator
+        hasVerifiedBadge && !hasPremiumUI && 'border border-blue-300/40 shadow-lg',
+        // Default styling
+        !hasVerifiedBadge && !hasPremiumUI && 'border border-border hover:border-primary/30 shadow-lg'
+      )}
       onClick={() => navigate(`/product/${id}`)}
     >
+      {/* Featured Spotlight Glow Effect */}
+      {hasFeaturedSpotlight && (
+        <div className="absolute inset-0 bg-gradient-to-br from-red-500/5 via-transparent to-orange-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+      )}
+
       {/* Premium Glow Effect */}
-      {hasVerifiedBadge && (
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+      {hasPremiumUI && !hasFeaturedSpotlight && (
+        <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-green-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
       )}
 
       <CardContent className="p-0 relative">
@@ -58,37 +83,42 @@ export const ProductCard = ({
           {/* Shine Effect on Hover */}
           <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
           
-          {/* Premium Gradient Overlay */}
+          {/* Gradient Overlay */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
           
-          {/* Verified Badge */}
-          {hasVerifiedBadge && (
+          {/* Featured Spotlight Badge */}
+          {hasFeaturedSpotlight && (
             <div className="absolute top-2 right-2 z-10 animate-bounce-slow">
-              <div className="bg-gradient-to-br from-primary to-accent backdrop-blur-sm rounded-full p-2 shadow-2xl ring-2 ring-white/50">
-                <CheckCircle className="h-5 w-5 text-white fill-current" />
+              <div className="bg-gradient-to-br from-red-500 to-orange-500 backdrop-blur-sm rounded-full p-2 shadow-2xl ring-2 ring-white/50">
+                <Crown className="h-5 w-5 text-white fill-current" />
+              </div>
+            </div>
+          )}
+
+          {/* Product Highlights Badge */}
+          {hasPremiumUI && !hasFeaturedSpotlight && (
+            <div className="absolute top-2 right-2 z-10">
+              <div className="bg-gradient-to-br from-emerald-500 to-green-500 backdrop-blur-sm rounded-full p-2 shadow-lg">
+                <Sparkles className="h-4 w-4 text-white" />
               </div>
             </div>
           )}
           
           {/* Category Badge with Premium Style */}
           <Badge 
-            className={`absolute top-2 left-2 shadow-lg backdrop-blur-md border-0 font-bold transition-all duration-300 group-hover:scale-110 ${
-              hasVerifiedBadge 
-                ? 'bg-gradient-to-r from-primary to-accent text-white' 
+            className={cn(
+              "absolute top-2 left-2 shadow-lg backdrop-blur-md border-0 font-bold transition-all duration-300 group-hover:scale-110",
+              hasFeaturedSpotlight 
+                ? 'bg-gradient-to-r from-red-500 to-orange-500 text-white' 
+                : hasPremiumUI 
+                ? 'bg-gradient-to-r from-emerald-500 to-green-500 text-white'
                 : 'bg-primary/90 text-primary-foreground'
-            }`}
+            )}
           >
-            <Sparkles className="h-3 w-3 mr-1" />
+            {hasFeaturedSpotlight && <Star className="h-3 w-3 mr-1" />}
+            {hasPremiumUI && !hasFeaturedSpotlight && <Sparkles className="h-3 w-3 mr-1" />}
             {category}
           </Badge>
-
-          {/* Trending Badge (Bottom Left) */}
-          {hasVerifiedBadge && (
-            <Badge className="absolute bottom-2 left-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-white border-0 shadow-lg backdrop-blur-sm font-bold">
-              <TrendingUp className="h-3 w-3 mr-1" />
-              Hot
-            </Badge>
-          )}
 
           {/* Quick Actions */}
           <div className="absolute bottom-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
@@ -117,22 +147,31 @@ export const ProductCard = ({
         </div>
 
         {/* Content */}
-        <div className="p-4 space-y-3 bg-card">
-          <h3 className="font-bold text-sm line-clamp-2 min-h-[2.5rem] group-hover:text-primary transition-colors duration-300">
+        <div className={cn(
+          "p-4 space-y-3 bg-card",
+          hasFeaturedSpotlight && "bg-gradient-to-b from-red-50/30 to-card dark:from-red-950/20",
+          hasPremiumUI && !hasFeaturedSpotlight && "bg-gradient-to-b from-emerald-50/20 to-card dark:from-emerald-950/10"
+        )}>
+          <h3 className={cn(
+            "font-bold text-sm line-clamp-2 min-h-[2.5rem] group-hover:text-primary transition-colors duration-300",
+            hasFeaturedSpotlight && "text-red-900 dark:text-red-100",
+            hasPremiumUI && !hasFeaturedSpotlight && "font-extrabold"
+          )}>
             {title}
           </h3>
 
           <div className="flex items-center justify-between">
             <div>
-              <p className={`text-xl font-black ${hasVerifiedBadge ? 'bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent' : 'text-primary'}`}>
+              <p className={cn(
+                "text-xl font-black",
+                hasFeaturedSpotlight 
+                  ? 'bg-gradient-to-r from-red-600 to-orange-500 bg-clip-text text-transparent' 
+                  : hasPremiumUI 
+                  ? 'bg-gradient-to-r from-emerald-600 to-green-500 bg-clip-text text-transparent'
+                  : 'text-primary'
+              )}>
                 Le {price.toLocaleString()}
               </p>
-              {hasVerifiedBadge && (
-                <p className="text-xs text-muted-foreground font-medium flex items-center gap-1 mt-0.5">
-                  <Zap className="h-3 w-3 text-yellow-500" />
-                  Fast Shipping
-                </p>
-              )}
             </div>
           </div>
 
@@ -140,8 +179,12 @@ export const ProductCard = ({
             <div className="flex items-center gap-2 text-xs pt-2 border-t border-border/50">
               <Store className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
               <span className="truncate text-muted-foreground font-medium">{store_name}</span>
+              {/* VERIFIED STORE LABEL - Trust only */}
               {hasVerifiedBadge && (
-                <CheckCircle className="h-3.5 w-3.5 text-primary fill-primary flex-shrink-0 animate-pulse-slow" />
+                <Badge variant="secondary" className="text-[8px] px-1.5 py-0 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border-0 flex items-center gap-0.5 flex-shrink-0">
+                  <Shield className="h-2.5 w-2.5" />
+                  Verified Store
+                </Badge>
               )}
             </div>
           )}
@@ -149,8 +192,11 @@ export const ProductCard = ({
       </CardContent>
 
       {/* Premium Store Indicator (Bottom Border) */}
-      {hasVerifiedBadge && (
-        <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-primary via-accent to-primary bg-[length:200%_100%] animate-gradient-x" />
+      {hasFeaturedSpotlight && (
+        <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-red-500 via-orange-500 to-red-500 bg-[length:200%_100%] animate-gradient-x" />
+      )}
+      {hasPremiumUI && !hasFeaturedSpotlight && (
+        <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 via-green-500 to-emerald-500 bg-[length:200%_100%] animate-gradient-x" />
       )}
     </Card>
   );

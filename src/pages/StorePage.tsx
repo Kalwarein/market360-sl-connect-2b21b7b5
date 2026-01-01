@@ -53,7 +53,6 @@ const StorePage = () => {
   const { 
     hasVerifiedBadge, 
     hasPremiumTheme, 
-    hasTrendingPlacement,
     hasFeaturedSpotlight,
     hasProductHighlights,
     loading: perksLoading 
