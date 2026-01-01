@@ -85,8 +85,17 @@ const ProductDetails = () => {
   const [reviews, setReviews] = useState<any[]>([]);
   const [isPromoted, setIsPromoted] = useState(false);
   
-  // Get store perks
-  const { hasVerifiedBadge } = useStorePerks(product?.stores?.id || null);
+  // Get ALL store perks
+  const { 
+    hasVerifiedBadge, 
+    hasProductHighlights, 
+    hasFeaturedSpotlight,
+    hasPremiumTheme,
+    loading: perksLoading 
+  } = useStorePerks(product?.stores?.id || null);
+
+  // Determine if this is a premium product (has product_highlights or featured_spotlight)
+  const isPremiumProduct = hasProductHighlights || hasFeaturedSpotlight;
 
   useEffect(() => {
     loadProduct();
@@ -291,19 +300,41 @@ const ProductDetails = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* Fixed Header */}
-      <div className="sticky top-0 z-30 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
-        <div className="container mx-auto px-4 py-3 flex items-center justify-between max-w-screen-xl">
+    <div className={`min-h-screen flex flex-col ${isPremiumProduct ? 'bg-gradient-to-b from-primary/5 via-background to-background' : 'bg-background'}`}>
+      {/* Fixed Header - Edge to Edge */}
+      <div className={`sticky top-0 z-30 backdrop-blur border-b ${isPremiumProduct ? 'bg-primary/5 border-primary/20' : 'bg-background/95'}`}>
+        <div className="px-4 py-3 flex items-center justify-between">
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="rounded-full">
             <ArrowLeft className="h-5 w-5" />
           </Button>
+          
+          {/* Premium Badge in Header */}
+          {isPremiumProduct && (
+            <div className="flex items-center gap-1.5 px-3 py-1 bg-gradient-to-r from-primary/20 to-secondary/20 rounded-full">
+              {hasFeaturedSpotlight ? (
+                <>
+                  <Star className="h-3.5 w-3.5 text-primary fill-primary" />
+                  <span className="text-xs font-semibold text-primary">Featured</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-3.5 w-3.5 text-primary" />
+                  <span className="text-xs font-semibold text-primary">Premium</span>
+                </>
+              )}
+            </div>
+          )}
+          
           {user && (
             <Button 
               variant="default" 
               size="sm"
               onClick={handleShare}
-              className="gap-2 bg-gradient-to-r from-primary to-secondary hover:opacity-90 transition-all shadow-sm rounded-full"
+              className={`gap-2 transition-all shadow-sm rounded-full ${
+                isPremiumProduct 
+                  ? 'bg-gradient-to-r from-primary via-primary to-secondary hover:opacity-90' 
+                  : 'bg-gradient-to-r from-primary to-secondary hover:opacity-90'
+              }`}
             >
               <Share2 className="h-4 w-4" />
               <span className="hidden sm:inline">Share</span>
@@ -312,359 +343,392 @@ const ProductDetails = () => {
         </div>
       </div>
 
-      {/* Scrollable Content Area */}
+      {/* Scrollable Content Area - Edge to Edge */}
       <div className="flex-1 overflow-y-auto pb-32">
-        <div className="container mx-auto max-w-screen-xl">
-          {/* Product Image - Full Width */}
-          <div className="w-full">
-            <ProductImageCarousel images={product.images} onImageClick={handleImageClick} />
-          </div>
+        {/* Product Image - Full Width Edge to Edge */}
+        <div className="w-full relative">
+          <ProductImageCarousel images={product.images} onImageClick={handleImageClick} />
           
-          {/* Product Content with Padding */}
-          <div className="px-4 py-6 space-y-6">
-            {/* Product Title and Store */}
-            <div className="space-y-2">
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex-1">
-                  <h1 className="text-2xl font-bold leading-tight">{product.title}</h1>
-                  
-                  {/* Store Name with Verified Badge */}
-                  {product.stores && (
-                    <div 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(`/store/${product.stores.id}`);
-                      }}
-                      className="flex items-center gap-2 mt-2 cursor-pointer hover:opacity-80 transition-opacity"
-                    >
-                      <StoreIcon className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm text-muted-foreground font-medium">
-                        {product.stores.store_name}
-                      </span>
-                      {hasVerifiedBadge && (
-                        <div className="flex items-center gap-1">
-                          <CheckCircle className="h-4 w-4 text-primary fill-primary" />
-                          <span className="text-xs font-semibold text-primary">Verified</span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-                
-                <Badge variant="secondary" className="shrink-0">
-                  {product.category}
-                </Badge>
+          {/* Premium Overlay Badge on Image */}
+          {isPremiumProduct && (
+            <div className="absolute top-4 left-4 z-10">
+              <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full backdrop-blur-md ${
+                hasFeaturedSpotlight 
+                  ? 'bg-gradient-to-r from-amber-500/90 to-orange-500/90 text-white' 
+                  : 'bg-gradient-to-r from-primary/90 to-secondary/90 text-white'
+              }`}>
+                {hasFeaturedSpotlight ? (
+                  <>
+                    <Star className="h-4 w-4 fill-white" />
+                    <span className="text-sm font-bold">Featured Product</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4" />
+                    <span className="text-sm font-bold">Highlighted</span>
+                  </>
+                )}
               </div>
-              
-              <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-bold text-primary">
-                  Le {product.price.toLocaleString()}
-                </span>
-                <span className="text-sm text-muted-foreground">
-                  MOQ: {product.moq} units
-                </span>
-              </div>
-              
-              <p className="text-sm text-muted-foreground">
-                Product Code: {product.product_code}
-              </p>
             </div>
-
-            <Separator />
-
-            <ProductPerks perks={product.perks} />
-
-        {/* Target Audience */}
-        {product.target_audience && product.target_audience.length > 0 && (
-          <Card className="shadow-sm">
-            <CardContent className="p-4">
-              <h3 className="font-semibold mb-2">Target Audience</h3>
-              <div className="flex flex-wrap gap-2">
-                {product.target_audience.map((audience, idx) => (
-                  <Badge key={idx} variant="secondary">{audience}</Badge>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Product Condition */}
-        {product.condition && (
-          <Card className="shadow-sm">
-            <CardContent className="p-4">
-              <h3 className="font-semibold mb-2">Condition</h3>
-              <Badge variant="outline" className="text-base">{product.condition}</Badge>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Variants */}
-        {product.variants && product.variants.length > 0 && (
-          <Card className="shadow-sm">
-            <CardContent className="p-4">
-              <h3 className="font-semibold mb-3">Available Variants</h3>
-              <div className="space-y-3">
-                {product.variants.map((variant: any, idx: number) => (
-                  <div key={idx} className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
-                    {variant.image && (
-                      <img src={variant.image} alt="variant" className="w-12 h-12 rounded object-cover" />
-                    )}
-                    <div className="flex-1">
-                      <p className="font-medium">
-                        {variant.color && `${variant.color} `}
-                        {variant.size && `- ${variant.size} `}
-                        {variant.material && `- ${variant.material}`}
-                      </p>
-                      <p className="text-sm text-muted-foreground">Stock: {variant.quantity} | Price: Le {variant.price?.toLocaleString()}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Technical Specifications */}
-        {product.technical_specs && Object.keys(product.technical_specs).length > 0 && (
-          <Card className="shadow-sm">
-            <CardContent className="p-4">
-              <h3 className="font-semibold mb-3">Technical Specifications</h3>
-              <div className="space-y-2">
-                {Object.entries(product.technical_specs).map(([key, value]) => (
-                  <div key={key} className="flex justify-between py-2 border-b last:border-0">
-                    <span className="font-medium text-muted-foreground">{key}</span>
-                    <span className="font-semibold">{value}</span>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Shipping & Delivery */}
-        {product.shipping_details && (
-          <Card className="shadow-sm">
-            <CardContent className="p-4">
-              <h3 className="font-semibold mb-3">Shipping & Delivery</h3>
-              <div className="space-y-2 text-sm">
-                {product.shipping_details.delivery_available && (
-                  <p><strong>Delivery:</strong> Available</p>
-                )}
-                {product.shipping_details.estimated_delivery_time && (
-                  <p><strong>Est. Delivery:</strong> {product.shipping_details.estimated_delivery_time}</p>
-                )}
-                {product.shipping_details.shipping_method && (
-                  <p><strong>Method:</strong> {product.shipping_details.shipping_method}</p>
-                )}
-                {product.shipping_details.packaging_type && (
-                  <p><strong>Packaging:</strong> {product.shipping_details.packaging_type}</p>
-                )}
-                {product.shipping_details.return_policy && (
-                  <Badge variant="secondary" className="mt-2">Return Policy Available</Badge>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Safety & Compliance Tags */}
-        {product.safety_tags && product.safety_tags.length > 0 && (
-          <Card className="shadow-sm">
-            <CardContent className="p-4">
-              <h3 className="font-semibold mb-2">Safety & Compliance</h3>
-              <div className="flex flex-wrap gap-2">
-                {product.safety_tags.map((tag, idx) => (
-                  <Badge key={idx} variant="destructive">{tag}</Badge>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Enhancement Tags */}
-        {product.enhancement_tags && product.enhancement_tags.length > 0 && (
-          <Card className="shadow-sm">
-            <CardContent className="p-4">
-              <h3 className="font-semibold mb-2">Special Features</h3>
-              <div className="flex flex-wrap gap-2">
-                {product.enhancement_tags.map((tag, idx) => (
-                  <Badge key={idx} variant="default">{tag}</Badge>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Eco Badges */}
-        {product.eco_badges && product.eco_badges.length > 0 && (
-          <Card className="shadow-sm bg-green-50">
-            <CardContent className="p-4">
-              <h3 className="font-semibold mb-2 text-green-700">Eco-Friendly</h3>
-              <div className="flex flex-wrap gap-2">
-                {product.eco_badges.map((badge, idx) => (
-                  <Badge key={idx} className="bg-green-600">{badge}</Badge>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Custom Labels */}
-        {product.custom_labels && product.custom_labels.length > 0 && (
-          <Card className="shadow-sm">
-            <CardContent className="p-4">
-              <h3 className="font-semibold mb-2">Product Options</h3>
-              <div className="flex flex-wrap gap-2">
-                {product.custom_labels.map((label, idx) => (
-                  <Badge key={idx} variant="outline">{label}</Badge>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Included in Box */}
-        {product.included_in_box && product.included_in_box.length > 0 && (
-          <Card className="shadow-sm">
-            <CardContent className="p-4">
-              <h3 className="font-semibold mb-2">What's Included</h3>
-              <ul className="list-disc list-inside space-y-1">
-                {product.included_in_box.map((item, idx) => (
-                  <li key={idx} className="text-sm">{item}</li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Product Requirements */}
-        {product.product_requirements && (
-          <Card className="shadow-sm">
-            <CardContent className="p-4">
-              <h3 className="font-semibold mb-2">Product Requirements</h3>
-              <p className="text-sm text-muted-foreground">{product.product_requirements}</p>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Warranty Details */}
-        {(product.warranty || product.warranty_type || product.support_contact) && (
-          <Card className="shadow-sm">
-            <CardContent className="p-4">
-              <h3 className="font-semibold mb-2">Warranty & Support</h3>
-              <div className="space-y-1 text-sm">
-                {product.warranty && <p><strong>Warranty:</strong> {product.warranty}</p>}
-                {product.warranty_type && <p><strong>Type:</strong> {product.warranty_type}</p>}
-                {product.support_contact && <p><strong>Support:</strong> {product.support_contact}</p>}
-                {product.replacement_available && (
-                  <Badge variant="secondary" className="mt-2">Replacement Available</Badge>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Seller Story */}
-        {product.seller_story && (
-          <Card className="shadow-sm">
-            <CardContent className="p-4">
-              <h3 className="font-semibold mb-2">About This Product</h3>
-              <p className="text-sm text-muted-foreground whitespace-pre-line">{product.seller_story}</p>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Product Highlights */}
-        {product.product_highlights && product.product_highlights.length > 0 && (
-          <Card className="shadow-sm">
-            <CardContent className="p-4">
-              <h3 className="font-semibold mb-2">Key Highlights</h3>
-              <ul className="list-disc list-inside space-y-1">
-                {product.product_highlights.map((highlight, idx) => (
-                  <li key={idx} className="text-sm">{highlight}</li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
-        )}
-
-        <Card className="shadow-sm cursor-pointer hover:shadow-md transition-all" onClick={() => navigate(`/store/${product.stores.id}`)}>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              {product.stores.logo_url ? (
-                <img src={product.stores.logo_url} alt={product.stores.store_name} className="w-12 h-12 rounded-lg object-cover" />
-              ) : (
-                <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
-                  <StoreIcon className="h-6 w-6 text-white" />
-                </div>
-              )}
-              <div className="flex-1">
-                <p className="font-semibold">{product.stores.store_name}</p>
-                <p className="text-sm text-muted-foreground">Visit Store</p>
-              </div>
-              <ChevronRight className="h-5 w-5 text-muted-foreground" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <KeyAttributes attributes={{ brand: product.brand, material: product.material, origin: product.origin, warranty: product.warranty, model_number: product.model_number, category: product.category }} />
-
-        <Card className="shadow-sm">
-          <CardContent className="p-4 space-y-3">
-            <h3 className="font-semibold">Description</h3>
-            <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
-              {product.description}
-            </p>
-          </CardContent>
-        </Card>
-
-        <ProductTags tags={product.tags} />
-
-        {product.category_cards && product.category_cards.length > 0 && (
-          <div className="my-4">
-            <CategoryCarousel categoryIds={product.category_cards} />
-          </div>
-        )}
-
-        {/* Reviews Section */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold">Reviews & Ratings</h2>
-            {user && (
-              <Button 
-                onClick={() => setShowReviewModal(true)}
-                className="gap-2 bg-gradient-to-r from-primary to-secondary"
-              >
-                <Star className="h-4 w-4" />
-                Write Review
-              </Button>
-            )}
-          </div>
-
-          <ReviewStatistics reviews={reviews} />
-          <ReviewList 
-            productId={product.id} 
-            onReviewsLoaded={setReviews}
-          />
+          )}
         </div>
+        
+        {/* Product Content - Edge to Edge with internal padding */}
+        <div className={`py-6 space-y-4 ${isPremiumProduct ? 'px-0' : 'px-0'}`}>
+          {/* Product Title and Store - Premium vs Normal */}
+          <div className={`space-y-3 ${isPremiumProduct ? 'px-4 py-4 bg-gradient-to-r from-primary/5 to-transparent' : 'px-4'}`}>
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex-1">
+                <h1 className={`leading-tight ${isPremiumProduct ? 'text-2xl font-extrabold' : 'text-xl font-bold'}`}>
+                  {product.title}
+                </h1>
+                
+                {/* Store Name with Verified Badge */}
+                {product.stores && (
+                  <div 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/store/${product.stores.id}`);
+                    }}
+                    className="flex items-center gap-2 mt-2 cursor-pointer hover:opacity-80 transition-opacity"
+                  >
+                    <StoreIcon className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground font-medium">
+                      {product.stores.store_name}
+                    </span>
+                    {hasVerifiedBadge && (
+                      <div className="flex items-center gap-1 px-2 py-0.5 bg-primary/10 rounded-full">
+                        <CheckCircle className="h-3.5 w-3.5 text-primary fill-primary" />
+                        <span className="text-xs font-semibold text-primary">Verified Store</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+              
+              <Badge variant="secondary" className={`shrink-0 ${isPremiumProduct ? 'bg-primary/10 text-primary border-primary/20' : ''}`}>
+                {product.category}
+              </Badge>
+            </div>
+            
+            <div className="flex items-baseline gap-3">
+              <span className={`font-bold text-primary ${isPremiumProduct ? 'text-4xl' : 'text-3xl'}`}>
+                Le {product.price.toLocaleString()}
+              </span>
+              <span className={`text-muted-foreground ${isPremiumProduct ? 'text-sm bg-muted/50 px-2 py-0.5 rounded' : 'text-sm'}`}>
+                MOQ: {product.moq} units
+              </span>
+            </div>
+            
+            <p className="text-sm text-muted-foreground">
+              Product Code: {product.product_code}
+            </p>
+          </div>
 
-            <Card className="shadow-sm cursor-pointer hover:shadow-md transition-all bg-primary/5 border-primary/20" onClick={() => navigate('/security-info')}>
+          {!isPremiumProduct && <Separator className="mx-4" />}
+          {isPremiumProduct && <div className="h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent mx-4" />}
+
+          <div className="px-4">
+            <ProductPerks perks={product.perks} />
+          </div>
+
+          {/* Target Audience */}
+          {product.target_audience && product.target_audience.length > 0 && (
+            <Card className={`mx-4 ${isPremiumProduct ? 'border-primary/20 shadow-md' : 'shadow-sm'}`}>
               <CardContent className="p-4">
-                <div className="flex items-start gap-3">
-                  <div className="p-2 rounded-lg bg-primary/10">
-                    <Shield className="h-5 w-5 text-primary" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-semibold">Market360 Secure Shopping</h3>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Buyer protection, verified sellers, and secure payments
-                    </p>
-                  </div>
-                  <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                <h3 className="font-semibold mb-2">Target Audience</h3>
+                <div className="flex flex-wrap gap-2">
+                  {product.target_audience.map((audience, idx) => (
+                    <Badge key={idx} variant="secondary">{audience}</Badge>
+                  ))}
                 </div>
               </CardContent>
             </Card>
+          )}
+
+          {/* Product Condition */}
+          {product.condition && (
+            <Card className={`mx-4 ${isPremiumProduct ? 'border-primary/20 shadow-md' : 'shadow-sm'}`}>
+              <CardContent className="p-4">
+                <h3 className="font-semibold mb-2">Condition</h3>
+                <Badge variant="outline" className="text-base">{product.condition}</Badge>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Variants */}
+          {product.variants && product.variants.length > 0 && (
+            <Card className={`mx-4 ${isPremiumProduct ? 'border-primary/20 shadow-md' : 'shadow-sm'}`}>
+              <CardContent className="p-4">
+                <h3 className="font-semibold mb-3">Available Variants</h3>
+                <div className="space-y-3">
+                  {product.variants.map((variant: any, idx: number) => (
+                    <div key={idx} className={`flex items-center gap-3 p-3 rounded-lg ${isPremiumProduct ? 'bg-primary/5' : 'bg-muted/30'}`}>
+                      {variant.image && (
+                        <img src={variant.image} alt="variant" className="w-12 h-12 rounded object-cover" />
+                      )}
+                      <div className="flex-1">
+                        <p className="font-medium">
+                          {variant.color && `${variant.color} `}
+                          {variant.size && `- ${variant.size} `}
+                          {variant.material && `- ${variant.material}`}
+                        </p>
+                        <p className="text-sm text-muted-foreground">Stock: {variant.quantity} | Price: Le {variant.price?.toLocaleString()}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Technical Specifications */}
+          {product.technical_specs && Object.keys(product.technical_specs).length > 0 && (
+            <Card className={`mx-4 ${isPremiumProduct ? 'border-primary/20 shadow-md' : 'shadow-sm'}`}>
+              <CardContent className="p-4">
+                <h3 className="font-semibold mb-3">Technical Specifications</h3>
+                <div className="space-y-2">
+                  {Object.entries(product.technical_specs).map(([key, value]) => (
+                    <div key={key} className={`flex justify-between py-2 border-b last:border-0 ${isPremiumProduct ? 'border-primary/10' : ''}`}>
+                      <span className="font-medium text-muted-foreground">{key}</span>
+                      <span className="font-semibold">{value}</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Shipping & Delivery */}
+          {product.shipping_details && (
+            <Card className={`mx-4 ${isPremiumProduct ? 'border-primary/20 shadow-md' : 'shadow-sm'}`}>
+              <CardContent className="p-4">
+                <h3 className="font-semibold mb-3">Shipping & Delivery</h3>
+                <div className="space-y-2 text-sm">
+                  {product.shipping_details.delivery_available && (
+                    <p><strong>Delivery:</strong> Available</p>
+                  )}
+                  {product.shipping_details.estimated_delivery_time && (
+                    <p><strong>Est. Delivery:</strong> {product.shipping_details.estimated_delivery_time}</p>
+                  )}
+                  {product.shipping_details.shipping_method && (
+                    <p><strong>Method:</strong> {product.shipping_details.shipping_method}</p>
+                  )}
+                  {product.shipping_details.packaging_type && (
+                    <p><strong>Packaging:</strong> {product.shipping_details.packaging_type}</p>
+                  )}
+                  {product.shipping_details.return_policy && (
+                    <Badge variant="secondary" className="mt-2">Return Policy Available</Badge>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Safety & Compliance Tags */}
+          {product.safety_tags && product.safety_tags.length > 0 && (
+            <Card className={`mx-4 ${isPremiumProduct ? 'border-primary/20 shadow-md' : 'shadow-sm'}`}>
+              <CardContent className="p-4">
+                <h3 className="font-semibold mb-2">Safety & Compliance</h3>
+                <div className="flex flex-wrap gap-2">
+                  {product.safety_tags.map((tag, idx) => (
+                    <Badge key={idx} variant="destructive">{tag}</Badge>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Enhancement Tags */}
+          {product.enhancement_tags && product.enhancement_tags.length > 0 && (
+            <Card className={`mx-4 ${isPremiumProduct ? 'border-primary/20 shadow-md' : 'shadow-sm'}`}>
+              <CardContent className="p-4">
+                <h3 className="font-semibold mb-2">Special Features</h3>
+                <div className="flex flex-wrap gap-2">
+                  {product.enhancement_tags.map((tag, idx) => (
+                    <Badge key={idx} variant="default">{tag}</Badge>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Eco Badges */}
+          {product.eco_badges && product.eco_badges.length > 0 && (
+            <Card className={`mx-4 bg-green-50 ${isPremiumProduct ? 'border-green-200 shadow-md' : 'shadow-sm'}`}>
+              <CardContent className="p-4">
+                <h3 className="font-semibold mb-2 text-green-700">Eco-Friendly</h3>
+                <div className="flex flex-wrap gap-2">
+                  {product.eco_badges.map((badge, idx) => (
+                    <Badge key={idx} className="bg-green-600">{badge}</Badge>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Custom Labels */}
+          {product.custom_labels && product.custom_labels.length > 0 && (
+            <Card className={`mx-4 ${isPremiumProduct ? 'border-primary/20 shadow-md' : 'shadow-sm'}`}>
+              <CardContent className="p-4">
+                <h3 className="font-semibold mb-2">Product Options</h3>
+                <div className="flex flex-wrap gap-2">
+                  {product.custom_labels.map((label, idx) => (
+                    <Badge key={idx} variant="outline">{label}</Badge>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Included in Box */}
+          {product.included_in_box && product.included_in_box.length > 0 && (
+            <Card className={`mx-4 ${isPremiumProduct ? 'border-primary/20 shadow-md' : 'shadow-sm'}`}>
+              <CardContent className="p-4">
+                <h3 className="font-semibold mb-2">What's Included</h3>
+                <ul className="list-disc list-inside space-y-1">
+                  {product.included_in_box.map((item, idx) => (
+                    <li key={idx} className="text-sm">{item}</li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Product Requirements */}
+          {product.product_requirements && (
+            <Card className={`mx-4 ${isPremiumProduct ? 'border-primary/20 shadow-md' : 'shadow-sm'}`}>
+              <CardContent className="p-4">
+                <h3 className="font-semibold mb-2">Product Requirements</h3>
+                <p className="text-sm text-muted-foreground">{product.product_requirements}</p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Warranty Details */}
+          {(product.warranty || product.warranty_type || product.support_contact) && (
+            <Card className={`mx-4 ${isPremiumProduct ? 'border-primary/20 shadow-md' : 'shadow-sm'}`}>
+              <CardContent className="p-4">
+                <h3 className="font-semibold mb-2">Warranty & Support</h3>
+                <div className="space-y-1 text-sm">
+                  {product.warranty && <p><strong>Warranty:</strong> {product.warranty}</p>}
+                  {product.warranty_type && <p><strong>Type:</strong> {product.warranty_type}</p>}
+                  {product.support_contact && <p><strong>Support:</strong> {product.support_contact}</p>}
+                  {product.replacement_available && (
+                    <Badge variant="secondary" className="mt-2">Replacement Available</Badge>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Seller Story */}
+          {product.seller_story && (
+            <Card className={`mx-4 ${isPremiumProduct ? 'border-primary/20 shadow-md bg-primary/5' : 'shadow-sm'}`}>
+              <CardContent className="p-4">
+                <h3 className="font-semibold mb-2">About This Product</h3>
+                <p className="text-sm text-muted-foreground whitespace-pre-line">{product.seller_story}</p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Product Highlights */}
+          {product.product_highlights && product.product_highlights.length > 0 && (
+            <Card className={`mx-4 ${isPremiumProduct ? 'border-primary/20 shadow-md bg-gradient-to-r from-primary/5 to-transparent' : 'shadow-sm'}`}>
+              <CardContent className="p-4">
+                <h3 className="font-semibold mb-2">Key Highlights</h3>
+                <ul className={`list-disc list-inside space-y-1 ${isPremiumProduct ? 'marker:text-primary' : ''}`}>
+                  {product.product_highlights.map((highlight, idx) => (
+                    <li key={idx} className="text-sm">{highlight}</li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Store Card */}
+          <Card className={`mx-4 cursor-pointer hover:shadow-md transition-all ${isPremiumProduct ? 'border-primary/20 shadow-md' : 'shadow-sm'}`} onClick={() => navigate(`/store/${product.stores.id}`)}>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                {product.stores.logo_url ? (
+                  <img src={product.stores.logo_url} alt={product.stores.store_name} className={`w-12 h-12 rounded-lg object-cover ${isPremiumProduct ? 'ring-2 ring-primary/30' : ''}`} />
+                ) : (
+                  <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
+                    <StoreIcon className="h-6 w-6 text-white" />
+                  </div>
+                )}
+                <div className="flex-1">
+                  <p className="font-semibold">{product.stores.store_name}</p>
+                  <p className="text-sm text-muted-foreground">Visit Store</p>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="px-4">
+            <KeyAttributes attributes={{ brand: product.brand, material: product.material, origin: product.origin, warranty: product.warranty, model_number: product.model_number, category: product.category }} />
           </div>
+
+          {/* Description */}
+          <Card className={`mx-4 ${isPremiumProduct ? 'border-primary/20 shadow-md' : 'shadow-sm'}`}>
+            <CardContent className="p-4 space-y-3">
+              <h3 className="font-semibold">Description</h3>
+              <p className={`text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap ${isPremiumProduct ? 'text-foreground/80' : ''}`}>
+                {product.description}
+              </p>
+            </CardContent>
+          </Card>
+
+          <div className="px-4">
+            <ProductTags tags={product.tags} />
+          </div>
+
+          {product.category_cards && product.category_cards.length > 0 && (
+            <div className="px-4">
+              <CategoryCarousel categoryIds={product.category_cards} />
+            </div>
+          )}
+
+          {/* Reviews Section */}
+          <div className="px-4 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className={`font-bold ${isPremiumProduct ? 'text-xl' : 'text-lg'}`}>Reviews & Ratings</h2>
+              {user && (
+                <Button 
+                  onClick={() => setShowReviewModal(true)}
+                  className={`gap-2 ${isPremiumProduct ? 'bg-gradient-to-r from-primary via-primary to-secondary' : 'bg-gradient-to-r from-primary to-secondary'}`}
+                >
+                  <Star className="h-4 w-4" />
+                  Write Review
+                </Button>
+              )}
+            </div>
+
+            <ReviewStatistics reviews={reviews} />
+            <ReviewList 
+              productId={product.id} 
+              onReviewsLoaded={setReviews}
+            />
+          </div>
+
+          {/* Security Info Card */}
+          <Card className={`mx-4 cursor-pointer hover:shadow-md transition-all ${isPremiumProduct ? 'bg-primary/5 border-primary/20 shadow-md' : 'shadow-sm bg-primary/5 border-primary/20'}`} onClick={() => navigate('/security-info')}>
+            <CardContent className="p-4">
+              <div className="flex items-start gap-3">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <Shield className="h-5 w-5 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold">Market360 Secure Shopping</h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Buyer protection, verified sellers, and secure payments
+                  </p>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
 
