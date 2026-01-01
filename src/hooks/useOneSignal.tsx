@@ -1,155 +1,225 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
 import { isNativeApp } from '@/lib/notificationEnvironment';
 
 declare global {
   interface Window {
-    OneSignalDeferred?: any;
+    OneSignalDeferred?: any[];
+    OneSignal?: any;
     plugins?: {
       OneSignal?: any;
+    };
+    median?: {
+      onesignal?: {
+        externalUserId?: {
+          set: (userId: string) => void;
+          remove: () => void;
+        };
+      };
     };
   }
 }
 
+const ONESIGNAL_APP_ID = "bcb717ee-7c1e-4d51-b64e-cd7e5c323a29";
+
 export const useOneSignal = () => {
   const { user } = useAuth();
   const [isInitialized, setIsInitialized] = useState(false);
-  const [playerId, setPlayerId] = useState<string | null>(null);
+  const [externalUserId, setExternalUserId] = useState<string | null>(null);
+  const previousUserIdRef = useRef<string | null>(null);
 
+  // Initialize OneSignal when component mounts
   useEffect(() => {
-    if (!user) return;
-
-    const initOneSignal = async () => {
-      if (isNativeApp()) {
-        // Native Android initialization via Capacitor OneSignal plugin
-        initNativeOneSignal();
-      } else {
-        // Web/PWA initialization
-        initWebOneSignal();
-      }
-    };
-
     initOneSignal();
-  }, [user]);
+  }, []);
+
+  // Handle user changes (login/logout/switch)
+  useEffect(() => {
+    if (!isInitialized) return;
+
+    const currentUserId = user?.id || null;
+    const previousUserId = previousUserIdRef.current;
+
+    // User logged out or switched accounts
+    if (previousUserId && previousUserId !== currentUserId) {
+      console.log('[OneSignal] User changed, removing external user ID:', previousUserId);
+      removeExternalUserId();
+    }
+
+    // User logged in
+    if (currentUserId && currentUserId !== previousUserId) {
+      console.log('[OneSignal] User logged in, setting external user ID:', currentUserId);
+      setExternalUserIdForUser(currentUserId);
+    }
+
+    previousUserIdRef.current = currentUserId;
+  }, [user?.id, isInitialized]);
+
+  const initOneSignal = async () => {
+    try {
+      // Check if running in Median.co wrapper
+      if (window.median?.onesignal) {
+        console.log('[OneSignal] Detected Median.co environment');
+        setIsInitialized(true);
+        return;
+      }
+
+      if (isNativeApp()) {
+        await initNativeOneSignal();
+      } else {
+        await initWebOneSignal();
+      }
+    } catch (error) {
+      console.error('[OneSignal] Error initializing:', error);
+    }
+  };
 
   const initWebOneSignal = async () => {
     try {
-      // Load OneSignal SDK dynamically
-      if (!window.OneSignalDeferred) {
+      // Load OneSignal SDK dynamically if not present
+      if (!window.OneSignal && !window.OneSignalDeferred) {
+        console.log('[OneSignal] Loading Web SDK...');
         const script = document.createElement('script');
         script.src = 'https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js';
         script.defer = true;
         document.head.appendChild(script);
 
-        await new Promise((resolve) => {
+        await new Promise((resolve, reject) => {
           script.onload = resolve;
+          script.onerror = reject;
         });
       }
 
       window.OneSignalDeferred = window.OneSignalDeferred || [];
       window.OneSignalDeferred.push(async function(OneSignal: any) {
         await OneSignal.init({
-          appId: "bcb717ee-7c1e-4d51-b64e-cd7e5c323a29",
-          safari_web_id: "web.onesignal.auto.xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+          appId: ONESIGNAL_APP_ID,
           notifyButton: {
             enable: false,
           },
           allowLocalhostAsSecureOrigin: true,
         });
 
-        // Get player ID
-        const userId = await OneSignal.User.PushSubscription.id;
-        if (userId) {
-          setPlayerId(userId);
-          await savePlayerIdToDatabase(userId);
-        }
-
-        // Listen for subscription changes
-        OneSignal.User.PushSubscription.addEventListener('change', async (event: any) => {
-          const newPlayerId = event.current.id;
-          if (newPlayerId) {
-            setPlayerId(newPlayerId);
-            await savePlayerIdToDatabase(newPlayerId);
-          }
-        });
-
+        console.log('[OneSignal] Web SDK initialized');
         setIsInitialized(true);
       });
     } catch (error) {
-      console.error('Error initializing OneSignal Web:', error);
+      console.error('[OneSignal] Error initializing Web SDK:', error);
     }
   };
 
   const initNativeOneSignal = async () => {
     try {
       if (!window.plugins?.OneSignal) {
-        console.error('OneSignal native plugin not available');
+        console.log('[OneSignal] Native plugin not available');
         return;
       }
 
       const OneSignal = window.plugins.OneSignal;
+      OneSignal.setAppId(ONESIGNAL_APP_ID);
 
-      // Initialize with App ID
-      OneSignal.setAppId("bcb717ee-7c1e-4d51-b64e-cd7e5c323a29");
-
-      // Request permission
       OneSignal.promptForPushNotificationsWithUserResponse((accepted: boolean) => {
-        console.log("User accepted notifications: " + accepted);
+        console.log('[OneSignal] User accepted notifications:', accepted);
       });
 
-      // Get player ID
-      OneSignal.getDeviceState((state: any) => {
-        if (state.userId) {
-          setPlayerId(state.userId);
-          savePlayerIdToDatabase(state.userId);
-        }
-      });
-
+      console.log('[OneSignal] Native SDK initialized');
       setIsInitialized(true);
     } catch (error) {
-      console.error('Error initializing OneSignal Native:', error);
+      console.error('[OneSignal] Error initializing Native SDK:', error);
     }
   };
 
-  const savePlayerIdToDatabase = async (playerIdToSave: string) => {
-    if (!user) return;
-
+  const setExternalUserIdForUser = async (userId: string) => {
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ onesignal_player_id: playerIdToSave })
-        .eq('id', user.id);
+      // Median.co wrapper
+      if (window.median?.onesignal?.externalUserId) {
+        window.median.onesignal.externalUserId.set(userId);
+        console.log('[OneSignal] External user ID set via Median:', userId);
+        setExternalUserId(userId);
+        return;
+      }
 
-      if (error) {
-        console.error('Error saving OneSignal player ID:', error);
-      } else {
-        console.log('OneSignal player ID saved successfully');
+      // Native plugin
+      if (isNativeApp() && window.plugins?.OneSignal) {
+        window.plugins.OneSignal.setExternalUserId(userId);
+        console.log('[OneSignal] External user ID set via Native plugin:', userId);
+        setExternalUserId(userId);
+        return;
+      }
+
+      // Web SDK
+      if (window.OneSignalDeferred) {
+        window.OneSignalDeferred.push(async function(OneSignal: any) {
+          await OneSignal.login(userId);
+          console.log('[OneSignal] External user ID set via Web SDK:', userId);
+          setExternalUserId(userId);
+        });
       }
     } catch (error) {
-      console.error('Error saving player ID to database:', error);
+      console.error('[OneSignal] Error setting external user ID:', error);
+    }
+  };
+
+  const removeExternalUserId = async () => {
+    try {
+      // Median.co wrapper
+      if (window.median?.onesignal?.externalUserId) {
+        window.median.onesignal.externalUserId.remove();
+        console.log('[OneSignal] External user ID removed via Median');
+        setExternalUserId(null);
+        return;
+      }
+
+      // Native plugin
+      if (isNativeApp() && window.plugins?.OneSignal) {
+        window.plugins.OneSignal.removeExternalUserId();
+        console.log('[OneSignal] External user ID removed via Native plugin');
+        setExternalUserId(null);
+        return;
+      }
+
+      // Web SDK
+      if (window.OneSignalDeferred) {
+        window.OneSignalDeferred.push(async function(OneSignal: any) {
+          await OneSignal.logout();
+          console.log('[OneSignal] External user ID removed via Web SDK');
+          setExternalUserId(null);
+        });
+      }
+    } catch (error) {
+      console.error('[OneSignal] Error removing external user ID:', error);
     }
   };
 
   const requestPermission = async () => {
     try {
+      if (window.median?.onesignal) {
+        console.log('[OneSignal] Permission handled by Median');
+        return;
+      }
+
       if (isNativeApp() && window.plugins?.OneSignal) {
         window.plugins.OneSignal.promptForPushNotificationsWithUserResponse((accepted: boolean) => {
-          console.log("User accepted notifications: " + accepted);
+          console.log('[OneSignal] User accepted notifications:', accepted);
         });
-      } else if (window.OneSignalDeferred) {
+        return;
+      }
+
+      if (window.OneSignalDeferred) {
         window.OneSignalDeferred.push(async function(OneSignal: any) {
           await OneSignal.Slidedown.promptPush();
         });
       }
     } catch (error) {
-      console.error('Error requesting notification permission:', error);
+      console.error('[OneSignal] Error requesting permission:', error);
     }
   };
 
   return {
     isInitialized,
-    playerId,
-    requestPermission
+    externalUserId,
+    requestPermission,
+    setExternalUserId: setExternalUserIdForUser,
+    removeExternalUserId
   };
 };
