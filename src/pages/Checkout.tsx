@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, MapPin, Wallet, AlertCircle, CreditCard, Package } from "lucide-react";
+import { ArrowLeft, MapPin, Wallet, AlertCircle, Shield } from "lucide-react";
 import { NumericInput } from "@/components/NumericInput";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SIERRA_LEONE_REGIONS, getAllDistricts } from "@/lib/sierraLeoneData";
@@ -26,7 +26,6 @@ export default function Checkout() {
   const [walletBalance, setWalletBalance] = useState<number>(0);
   const [loadingBalance, setLoadingBalance] = useState(true);
   const [showInsufficientModal, setShowInsufficientModal] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<'wallet' | 'delivery' | null>(null);
   
   const [deliveryInfo, setDeliveryInfo] = useState({
     name: "",
@@ -62,7 +61,6 @@ export default function Checkout() {
 
       if (!data) {
         console.log('No wallet found for user, creating one...');
-        // Try to create a wallet if it doesn't exist
         const { data: newWallet } = await supabase
           .from('wallets')
           .insert({ user_id: user.id, balance_leones: 0 })
@@ -91,16 +89,6 @@ export default function Checkout() {
       return;
     }
 
-    // Validate payment method
-    if (!paymentMethod) {
-      toast({
-        title: "Select payment method",
-        description: "Please choose how you'd like to pay for your order",
-        variant: "destructive",
-      });
-      return;
-    }
-
     // Validate delivery info
     if (!deliveryInfo.name || !deliveryInfo.phone || !deliveryInfo.address || !deliveryInfo.city || !deliveryInfo.region) {
       toast({
@@ -123,8 +111,8 @@ export default function Checkout() {
       }
     }
 
-    // Check wallet balance only if paying with wallet
-    if (paymentMethod === 'wallet' && walletBalance < totalPrice) {
+    // Check wallet balance
+    if (walletBalance < totalPrice) {
       setShowInsufficientModal(true);
       return;
     }
@@ -165,7 +153,7 @@ export default function Checkout() {
           .eq("id", store.owner_id)
           .single();
 
-        // Create order with payment method
+        // Create order with wallet payment
         const { data: newOrder, error: orderError } = await supabase
           .from("orders")
           .insert({
@@ -174,15 +162,15 @@ export default function Checkout() {
             product_id: item.id,
             quantity: item.quantity,
             total_amount: item.price * item.quantity,
-            escrow_status: paymentMethod === 'wallet' ? "holding" : "pending_payment",
-            escrow_amount: paymentMethod === 'wallet' ? item.price * item.quantity : 0,
+            escrow_status: "holding",
+            escrow_amount: item.price * item.quantity,
             delivery_name: deliveryInfo.name,
             delivery_phone: deliveryInfo.phone,
             shipping_address: deliveryInfo.address,
             shipping_city: deliveryInfo.city,
             shipping_region: deliveryInfo.region,
             shipping_country: deliveryInfo.country,
-            delivery_notes: paymentMethod === 'delivery' ? 'Pay on Delivery' : deliveryInfo.notes,
+            delivery_notes: deliveryInfo.notes,
             status: "pending"
           })
           .select()
@@ -216,7 +204,6 @@ export default function Checkout() {
           });
         } catch (notifError) {
           console.error('Failed to send notification:', notifError);
-          // Don't fail the order if notification fails
         }
 
         // Send SMS notification to seller for new order
@@ -231,12 +218,10 @@ export default function Checkout() {
           }
         } catch (smsError) {
           console.error('Failed to send SMS to seller:', smsError);
-          // Don't fail the order if SMS fails
         }
 
         // Send email notifications
         try {
-          // Send order confirmation to buyer
           if (buyerProfile?.email) {
             await sendOrderConfirmationEmail(buyerProfile.email, {
               orderNumber,
@@ -250,7 +235,6 @@ export default function Checkout() {
             }, user.id);
           }
 
-          // Send new order notification to seller
           if (sellerProfile?.email) {
             await sendNewOrderSellerEmail(sellerProfile.email, {
               orderNumber,
@@ -265,47 +249,42 @@ export default function Checkout() {
           }
         } catch (emailError) {
           console.error('Failed to send email notifications:', emailError);
-          // Don't fail the order if email fails
         }
       });
 
       await Promise.all(orderPromises);
 
-      // Deduct from wallet only if paying with wallet (no fees)
-      if (paymentMethod === 'wallet') {
-        const { error: walletError } = await supabase
-          .from("wallets")
-          .update({ balance_leones: walletBalance - totalPrice })
-          .eq("user_id", user.id);
+      // Deduct from wallet
+      const { error: walletError } = await supabase
+        .from("wallets")
+        .update({ balance_leones: walletBalance - totalPrice })
+        .eq("user_id", user.id);
 
-        if (walletError) throw walletError;
+      if (walletError) throw walletError;
 
-        // Create transaction record
-        const { data: wallet } = await supabase
-          .from("wallets")
-          .select("id")
-          .eq("user_id", user.id)
-          .single();
+      // Create transaction record
+      const { data: wallet } = await supabase
+        .from("wallets")
+        .select("id")
+        .eq("user_id", user.id)
+        .single();
 
-        if (wallet) {
-          await supabase.from("transactions").insert({
-            wallet_id: wallet.id,
-            type: "withdrawal",
-            amount: -totalPrice,
-            status: "completed",
-            reference: `Order payment - ${items.length} items`,
-            metadata: { payment_method: 'wallet', order_count: items.length }
-          });
-        }
+      if (wallet) {
+        await supabase.from("transactions").insert({
+          wallet_id: wallet.id,
+          type: "withdrawal",
+          amount: -totalPrice,
+          status: "completed",
+          reference: `Order payment - ${items.length} items`,
+          metadata: { payment_method: 'wallet', order_count: items.length }
+        });
       }
 
       clearCart();
       
       toast({
         title: "Order placed successfully!",
-        description: paymentMethod === 'wallet' 
-          ? "Your payment is in escrow. Track your orders in the Orders page."
-          : "You'll pay the seller upon delivery. Track your orders in the Orders page.",
+        description: "Your payment is in escrow. Track your orders in the Orders page.",
       });
 
       navigate("/orders");
@@ -340,28 +319,34 @@ export default function Checkout() {
       </div>
 
       <div className="max-w-4xl mx-auto p-4 space-y-4">
-        {/* Wallet Balance Card */}
-        <Card className="p-4">
+        {/* Wallet Balance Card - Now the payment method */}
+        <Card className="p-4 border-2 border-primary bg-primary/5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                <Wallet className="h-5 w-5 text-primary" />
+              <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center">
+                <Wallet className="h-6 w-6 text-primary-foreground" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Wallet Balance</p>
+                <p className="text-sm font-medium text-primary">Paying with Market 360 Wallet</p>
                 {loadingBalance ? (
                   <Skeleton className="h-6 w-24" />
                 ) : (
-                  <p className="text-lg font-bold">Le {walletBalance.toLocaleString()}</p>
+                  <p className="text-xl font-bold">Le {walletBalance.toLocaleString()}</p>
                 )}
               </div>
             </div>
             {!loadingBalance && !isBalanceSufficient && (
               <div className="flex items-center gap-2 text-destructive">
                 <AlertCircle className="h-5 w-5" />
-                <span className="text-sm font-medium">Insufficient Balance</span>
+                <span className="text-sm font-medium">Insufficient</span>
               </div>
             )}
+          </div>
+          <div className="mt-3 pt-3 border-t border-primary/20">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Shield className="h-4 w-4 text-primary" />
+              <span>Secure escrow payment • Funds held until delivery confirmed</span>
+            </div>
           </div>
         </Card>
 
@@ -396,85 +381,6 @@ export default function Checkout() {
                 Le {totalPrice.toLocaleString()}
               </span>
             </div>
-          </div>
-        </Card>
-
-        {/* Payment Method Selection */}
-        <Card className="p-4">
-          <h2 className="font-semibold mb-4 flex items-center gap-2">
-            <CreditCard className="h-5 w-5 text-primary" />
-            Select Payment Method
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Pay with Market 360 Wallet */}
-            <Card 
-              className={`cursor-pointer transition-all border-2 hover:shadow-lg ${
-                paymentMethod === 'wallet' 
-                  ? 'border-primary bg-primary/5 shadow-md' 
-                  : 'border-border hover:border-primary/50'
-              }`}
-              onClick={() => setPaymentMethod('wallet')}
-            >
-              <div className="p-4 space-y-3">
-                <div className="flex items-center gap-3">
-                  <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                    paymentMethod === 'wallet' ? 'bg-primary text-primary-foreground' : 'bg-primary/10 text-primary'
-                  }`}>
-                    <Wallet className="h-6 w-6" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-bold text-base">Pay with Market 360</h3>
-                    <p className="text-xs text-muted-foreground">Instant & Secure</p>
-                  </div>
-                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                    paymentMethod === 'wallet' ? 'border-primary bg-primary' : 'border-border'
-                  }`}>
-                    {paymentMethod === 'wallet' && (
-                      <div className="w-2.5 h-2.5 rounded-full bg-white" />
-                    )}
-                  </div>
-                </div>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  Pay securely using your Market 360 wallet. Funds held in escrow until delivery confirmed. 
-                  <span className="font-bold text-green-600 block mt-1">✓ No transaction fees</span>
-                </p>
-              </div>
-            </Card>
-
-            {/* Pay on Delivery */}
-            <Card 
-              className={`cursor-pointer transition-all border-2 hover:shadow-lg ${
-                paymentMethod === 'delivery' 
-                  ? 'border-primary bg-primary/5 shadow-md' 
-                  : 'border-border hover:border-primary/50'
-              }`}
-              onClick={() => setPaymentMethod('delivery')}
-            >
-              <div className="p-4 space-y-3">
-                <div className="flex items-center gap-3">
-                  <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                    paymentMethod === 'delivery' ? 'bg-primary text-primary-foreground' : 'bg-primary/10 text-primary'
-                  }`}>
-                    <Package className="h-6 w-6" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-bold text-base">Pay on Delivery</h3>
-                    <p className="text-xs text-muted-foreground">Cash Payment</p>
-                  </div>
-                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                    paymentMethod === 'delivery' ? 'border-primary bg-primary' : 'border-border'
-                  }`}>
-                    {paymentMethod === 'delivery' && (
-                      <div className="w-2.5 h-2.5 rounded-full bg-white" />
-                    )}
-                  </div>
-                </div>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  Pay directly to the seller when your order arrives. Inspect product before payment. 
-                  <span className="font-bold text-yellow-600 block mt-1">⚠️ Market 360 is not responsible for disputes</span>
-                </p>
-              </div>
-            </Card>
           </div>
         </Card>
 
@@ -581,17 +487,27 @@ export default function Checkout() {
         {/* Place Order Button */}
         <Button
           onClick={handlePlaceOrder}
-          disabled={loading || loadingBalance || !paymentMethod || (paymentMethod === 'wallet' && !isBalanceSufficient)}
+          disabled={loading || loadingBalance || !isBalanceSufficient}
           className="w-full h-12 text-base font-semibold"
           size="lg"
         >
-          {loading ? "Processing..." : paymentMethod === 'delivery' ? `Place Order (Pay on Delivery) - Le ${totalPrice.toLocaleString()}` : `Place Order - Le ${totalPrice.toLocaleString()}`}
+          {loading ? "Processing..." : `Pay Le ${totalPrice.toLocaleString()}`}
         </Button>
 
-        {paymentMethod === 'wallet' && !isBalanceSufficient && !loadingBalance && (
-          <p className="text-center text-sm text-muted-foreground">
-            Top up your wallet to complete this purchase
-          </p>
+        {!isBalanceSufficient && !loadingBalance && (
+          <div className="text-center space-y-2">
+            <p className="text-sm text-muted-foreground">
+              Your wallet balance is insufficient
+            </p>
+            <Button
+              variant="outline"
+              onClick={() => navigate("/wallet")}
+              className="gap-2"
+            >
+              <Wallet className="h-4 w-4" />
+              Top Up Wallet
+            </Button>
+          </div>
         )}
       </div>
 
