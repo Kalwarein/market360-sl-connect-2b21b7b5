@@ -180,17 +180,24 @@ const StorePage = () => {
   }
 
   const isPremiumStore = hasFeaturedSpotlight || hasPremiumTheme;
+  const isFeaturedStore = hasFeaturedSpotlight;
 
-  // Premium Featured Store Layout
+  // Premium Featured Store Layout with Premium Theme
   if (isPremiumStore) {
     return (
-      <div className="min-h-screen pb-20 bg-background">
+      <div className={`min-h-screen pb-20 ${isFeaturedStore ? 'bg-gradient-to-b from-amber-50/50 via-background to-background' : 'bg-gradient-to-b from-primary/5 via-background to-background'}`}>
+        {/* Decorative Background Elements */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className={`absolute top-0 right-0 w-96 h-96 rounded-full blur-3xl opacity-20 ${isFeaturedStore ? 'bg-amber-400' : 'bg-primary'}`} />
+          <div className={`absolute bottom-1/3 left-0 w-64 h-64 rounded-full blur-3xl opacity-10 ${isFeaturedStore ? 'bg-orange-400' : 'bg-secondary'}`} />
+        </div>
+
         {/* Header Actions */}
-        <div className="px-4 pt-4 flex items-center justify-between">
+        <div className="relative px-4 pt-4 flex items-center justify-between z-10">
           <Button
             variant="outline"
             size="sm"
-            className="rounded-xl h-9 px-3"
+            className={`rounded-xl h-9 px-3 backdrop-blur-sm ${isFeaturedStore ? 'border-amber-200 hover:bg-amber-50' : 'border-primary/20 hover:bg-primary/5'}`}
             onClick={() => navigate(-1)}
           >
             <ArrowLeft className="h-4 w-4 mr-1.5" />
@@ -199,7 +206,7 @@ const StorePage = () => {
           <Button
             variant="outline"
             size="sm"
-            className="rounded-xl h-9 px-3"
+            className={`rounded-xl h-9 px-3 backdrop-blur-sm ${isFeaturedStore ? 'border-amber-200 hover:bg-amber-50' : 'border-primary/20 hover:bg-primary/5'}`}
             onClick={() => setShareDialogOpen(true)}
           >
             <Share2 className="h-4 w-4 mr-1.5" />
@@ -208,11 +215,11 @@ const StorePage = () => {
         </div>
 
         {/* Premium Hero Section */}
-        <div className="px-4 pt-6">
+        <div className="relative px-4 pt-6 z-10">
           {/* Verified Banner for Premium Stores */}
           {hasVerifiedBadge && (
             <div className="mb-6">
-              <Card className="bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 border-0 shadow-2xl overflow-hidden">
+              <Card className={`border-0 shadow-2xl overflow-hidden ${isFeaturedStore ? 'bg-gradient-to-r from-amber-500 via-amber-600 to-orange-600' : 'bg-gradient-to-r from-primary via-primary to-secondary'}`}>
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
@@ -225,7 +232,7 @@ const StorePage = () => {
                       </div>
                       <div className="text-white">
                         <h3 className="text-xl font-bold mb-1">Verified Store</h3>
-                        <p className="text-sm text-blue-100">This seller has been verified by 360Mall</p>
+                        <p className="text-sm text-white/80">This seller has been verified by 360Mall</p>
                       </div>
                     </div>
                     <Shield className="h-16 w-16 text-white/30" />
@@ -237,17 +244,25 @@ const StorePage = () => {
 
           {/* Premium Banner */}
           <div className="flex items-center justify-center mb-6">
-            <Badge className="bg-primary text-primary-foreground px-6 py-2 rounded-full shadow-lg text-sm font-bold">
+            <Badge className={`px-6 py-2 rounded-full shadow-lg text-sm font-bold ${
+              isFeaturedStore 
+                ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white' 
+                : 'bg-gradient-to-r from-primary to-secondary text-primary-foreground'
+            }`}>
               <Crown className="h-5 w-5 mr-2 fill-current" />
-              PREMIUM FEATURED STORE
+              {isFeaturedStore ? 'FEATURED SPOTLIGHT STORE' : 'PREMIUM THEME STORE'}
             </Badge>
           </div>
 
-          {/* Store Hero Card */}
-          <Card className="overflow-hidden border-2 border-primary/20 shadow-xl">
+          {/* Store Hero Card - Enhanced for Premium Theme */}
+          <Card className={`overflow-hidden shadow-2xl ${
+            isFeaturedStore 
+              ? 'border-2 border-amber-300/50 ring-4 ring-amber-100/50' 
+              : 'border-2 border-primary/20 ring-4 ring-primary/10'
+          }`}>
 
             {/* Store Banner */}
-            <div className="relative h-48 overflow-hidden">
+            <div className="relative h-56 overflow-hidden">
               {store.banner_url ? (
                 <img 
                   src={store.banner_url} 
@@ -255,9 +270,13 @@ const StorePage = () => {
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <div className="w-full h-full bg-gradient-to-br from-primary via-primary-hover to-accent" />
+                <div className={`w-full h-full ${
+                  isFeaturedStore 
+                    ? 'bg-gradient-to-br from-amber-400 via-orange-500 to-amber-600' 
+                    : 'bg-gradient-to-br from-primary via-primary-hover to-accent'
+                }`} />
               )}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
               
               {/* Verified Badge - Floating */}
               {hasVerifiedBadge && (
@@ -269,24 +288,47 @@ const StorePage = () => {
                   />
                 </div>
               )}
+
+              {/* Store Logo Overlay on Banner */}
+              <div className="absolute -bottom-14 left-6 z-20">
+                <div className={`h-28 w-28 rounded-2xl overflow-hidden shadow-2xl bg-card ${
+                  isFeaturedStore 
+                    ? 'border-4 border-amber-400 ring-4 ring-amber-200/50' 
+                    : 'border-4 border-primary/30 ring-4 ring-primary/20'
+                }`}>
+                  {store.logo_url ? (
+                    <img src={store.logo_url} alt={store.store_name} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className={`w-full h-full flex items-center justify-center ${
+                      isFeaturedStore 
+                        ? 'bg-gradient-to-br from-amber-400 to-orange-500' 
+                        : 'bg-gradient-to-br from-primary to-accent'
+                    }`}>
+                      <Crown className="h-14 w-14 text-white" />
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
 
-            <CardContent className="p-6 space-y-6">
-              {/* Store Name and Verified Badge - First */}
-              <div className="text-center">
-                <div className="flex items-center justify-center gap-3 mb-2">
-                  <h1 className="text-3xl md:text-4xl font-black text-foreground">
+            <CardContent className="pt-16 pb-6 px-6 space-y-6">
+              {/* Store Name and Verified Badge */}
+              <div>
+                <div className="flex items-center gap-3 mb-2">
+                  <h1 className={`text-3xl md:text-4xl font-black ${isFeaturedStore ? 'text-amber-900' : 'text-foreground'}`}>
                     {store.store_name}
                   </h1>
                   {hasVerifiedBadge && (
-                    <CheckCircle className="h-8 w-8 text-primary fill-primary flex-shrink-0 animate-pulse-slow" />
+                    <CheckCircle className={`h-8 w-8 flex-shrink-0 ${
+                      isFeaturedStore ? 'text-amber-500 fill-amber-500' : 'text-primary fill-primary'
+                    }`} />
                   )}
                 </div>
 
                 {/* Location */}
                 {(store.city || store.region) && (
-                  <div className="flex items-center justify-center gap-2 text-muted-foreground">
-                    <MapPin className="h-4 w-4 text-primary" />
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <MapPin className={`h-4 w-4 ${isFeaturedStore ? 'text-amber-600' : 'text-primary'}`} />
                     <span className="font-medium text-sm">
                       {[store.city, store.region, store.country].filter(Boolean).join(', ')}
                     </span>
@@ -294,27 +336,37 @@ const StorePage = () => {
                 )}
               </div>
 
-              {/* Action Buttons - Second (Right After Store Name) */}
+              {/* Action Buttons */}
               {!user ? (
-                <div className="grid grid-cols-2 gap-3 max-w-lg mx-auto">
+                <div className="grid grid-cols-2 gap-3 max-w-lg">
                   <Button 
                     variant="outline"
-                    className="rounded-xl h-12 font-bold border-2 hover:border-primary" 
+                    className={`rounded-xl h-12 font-bold border-2 ${
+                      isFeaturedStore ? 'border-amber-300 hover:bg-amber-50' : 'hover:border-primary'
+                    }`} 
                     onClick={() => navigate('/auth')}
                   >
                     Sign In
                   </Button>
                   <Button 
-                    className="rounded-xl shadow-2xl font-bold h-12 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90"
+                    className={`rounded-xl shadow-2xl font-bold h-12 ${
+                      isFeaturedStore 
+                        ? 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600' 
+                        : 'bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90'
+                    }`}
                     onClick={() => navigate('/auth')}
                   >
                     Create Account
                   </Button>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 gap-3 max-w-lg mx-auto">
+                <div className="grid grid-cols-2 gap-3 max-w-lg">
                   <Button 
-                    className="rounded-xl shadow-2xl font-bold h-12 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90"
+                    className={`rounded-xl shadow-2xl font-bold h-12 ${
+                      isFeaturedStore 
+                        ? 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600' 
+                        : 'bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90'
+                    }`}
                     onClick={handleContactSeller}
                     disabled={contacting}
                   >
@@ -323,7 +375,9 @@ const StorePage = () => {
                   </Button>
                   <Button 
                     variant="outline" 
-                    className="rounded-xl h-12 font-bold border-2 hover:border-primary" 
+                    className={`rounded-xl h-12 font-bold border-2 ${
+                      isFeaturedStore ? 'border-amber-300 hover:bg-amber-50' : 'hover:border-primary'
+                    }`} 
                     onClick={() => setShareDialogOpen(true)}
                   >
                     <Share2 className="h-5 w-5 mr-2" />
@@ -332,99 +386,77 @@ const StorePage = () => {
                 </div>
               )}
 
-              {/* Store Logo - Third (Centered) */}
-              <div className="flex justify-center">
-                <div className="h-32 w-32 rounded-2xl overflow-hidden border-4 border-primary/20 shadow-2xl bg-card hover:scale-105 transition-transform duration-300">
-                  {store.logo_url ? (
-                    <img src={store.logo_url} alt={store.store_name} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary to-accent">
-                      <Crown className="h-16 w-16 text-primary-foreground" />
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Store Stats Cards - Fourth (Stacked Vertically Below) */}
-              <div className="max-w-md mx-auto space-y-4">
+              {/* Store Stats Cards - Horizontal on Premium Theme */}
+              <div className="grid grid-cols-3 gap-3">
                 {/* Rating Card */}
-                <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-2 border-primary/20 shadow-lg hover:shadow-xl transition-shadow duration-300">
-                  <CardContent className="p-5">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="bg-primary/20 rounded-full p-3">
-                          <Star className="h-7 w-7 text-primary fill-primary" />
-                        </div>
-                        <div>
-                          <p className="text-3xl font-black text-primary">4.9</p>
-                          <p className="text-sm text-muted-foreground font-semibold">Store Rating</p>
-                        </div>
-                      </div>
-                      <Badge className="bg-primary text-primary-foreground px-3 py-1 rounded-full font-bold">
-                        Excellent
-                      </Badge>
-                    </div>
+                <Card className={`border-2 shadow-lg ${
+                  isFeaturedStore ? 'border-amber-200 bg-amber-50/50' : 'border-primary/20 bg-primary/5'
+                }`}>
+                  <CardContent className="p-4 text-center">
+                    <Star className={`h-6 w-6 mx-auto mb-1 ${isFeaturedStore ? 'text-amber-500 fill-amber-500' : 'text-primary fill-primary'}`} />
+                    <p className={`text-2xl font-black ${isFeaturedStore ? 'text-amber-700' : 'text-primary'}`}>4.9</p>
+                    <p className="text-xs text-muted-foreground font-medium">Rating</p>
                   </CardContent>
                 </Card>
 
                 {/* Products Card */}
-                <Card className="bg-gradient-to-br from-accent/10 to-accent/5 border-2 border-accent/20 shadow-lg hover:shadow-xl transition-shadow duration-300">
-                  <CardContent className="p-5">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="bg-accent/20 rounded-full p-3">
-                          <Package className="h-7 w-7 text-accent" />
-                        </div>
-                        <div>
-                          <p className="text-3xl font-black text-foreground">{products.length}</p>
-                          <p className="text-sm text-muted-foreground font-semibold">Products Listed</p>
-                        </div>
-                      </div>
-                      <Badge className="bg-accent text-white px-3 py-1 rounded-full font-bold">
-                        Active
-                      </Badge>
-                    </div>
+                <Card className={`border-2 shadow-lg ${
+                  isFeaturedStore ? 'border-amber-200 bg-amber-50/50' : 'border-accent/20 bg-accent/5'
+                }`}>
+                  <CardContent className="p-4 text-center">
+                    <Package className={`h-6 w-6 mx-auto mb-1 ${isFeaturedStore ? 'text-amber-600' : 'text-accent'}`} />
+                    <p className="text-2xl font-black text-foreground">{products.length}</p>
+                    <p className="text-xs text-muted-foreground font-medium">Products</p>
                   </CardContent>
                 </Card>
 
                 {/* Premium Status Card */}
-                <Card className="bg-gradient-to-br from-secondary/10 to-secondary/5 border-2 border-secondary/20 shadow-lg hover:shadow-xl transition-shadow duration-300">
-                  <CardContent className="p-5">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="bg-secondary/20 rounded-full p-3">
-                          <Award className="h-7 w-7 text-secondary-foreground" />
-                        </div>
-                        <div>
-                          <p className="text-2xl font-black text-foreground">Premium</p>
-                          <p className="text-sm text-muted-foreground font-semibold">Featured Store</p>
-                        </div>
-                      </div>
-                      <Crown className="h-12 w-12 text-primary/30 fill-current" />
-                    </div>
+                <Card className={`border-2 shadow-lg ${
+                  isFeaturedStore ? 'border-amber-200 bg-gradient-to-br from-amber-100 to-orange-100' : 'border-secondary/20 bg-gradient-to-br from-primary/10 to-secondary/10'
+                }`}>
+                  <CardContent className="p-4 text-center">
+                    <Crown className={`h-6 w-6 mx-auto mb-1 ${isFeaturedStore ? 'text-amber-600 fill-amber-600' : 'text-primary fill-primary'}`} />
+                    <p className="text-lg font-black text-foreground">Premium</p>
+                    <p className="text-xs text-muted-foreground font-medium">Status</p>
                   </CardContent>
                 </Card>
               </div>
 
-              {/* Trust Badges - Fifth */}
-              <div className="flex items-center justify-center gap-2 flex-wrap">
-                <Badge className="bg-primary/10 text-primary font-bold border-2 border-primary/20 rounded-full px-4 py-2 hover:scale-105 transition-transform">
+              {/* Trust Badges */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <Badge className={`font-bold border-2 rounded-full px-4 py-2 ${
+                  isFeaturedStore 
+                    ? 'bg-amber-100 text-amber-700 border-amber-200' 
+                    : 'bg-primary/10 text-primary border-primary/20'
+                }`}>
                   <Shield className="h-4 w-4 mr-1.5" />
                   Trusted Seller
                 </Badge>
-                <Badge className="bg-accent/10 text-accent font-bold border-2 border-accent/20 rounded-full px-4 py-2 hover:scale-105 transition-transform">
-                  <CheckCircle className="h-4 w-4 mr-1.5" />
-                  Verified
-                </Badge>
-                <Badge className="bg-secondary/10 text-secondary-foreground font-bold border-2 border-secondary/20 rounded-full px-4 py-2 hover:scale-105 transition-transform">
+                {hasVerifiedBadge && (
+                  <Badge className={`font-bold border-2 rounded-full px-4 py-2 ${
+                    isFeaturedStore 
+                      ? 'bg-orange-100 text-orange-700 border-orange-200' 
+                      : 'bg-accent/10 text-accent border-accent/20'
+                  }`}>
+                    <CheckCircle className="h-4 w-4 mr-1.5" />
+                    Verified
+                  </Badge>
+                )}
+                <Badge className={`font-bold border-2 rounded-full px-4 py-2 ${
+                  isFeaturedStore 
+                    ? 'bg-yellow-100 text-yellow-700 border-yellow-200' 
+                    : 'bg-secondary/10 text-secondary-foreground border-secondary/20'
+                }`}>
                   <Zap className="h-4 w-4 mr-1.5" />
                   Fast Response
                 </Badge>
               </div>
 
-              {/* Description - Sixth (Last) */}
+              {/* Description */}
               {store.description && (
-                <Card className="bg-muted/50 border-2 border-border shadow-lg">
+                <Card className={`border-2 shadow-lg ${
+                  isFeaturedStore ? 'border-amber-100 bg-amber-50/30' : 'border-muted bg-muted/50'
+                }`}>
                   <CardContent className="p-5">
                     <h3 className="font-bold text-base mb-2 text-foreground">About This Store</h3>
                     <p className="text-sm text-muted-foreground leading-relaxed">
@@ -438,13 +470,15 @@ const StorePage = () => {
           </Card>
         </div>
 
-        {/* Products Section */}
-        <div className="px-4 mt-8">
+        {/* Products Section - Premium Grid */}
+        <div className="relative px-4 mt-8 z-10">
           {products.length === 0 ? (
-            <Card className="border-2 border-border">
+            <Card className={`border-2 ${isFeaturedStore ? 'border-amber-200' : 'border-border'}`}>
               <CardContent className="p-12 text-center">
-                <div className="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
-                  <Package className="h-8 w-8 text-muted-foreground" />
+                <div className={`mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-4 ${
+                  isFeaturedStore ? 'bg-amber-100' : 'bg-muted'
+                }`}>
+                  <Package className={`h-8 w-8 ${isFeaturedStore ? 'text-amber-500' : 'text-muted-foreground'}`} />
                 </div>
                 <p className="text-foreground font-medium">No products available</p>
                 <p className="text-sm text-muted-foreground mt-1">Check back soon for new items</p>
@@ -455,8 +489,12 @@ const StorePage = () => {
               {/* All Products Section */}
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-2xl font-bold text-foreground">All Products</h2>
-                  <Badge className="bg-primary/10 text-primary font-bold border border-primary/20 rounded-full">
+                  <h2 className={`text-2xl font-bold ${isFeaturedStore ? 'text-amber-900' : 'text-foreground'}`}>All Products</h2>
+                  <Badge className={`font-bold border rounded-full ${
+                    isFeaturedStore 
+                      ? 'bg-amber-100 text-amber-700 border-amber-200' 
+                      : 'bg-primary/10 text-primary border-primary/20'
+                  }`}>
                     {products.length} items
                   </Badge>
                 </div>
@@ -465,7 +503,11 @@ const StorePage = () => {
                     <Card
                       key={product.id}
                       onClick={() => navigate(`/product/${product.id}`)}
-                      className="cursor-pointer hover:shadow-lg transition-all duration-300 overflow-hidden border border-border rounded-2xl"
+                      className={`cursor-pointer hover:shadow-xl transition-all duration-300 overflow-hidden rounded-2xl ${
+                        isFeaturedStore 
+                          ? 'border-2 border-amber-200 hover:border-amber-300 hover:ring-4 hover:ring-amber-100' 
+                          : 'border-2 border-primary/10 hover:border-primary/30 hover:ring-4 hover:ring-primary/10'
+                      }`}
                     >
                       <div className="relative aspect-square overflow-hidden">
                         {product.images && product.images.length > 0 ? (
@@ -475,16 +517,25 @@ const StorePage = () => {
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                           />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-muted">
-                            <Package className="h-12 w-12 text-muted-foreground" />
+                          <div className={`w-full h-full flex items-center justify-center ${
+                            isFeaturedStore ? 'bg-amber-50' : 'bg-muted'
+                          }`}>
+                            <Package className={`h-12 w-12 ${isFeaturedStore ? 'text-amber-300' : 'text-muted-foreground'}`} />
                           </div>
                         )}
+                        <Badge className={`absolute top-2 right-2 backdrop-blur-sm text-xs shadow-md ${
+                          isFeaturedStore 
+                            ? 'bg-amber-500/90 text-white' 
+                            : 'bg-primary/90 text-primary-foreground'
+                        }`}>
+                          {product.category}
+                        </Badge>
                       </div>
                       <CardContent className="p-3">
-                        <h3 className="text-sm font-medium line-clamp-2 text-foreground mb-2">
+                        <h3 className="text-sm font-semibold line-clamp-2 text-foreground mb-2">
                           {product.title}
                         </h3>
-                        <p className="text-lg font-bold text-primary">
+                        <p className={`text-lg font-bold ${isFeaturedStore ? 'text-amber-600' : 'text-primary'}`}>
                           Le {product.price.toLocaleString()}
                         </p>
                       </CardContent>
