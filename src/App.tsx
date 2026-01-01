@@ -83,8 +83,9 @@ import AdminStoreAppealDetail from "./pages/AdminStoreAppealDetail";
 
 const queryClient = new QueryClient();
 
-const AppContent = () => {
-  useOneSignal(); // Initialize OneSignal
+// OneSignal initializer - must be inside AuthProvider
+const OneSignalInitializer = () => {
+  useOneSignal();
   return null;
 };
 
@@ -95,10 +96,10 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <AppContent />
           <PresenceProvider>
             <ChatProvider>
               <CartProvider>
+                <OneSignalInitializer />
                 <Routes>
               <Route path="/splash" element={<Splash />} />
               <Route path="/auth" element={<Auth />} />
