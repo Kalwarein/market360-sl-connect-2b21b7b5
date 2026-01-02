@@ -31,7 +31,6 @@ serve(async (req) => {
       headings: { en: title || 'Notification' },
       contents: { en: body || '' },
       data: { url: link_url, ...data },
-      android_channel_id: 'market360-notifications',
       ios_badgeType: 'Increase',
       ios_badgeCount: 1,
     };
