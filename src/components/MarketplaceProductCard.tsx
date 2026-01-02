@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Store, Package, Sparkles, Shield, Star, ShoppingCart } from 'lucide-react';
 import { useStorePerks } from '@/hooks/useStorePerks';
 import { cn } from '@/lib/utils';
+import { CachedImage } from '@/components/CachedImage';
 
 interface MarketplaceProductCardProps {
   id: string;
@@ -90,14 +91,11 @@ export const MarketplaceProductCard = ({
             ? "bg-gradient-to-br from-primary/30 via-accent/20 to-primary/10" 
             : "bg-gradient-to-br from-accent/40 via-accent/20 to-muted"
         )}>
-          <img
+          <CachedImage
             src={image}
             alt={title}
             className="w-full h-full object-contain p-3 transition-transform duration-500 group-hover:scale-105"
-            loading="lazy"
-            onError={(e) => {
-              (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500';
-            }}
+            fallback="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500"
           />
           
           {/* Premium Badge - Top Right */}
@@ -220,14 +218,11 @@ export const MarketplaceProductCard = ({
 
       {/* Image Container */}
       <div className="relative aspect-square overflow-hidden bg-card">
-        <img
+        <CachedImage
           src={image}
           alt={title}
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-          loading="lazy"
-          onError={(e) => {
-            (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500';
-          }}
+          fallback="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500"
         />
         
         {/* Tag Badge - Top Left */}

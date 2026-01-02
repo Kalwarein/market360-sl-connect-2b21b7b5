@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { Bell, ShoppingCart, MessageSquare, Search, Headset } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useCache } from '@/contexts/CacheContext';
 import BottomNav from '@/components/BottomNav';
 import Sidebar from '@/components/Sidebar';
 import { PremiumSearchBar } from '@/components/PremiumSearchBar';
@@ -13,6 +14,7 @@ import { MarketplaceProductCard } from '@/components/MarketplaceProductCard';
 import { StoreCard } from '@/components/StoreCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { GuidedTour } from '@/components/GuidedTour';
+import { useScrollRestoration } from '@/hooks/useScrollRestoration';
 
 interface Product {
   id: string;
@@ -39,21 +41,48 @@ interface CategorySection {
 }
 
 const Home = () => {
-  const [categorySections, setCategorySections] = useState<CategorySection[]>([]);
-  const [featuredStores, setFeaturedStores] = useState<Store[]>([]);
-  const [topDeals, setTopDeals] = useState<Product[]>([]);
-  const [topRanking, setTopRanking] = useState<Product[]>([]);
-  const [newArrivals, setNewArrivals] = useState<Product[]>([]);
-  const [availableCategories, setAvailableCategories] = useState<string[]>(['All']);
+  const { 
+    getCache, 
+    setCache, 
+    hasInitiallyLoaded, 
+    markInitiallyLoaded 
+  } = useCache();
+  
+  // Use scroll restoration
+  useScrollRestoration();
+  
+  // Initialize state from cache immediately
+  const [categorySections, setCategorySections] = useState<CategorySection[]>(() => 
+    getCache<CategorySection[]>('home_categorySections') || []
+  );
+  const [featuredStores, setFeaturedStores] = useState<Store[]>(() => 
+    getCache<Store[]>('home_featuredStores') || []
+  );
+  const [topDeals, setTopDeals] = useState<Product[]>(() => 
+    getCache<Product[]>('home_topDeals') || []
+  );
+  const [topRanking, setTopRanking] = useState<Product[]>(() => 
+    getCache<Product[]>('home_topRanking') || []
+  );
+  const [newArrivals, setNewArrivals] = useState<Product[]>(() => 
+    getCache<Product[]>('home_newArrivals') || []
+  );
+  const [availableCategories, setAvailableCategories] = useState<string[]>(() => 
+    getCache<string[]>('home_categories') || ['All']
+  );
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [categorySearch, setCategorySearch] = useState('');
-  const [loading, setLoading] = useState(true);
+  
+  // Only show loading if we have NO cached data at all
+  const hasCachedData = hasInitiallyLoaded('home_data');
+  const [loading, setLoading] = useState(!hasCachedData);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('products');
   const [unreadCount, setUnreadCount] = useState(0);
   const [cartCount, setCartCount] = useState(0);
   const [notificationCount, setNotificationCount] = useState(0);
   const [showCustomerCareTooltip, setShowCustomerCareTooltip] = useState(false);
+  const isRefreshing = useRef(false);
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -116,14 +145,21 @@ const Home = () => {
       if (error) throw error;
 
       const categories = Array.from(new Set(data?.map(p => p.category).filter(Boolean))) as string[];
-      setAvailableCategories(['All', ...categories.sort()]);
+      const result = ['All', ...categories.sort()];
+      setAvailableCategories(result);
+      setCache('home_categories', result);
     } catch (error) {
       console.error('Error loading categories:', error);
     }
   };
 
   const loadData = async () => {
-    setLoading(true);
+    // Only show loading spinner if we haven't loaded before AND have no cache
+    if (!hasCachedData && !isRefreshing.current) {
+      setLoading(true);
+    }
+    isRefreshing.current = true;
+    
     await Promise.all([
       loadTopDeals(),
       loadTopRanking(),
@@ -131,7 +167,10 @@ const Home = () => {
       loadCategorySections(),
       loadFeaturedStores(),
     ]);
+    
     setLoading(false);
+    markInitiallyLoaded('home_data');
+    isRefreshing.current = false;
   };
 
   const loadTopDeals = async () => {
@@ -144,7 +183,9 @@ const Home = () => {
         .limit(10);
 
       if (error) throw error;
-      setTopDeals(data || []);
+      const result = data || [];
+      setTopDeals(result);
+      setCache('home_topDeals', result);
     } catch (error) {
       console.error('Error loading top deals:', error);
     }
@@ -160,7 +201,9 @@ const Home = () => {
         .limit(10);
 
       if (error) throw error;
-      setTopRanking(data || []);
+      const result = data || [];
+      setTopRanking(result);
+      setCache('home_topRanking', result);
     } catch (error) {
       console.error('Error loading top ranking:', error);
     }
@@ -176,7 +219,9 @@ const Home = () => {
         .limit(10);
 
       if (error) throw error;
-      setNewArrivals(data || []);
+      const result = data || [];
+      setNewArrivals(result);
+      setCache('home_newArrivals', result);
     } catch (error) {
       console.error('Error loading new arrivals:', error);
     }
@@ -236,7 +281,9 @@ const Home = () => {
         })
       );
 
-      setCategorySections(sections.filter(s => s.products.length > 0));
+      const result = sections.filter(s => s.products.length > 0);
+      setCategorySections(result);
+      setCache('home_categorySections', result);
     } catch (error) {
       console.error('Error loading category sections:', error);
     }
@@ -286,6 +333,7 @@ const Home = () => {
       );
 
       setFeaturedStores(storesWithCounts);
+      setCache('home_featuredStores', storesWithCounts);
     } catch (error) {
       console.error('Error loading featured stores:', error);
     }
