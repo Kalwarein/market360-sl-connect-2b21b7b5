@@ -33,7 +33,7 @@ export const sendNotification = async (payload: NotificationPayload) => {
     }
 
     // Send OneSignal push notification
-    const { error: pushError } = await supabase.functions.invoke('send-onesignal-notification', {
+    const { data: pushData, error: pushError } = await supabase.functions.invoke('send-onesignal-notification', {
       body: {
         user_id: payload.user_id,
         title: payload.title,
@@ -44,8 +44,8 @@ export const sendNotification = async (payload: NotificationPayload) => {
       }
     });
 
-    if (pushError) {
-      console.error('Failed to send push notification:', pushError);
+    if (pushError || (pushData as any)?.success === false) {
+      console.error('Failed to send push notification:', { pushError, pushData });
     }
 
     return true;

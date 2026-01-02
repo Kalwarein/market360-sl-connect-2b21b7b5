@@ -31,6 +31,8 @@ serve(async (req) => {
       headings: { en: title || 'Notification' },
       contents: { en: body || '' },
       data: { url: link_url, ...data },
+      // Force push channel (avoids OneSignal attempting non-push routes)
+      target_channel: 'push',
       ios_badgeType: 'Increase',
       ios_badgeCount: 1,
     };
@@ -56,22 +58,51 @@ serve(async (req) => {
 
     console.log('[OneSignal] Sending payload:', JSON.stringify(payload, null, 2));
 
-    const response = await fetch('https://onesignal.com/api/v1/notifications', {
+    const apiKey = ONESIGNAL_REST_API_KEY;
+    const isV2Key = apiKey.startsWith('os_v2_');
+
+    const endpoint = isV2Key
+      ? 'https://api.onesignal.com/notifications'
+      : 'https://onesignal.com/api/v1/notifications';
+
+    const authHeader = isV2Key ? `Bearer ${apiKey}` : `Basic ${apiKey}`;
+
+    console.log('[OneSignal] POST', endpoint);
+
+    const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Basic ${ONESIGNAL_REST_API_KEY}`,
+        'Authorization': authHeader,
       },
       body: JSON.stringify(payload),
     });
 
-    const result = await response.json();
+    const result = await response.json().catch(() => ({}));
 
-    if (!response.ok) {
+    console.log('[OneSignal] API response:', {
+      status: response.status,
+      ok: response.ok,
+      result,
+    });
+
+    // OneSignal may return 200 with an "errors" array; treat that as a failure.
+    const resultErrors = (result as any)?.errors;
+    const hasResultErrors = Array.isArray(resultErrors) && resultErrors.length > 0;
+
+    if (!response.ok || hasResultErrors) {
       console.error('[OneSignal] API error:', JSON.stringify(result));
       return new Response(
-        JSON.stringify({ success: false, error: result.errors || result }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: response.status }
+        JSON.stringify({
+          success: false,
+          status: response.status,
+          error: hasResultErrors ? resultErrors : (result as any)?.errors || result,
+          result,
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: response.ok ? 400 : response.status,
+        }
       );
     }
 
@@ -80,9 +111,10 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        notification_id: result.id,
-        recipients: result.recipients ?? 0,
-        external_id: result.external_id,
+        notification_id: (result as any)?.id,
+        recipients: (result as any)?.recipients ?? 0,
+        external_id: (result as any)?.external_id,
+        result,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
     );
