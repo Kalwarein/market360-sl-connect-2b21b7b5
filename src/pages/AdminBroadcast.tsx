@@ -86,26 +86,27 @@ const AdminBroadcast = () => {
         }
       );
 
-      if (pushError) {
-        console.error('[AdminBroadcast] Push error:', pushError);
-      }
+       const pushOk = !pushError && (pushData as any)?.success !== false;
+       const recipients = (pushData as any)?.recipients ?? 0;
+       const pushErrorMsg = (pushData as any)?.error;
 
-      const recipients = (pushData as any)?.recipients ?? 0;
-      const pushSent = !pushError;
+       if (pushError || (pushData as any)?.success === false) {
+         console.error('[AdminBroadcast] Push failed:', { pushError, pushData });
+       }
 
-      console.log('[AdminBroadcast] Push result:', { pushSent, recipients, pushData });
+       console.log('[AdminBroadcast] Push result:', { pushOk, recipients, pushData });
 
-      const pushNote = !pushSent
-        ? 'failed'
-        : recipients === 0
-          ? '0 recipients (no subscribed devices)'
-          : `${recipients} recipients`;
+       const pushNote = !pushOk
+         ? `failed${pushErrorMsg ? ` (${Array.isArray(pushErrorMsg) ? pushErrorMsg.join(', ') : String(pushErrorMsg)})` : ''}`
+         : recipients === 0
+           ? '0 recipients (no subscribed devices)'
+           : `${recipients} recipients`;
 
-      toast({
-        title: 'Broadcast Sent',
-        description: `In-app sent to ${users.length} users. Push: ${pushNote}`,
-        variant: pushSent && recipients > 0 ? 'default' : 'destructive',
-      });
+       toast({
+         title: 'Broadcast Sent',
+         description: `In-app sent to ${users.length} users. Push: ${pushNote}`,
+         variant: pushOk && recipients > 0 ? 'default' : 'destructive',
+       });
 
       setFormData({
         title: '',
