@@ -12,7 +12,7 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const [checkingModeration, setCheckingModeration] = useState(true);
   const [hasActiveModeration, setHasActiveModeration] = useState(false);
   const [checkingOnboarding, setCheckingOnboarding] = useState(true);
-  const [onboardingCompleted, setOnboardingCompleted] = useState(true);
+  const [onboardingCompleted, setOnboardingCompleted] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -34,21 +34,17 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
 
       if (error) {
         console.error('Error checking onboarding status:', error);
-        // Default to completed if error to prevent blocking access
-        setOnboardingCompleted(true);
+        // Force onboarding if error - strict enforcement
+        setOnboardingCompleted(false);
       } else {
+        // Strictly check - must be exactly true
         const isOnboardingComplete = data?.onboarding_completed === true;
         setOnboardingCompleted(isOnboardingComplete);
-        
-        // If onboarding is complete but tour isn't, ensure tour will trigger on home page
-        if (isOnboardingComplete && data?.onboarding_tour_completed === false) {
-          console.log('Onboarding complete, tour will start on home page');
-        }
       }
     } catch (error) {
       console.error('Error checking onboarding status:', error);
-      // Default to completed if error to prevent blocking access
-      setOnboardingCompleted(true);
+      // Force onboarding on any error - strict enforcement
+      setOnboardingCompleted(false);
     } finally {
       setCheckingOnboarding(false);
     }
