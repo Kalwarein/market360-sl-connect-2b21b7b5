@@ -21,7 +21,16 @@ Deno.serve(async (req) => {
     const financialAccountId = Deno.env.get('MONIME_FINANCIAL_ACCOUNT_ID');
 
     console.log('Withdrawal function called');
-    console.log('Has financial account ID:', !!financialAccountId);
+    console.log('Financial account ID configured:', financialAccountId);
+
+    // Financial account ID is REQUIRED for payouts
+    if (!financialAccountId) {
+      console.error('MONIME_FINANCIAL_ACCOUNT_ID not configured');
+      return new Response(
+        JSON.stringify({ success: false, error: 'Withdrawal service not configured. Please contact support.' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Get auth token from request
     const authHeader = req.headers.get('Authorization');
@@ -171,10 +180,14 @@ Deno.serve(async (req) => {
     console.log('Formatted phone number:', { input: phone_number, national, monimePhoneNumber });
 
     // Build payout request body according to Monime API v1 specs
+    // IMPORTANT: source.financialAccountId is REQUIRED - must be fac-xxx, NOT spc-xxx (Space ID)
     const payoutBody: Record<string, unknown> = {
       amount: {
         currency: 'SLE',
         value: amountToSendInCents, // Amount in cents (minor unit)
+      },
+      source: {
+        financialAccountId: financialAccountId, // Must be fac-xxx format
       },
       destination: {
         type: 'momo',
@@ -192,15 +205,8 @@ Deno.serve(async (req) => {
       },
     };
 
-    // Add source financial account if configured
-    if (financialAccountId) {
-      payoutBody.source = {
-        financialAccountId: financialAccountId,
-      };
-      console.log('Using financial account:', financialAccountId);
-    }
-
-    console.log('Creating Monime payout:', JSON.stringify(payoutBody, null, 2));
+    console.log('Creating Monime payout with financial account:', financialAccountId);
+    console.log('Payout body:', JSON.stringify(payoutBody, null, 2));
 
     const monimeResponse = await fetch(`${MONIME_API_URL}/v1/payouts`, {
       method: 'POST',
