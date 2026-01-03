@@ -27,27 +27,37 @@ const Withdrawal = () => {
     loadBalance();
   }, [user]);
 
-  useEffect(() => {
-    // Detect provider based on phone number prefix
-    if (phone.length >= 2) {
-      const cleaned = phone.replace(/\D/g, '');
-      const prefix = cleaned.startsWith('232') ? cleaned.substring(3, 5) : cleaned.substring(0, 2);
-      
-      // Orange Money prefixes: 76, 77, 78, 79, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39
-      const orangePrefixes = ['76', '77', '78', '79', '30', '31', '32', '33', '34', '35', '36', '37', '38', '39'];
-      // Africell prefixes: 88, 99, 80, 81, 82, 83, 84, 85, 86, 87, 25
-      const africellPrefixes = ['88', '99', '80', '81', '82', '83', '84', '85', '86', '87', '25'];
-
-      if (orangePrefixes.includes(prefix)) {
-        setDetectedProvider('m17');
-      } else if (africellPrefixes.includes(prefix)) {
-        setDetectedProvider('m18');
-      } else {
-        setDetectedProvider(null);
-      }
+  // Detect provider based on phone number
+  const detectProvider = (phoneNumber: string): Provider | null => {
+    const cleaned = phoneNumber.replace(/\D/g, '');
+    if (cleaned.length < 2) return null;
+    
+    // Handle different formats: 076xxx, 76xxx, +23276xxx, 23276xxx
+    let prefix = '';
+    if (cleaned.startsWith('232')) {
+      prefix = cleaned.substring(3, 5);
+    } else if (cleaned.startsWith('0')) {
+      prefix = cleaned.substring(1, 3);
     } else {
-      setDetectedProvider(null);
+      prefix = cleaned.substring(0, 2);
     }
+    
+    // Orange Money prefixes: 76, 77, 78, 79, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39
+    const orangePrefixes = ['76', '77', '78', '79', '30', '31', '32', '33', '34', '35', '36', '37', '38', '39'];
+    // Africell prefixes: 88, 99, 80, 81, 82, 83, 84, 85, 86, 87, 25
+    const africellPrefixes = ['88', '99', '80', '81', '82', '83', '84', '85', '86', '87', '25'];
+
+    if (orangePrefixes.includes(prefix)) {
+      return 'm17';
+    } else if (africellPrefixes.includes(prefix)) {
+      return 'm18';
+    }
+    return null;
+  };
+
+  useEffect(() => {
+    const provider = detectProvider(phone);
+    setDetectedProvider(provider);
   }, [phone]);
 
   const loadBalance = async () => {
@@ -307,6 +317,23 @@ const Withdrawal = () => {
                 className="h-14 text-xl font-bold rounded-2xl border-2 focus:border-primary shadow-sm"
                 required
               />
+              
+              {amount && parseFloat(amount) > 0 && (
+                <div className="p-3 bg-muted/50 rounded-xl space-y-1">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Amount</span>
+                    <span>SLE {parseFloat(amount).toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Processing Fee (2%)</span>
+                    <span className="text-destructive">-SLE {(parseFloat(amount) * 0.02).toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between font-bold border-t pt-2 mt-2">
+                    <span>You'll Receive</span>
+                    <span className="text-success">SLE {(parseFloat(amount) * 0.98).toLocaleString()}</span>
+                  </div>
+                </div>
+              )}
               
               {amount && parseFloat(amount) > currentBalance && (
                 <p className="text-sm text-destructive font-medium animate-fade-in">
