@@ -22,13 +22,29 @@ Deno.serve(async (req) => {
     const payload = await req.json();
     console.log('Received Monime webhook:', JSON.stringify(payload, null, 2));
 
-    // Extract event details
-    const eventId = payload.id || `evt-${Date.now()}`;
-    const eventType = payload.type || payload.event;
-    const eventData = payload.data || payload.result || payload;
+    // Extract event details (Monime wraps events under `event`)
+    const eventId: string =
+      payload?.event?.id ?? payload?.id ?? `evt-${crypto.randomUUID?.() ?? Date.now()}`;
+
+    const eventTypeRaw =
+      (typeof payload?.event === 'object' ? payload?.event?.name : payload?.event) ??
+      payload?.type ??
+      payload?.name;
+
+    const eventType: string | null = typeof eventTypeRaw === 'string' ? eventTypeRaw : null;
+    const eventData = payload?.data ?? payload?.result ?? payload;
+
+    console.log('Parsed webhook envelope:', {
+      eventId,
+      eventType,
+      object: payload?.object,
+    });
 
     if (!eventType) {
-      console.error('Missing event type in webhook payload');
+      console.error('Missing event type in webhook payload', {
+        hasEvent: !!payload?.event,
+        event: payload?.event,
+      });
       return new Response(
         JSON.stringify({ success: false, error: 'Missing event type' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -96,7 +112,7 @@ async function handleDepositSuccess(supabase: any, eventData: any): Promise<bool
   try {
     // Find the ledger entry by payment code ID or reference
     const monimeId = eventData.id || eventData.paymentCodeId;
-    const reference = eventData.reference;
+    const reference = eventData.reference || eventData.metadata?.reference;
 
     console.log('Processing deposit success:', { monimeId, reference });
 
@@ -161,7 +177,7 @@ async function handleDepositSuccess(supabase: any, eventData: any): Promise<bool
 async function handleDepositFailed(supabase: any, eventData: any, reason: string): Promise<boolean> {
   try {
     const monimeId = eventData.id || eventData.paymentCodeId;
-    const reference = eventData.reference;
+    const reference = eventData.reference || eventData.metadata?.reference;
 
     console.log('Processing deposit failure:', { monimeId, reference, reason });
 
@@ -265,6 +281,7 @@ async function handlePayoutFailed(supabase: any, eventData: any): Promise<boolea
   try {
     const monimeId = eventData.id || eventData.payoutId;
     const failureDetail = eventData.failureDetail || {};
+    const failureMessage = failureDetail.message || failureDetail.explanation || failureDetail.code;
 
     console.log('Processing payout failure:', { monimeId, failureDetail });
 
@@ -290,7 +307,7 @@ async function handlePayoutFailed(supabase: any, eventData: any): Promise<boolea
           ...ledgerEntry.metadata,
           failed_at: new Date().toISOString(),
           failure_code: failureDetail.code,
-          failure_message: failureDetail.message,
+          failure_message: failureMessage,
         },
       })
       .eq('id', ledgerEntry.id);
@@ -304,7 +321,7 @@ async function handlePayoutFailed(supabase: any, eventData: any): Promise<boolea
       metadata: { 
         ledger_id: ledgerEntry.id, 
         type: 'withdrawal_failed',
-        reason: failureDetail.message || failureDetail.code,
+        reason: failureMessage,
       },
     });
 
