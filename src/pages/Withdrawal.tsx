@@ -66,7 +66,7 @@ const Withdrawal = () => {
     try {
       setLoadingBalance(true);
       
-      // Use the ledger-based balance function
+      // Use the ledger-based balance function (returns balance in cents)
       const { data, error } = await supabase.rpc('get_wallet_balance', { 
         p_user_id: user.id 
       });
@@ -80,10 +80,14 @@ const Withdrawal = () => {
           .eq('user_id', user.id)
           .maybeSingle();
         
+        // Old table stores balance in SLE directly
         setCurrentBalance(walletData?.balance_leones || 0);
       } else {
-        // Balance from ledger is in cents, convert to SLE
-        setCurrentBalance((data || 0) / 100);
+        // RPC returns balance in cents, convert to SLE for display
+        const balanceInCents = data || 0;
+        const balanceInSLE = balanceInCents / 100;
+        console.log('Balance loaded:', { balanceInCents, balanceInSLE });
+        setCurrentBalance(balanceInSLE);
       }
     } catch (error) {
       console.error('Error loading balance:', error);
