@@ -168,6 +168,84 @@ export type Database = {
           },
         ]
       }
+      finance_activity_log: {
+        Row: {
+          action: string
+          admin_id: string
+          created_at: string
+          details: Json | null
+          id: string
+          target_id: string | null
+          target_type: string | null
+          target_user_id: string | null
+        }
+        Insert: {
+          action: string
+          admin_id: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          target_id?: string | null
+          target_type?: string | null
+          target_user_id?: string | null
+        }
+        Update: {
+          action?: string
+          admin_id?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          target_id?: string | null
+          target_type?: string | null
+          target_user_id?: string | null
+        }
+        Relationships: []
+      }
+      fraud_alerts: {
+        Row: {
+          alert_type: string
+          created_at: string
+          description: string
+          id: string
+          metadata: Json | null
+          resolution_notes: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          alert_type: string
+          created_at?: string
+          description: string
+          id?: string
+          metadata?: Json | null
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          alert_type?: string
+          created_at?: string
+          description?: string
+          id?: string
+          metadata?: Json | null
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           attachments: string[] | null
@@ -384,6 +462,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      platform_analytics: {
+        Row: {
+          created_at: string
+          id: string
+          metadata: Json | null
+          metric_count: number
+          metric_date: string
+          metric_type: string
+          metric_value: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          metric_count?: number
+          metric_date: string
+          metric_type: string
+          metric_value?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          metric_count?: number
+          metric_date?: string
+          metric_type?: string
+          metric_value?: number
+        }
+        Relationships: []
       }
       product_moderation: {
         Row: {
@@ -1371,6 +1479,33 @@ export type Database = {
         }
         Relationships: []
       }
+      wallet_admin_notes: {
+        Row: {
+          admin_id: string
+          created_at: string
+          id: string
+          note: string
+          note_type: string
+          user_id: string
+        }
+        Insert: {
+          admin_id: string
+          created_at?: string
+          id?: string
+          note: string
+          note_type?: string
+          user_id: string
+        }
+        Update: {
+          admin_id?: string
+          created_at?: string
+          id?: string
+          note?: string
+          note_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       wallet_freezes: {
         Row: {
           created_at: string
@@ -1417,6 +1552,10 @@ export type Database = {
           monime_ussd_code: string | null
           provider: string | null
           reference: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          risk_flags: string[] | null
+          risk_score: number | null
           status: string
           transaction_type: string
           updated_at: string
@@ -1431,6 +1570,10 @@ export type Database = {
           monime_ussd_code?: string | null
           provider?: string | null
           reference?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          risk_flags?: string[] | null
+          risk_score?: number | null
           status?: string
           transaction_type: string
           updated_at?: string
@@ -1445,6 +1588,10 @@ export type Database = {
           monime_ussd_code?: string | null
           provider?: string | null
           reference?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          risk_flags?: string[] | null
+          risk_score?: number | null
           status?: string
           transaction_type?: string
           updated_at?: string
@@ -1561,6 +1708,30 @@ export type Database = {
         Returns: undefined
       }
       delete_expired_products: { Args: never; Returns: undefined }
+      detect_fraud_patterns: { Args: never; Returns: undefined }
+      get_daily_transaction_volume: {
+        Args: { days_back?: number }
+        Returns: {
+          deposits: number
+          net_flow: number
+          tx_count: number
+          tx_date: string
+          withdrawals: number
+        }[]
+      }
+      get_platform_wallet_totals: {
+        Args: never
+        Returns: {
+          flagged_users_count: number
+          frozen_wallets_count: number
+          pending_amount: number
+          total_balance: number
+          total_deposits: number
+          total_earnings: number
+          total_perks_revenue: number
+          total_withdrawals: number
+        }[]
+      }
       get_wallet_balance: { Args: { p_user_id: string }; Returns: number }
       has_active_moderation: { Args: { user_uuid: string }; Returns: boolean }
       has_role: {
