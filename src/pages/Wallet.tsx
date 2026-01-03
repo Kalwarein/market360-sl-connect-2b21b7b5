@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { ArrowLeft, Wallet as WalletIcon, ArrowUpCircle, ArrowDownCircle, Clock, RefreshCw, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { ArrowLeft, Wallet as WalletIcon, ArrowUpCircle, ArrowDownCircle, Clock, RefreshCw, CheckCircle, XCircle, Loader2, BarChart3 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 
@@ -239,6 +239,16 @@ const Wallet = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Analytics Button */}
+        <Button
+          variant="outline"
+          onClick={() => navigate('/wallet/activity')}
+          className="w-full h-14 text-base font-semibold rounded-2xl border-2 flex items-center justify-center gap-2"
+        >
+          <BarChart3 className="h-5 w-5" />
+          View Full Analytics & Activity
+        </Button>
 
         {/* Transaction History */}
         <Card>

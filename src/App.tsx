@@ -22,6 +22,7 @@ import Cart from "./pages/Cart";
 import Profile from "./pages/Profile";
 import BecomeSellerMultiStep from "./pages/BecomeSellerMultiStep";
 import Wallet from "./pages/Wallet";
+import WalletActivity from "./pages/WalletActivity";
 import NotFound from "./pages/NotFound";
 import SellerDashboard from "./pages/SellerDashboard";
 import AddProduct from "./pages/AddProduct";
@@ -140,6 +141,7 @@ const App = () => (
                 <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                 <Route path="/become-seller" element={<ProtectedRoute><BecomeSellerMultiStep /></ProtectedRoute>} />
                 <Route path="/wallet" element={<ProtectedRoute><Wallet /></ProtectedRoute>} />
+                <Route path="/wallet/activity" element={<ProtectedRoute><WalletActivity /></ProtectedRoute>} />
                 <Route path="/deposit" element={<ProtectedRoute><Deposit /></ProtectedRoute>} />
                 <Route path="/withdrawal" element={<ProtectedRoute><Withdrawal /></ProtectedRoute>} />
                 <Route path="/transaction/:transactionId" element={<ProtectedRoute><TransactionDetail /></ProtectedRoute>} />
