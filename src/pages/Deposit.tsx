@@ -133,6 +133,17 @@ const Deposit = () => {
                 </p>
               </div>
 
+              {/* Dial Button - Opens phone dialer */}
+              <Button
+                asChild
+                className="w-full h-16 rounded-2xl font-bold text-xl shadow-xl shadow-primary/40 hover:shadow-2xl hover:shadow-primary/50 transition-all bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90"
+              >
+                <a href={`tel:${encodeURIComponent(depositResult.ussd_code)}`}>
+                  <Phone className="mr-3 h-6 w-6" />
+                  Dial Now
+                </a>
+              </Button>
+
               <Button
                 onClick={copyUssdCode}
                 variant="outline"
@@ -148,40 +159,10 @@ const Deposit = () => {
                   SLE {depositResult.amount.toLocaleString()}
                 </p>
               </div>
-            </CardContent>
-          </Card>
 
-          {/* Instructions */}
-          <Card className="border-2 border-border shadow-md">
-            <CardContent className="p-6 space-y-4">
-              <h3 className="font-bold text-lg text-foreground flex items-center gap-2">
-                <Phone className="h-5 w-5 text-primary" />
-                How to Complete Payment
-              </h3>
-              <ol className="space-y-3 text-sm text-muted-foreground">
-                <li className="flex gap-3">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">1</span>
-                  <span>Open your phone's dialer app</span>
-                </li>
-                <li className="flex gap-3">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">2</span>
-                  <span>Dial: <strong className="text-primary font-mono">{depositResult.ussd_code}</strong></span>
-                </li>
-                <li className="flex gap-3">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">3</span>
-                  <span>Follow the prompts and enter your PIN to confirm</span>
-                </li>
-                <li className="flex gap-3">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">4</span>
-                  <span>Your wallet will be credited instantly after payment</span>
-                </li>
-              </ol>
-
-              <div className="pt-4 border-t border-border">
-                <p className="text-xs text-muted-foreground">
-                  ⏰ This code expires in 30 minutes. Reference: {depositResult.reference}
-                </p>
-              </div>
+              <p className="text-xs text-muted-foreground">
+                ⏰ This code expires in 30 minutes. Reference: {depositResult.reference}
+              </p>
             </CardContent>
           </Card>
 
