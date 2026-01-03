@@ -79,24 +79,25 @@ const Profile = () => {
 
   const loadWalletBalance = async () => {
     try {
-      const { data, error } = await supabase
-        .from('wallets')
-        .select('balance_leones')
-        .eq('user_id', user?.id)
-        .maybeSingle();
+      // Get ledger-based balance (same logic as Wallet page)
+      const { data: balanceData, error: balanceError } = await supabase.rpc('get_wallet_balance', { 
+        p_user_id: user?.id 
+      });
 
-      if (error) {
-        console.error('Wallet fetch error:', error);
-        throw error;
+      if (balanceError) {
+        console.error('Balance fetch error:', balanceError);
+        // Fallback to old wallet table
+        const { data: walletData } = await supabase
+          .from('wallets')
+          .select('balance_leones')
+          .eq('user_id', user?.id)
+          .maybeSingle();
+        
+        setWalletBalance(walletData?.balance_leones || 0);
+      } else {
+        // Balance from ledger is in cents, convert to SLE
+        setWalletBalance((balanceData || 0) / 100);
       }
-
-      if (!data) {
-        console.log('No wallet found, may need to create one');
-        setWalletBalance(0);
-        return;
-      }
-
-      setWalletBalance(data.balance_leones || 0);
     } catch (error) {
       console.error('Error loading wallet balance:', error);
       setWalletBalance(0);
@@ -386,7 +387,7 @@ const Profile = () => {
                   <Skeleton className="h-10 w-24 mx-auto rounded-lg" />
                 ) : (
                   <p className="text-3xl font-bold text-primary dark:text-primary group-hover:scale-105 transition-transform">
-                    SLL {walletBalance?.toLocaleString() || 0}
+                    SLE {walletBalance?.toLocaleString() || 0}
                   </p>
                 )}
               </CardContent>
