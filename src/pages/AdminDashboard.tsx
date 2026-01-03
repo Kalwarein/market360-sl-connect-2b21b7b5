@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { 
   Shield, Users, Store, Package, ShoppingBag, 
   FileText, MessageSquare, CheckCircle, XCircle, Clock,
-  Wallet, Radio, AlertCircle, AlertTriangle
+  Wallet, Radio, AlertCircle, AlertTriangle, Webhook
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -323,6 +323,16 @@ const AdminDashboard = () => {
             >
               <FileText className="h-6 w-6" />
               <span className="text-xs font-semibold">Audit Logs</span>
+            </Button>
+            
+            <Button
+              variant={window.location.pathname === '/admin/webhook-status' ? 'default' : 'outline'}
+              size="lg"
+              onClick={() => navigate('/admin/webhook-status')}
+              className="h-auto flex-col gap-2 py-4"
+            >
+              <Webhook className="h-6 w-6" />
+              <span className="text-xs font-semibold">Webhooks</span>
             </Button>
           </div>
         </div>
