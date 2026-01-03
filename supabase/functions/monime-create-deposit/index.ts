@@ -95,12 +95,12 @@ Deno.serve(async (req) => {
       },
       body: JSON.stringify({
         name: `Market360 Deposit - ${reference}`,
-        mode: 'oneTime',
+        mode: 'one_time',
         amount: {
           currency: 'SLE',
           value: amountInCents,
         },
-        allowedProviders: ['m17', 'm18'],
+        authorizedProviders: ['m17', 'm18'],
         metadata: {
           user_id: user.id,
           type: 'deposit',
