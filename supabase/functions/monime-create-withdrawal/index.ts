@@ -102,11 +102,18 @@ Deno.serve(async (req) => {
 
     const currentBalance = balanceData || 0;
     const amountInCents = Math.round(amount * 100);
+    
+    // Calculate 2% fee
+    const feePercentage = 0.02;
+    const feeInCents = Math.round(amountInCents * feePercentage);
+    const amountToSendInCents = amountInCents - feeInCents;
 
     console.log('Withdrawal request:', {
       userId: user.id,
       amount,
       amountInCents,
+      feeInCents,
+      amountToSendInCents,
       currentBalance,
       phoneNumber: phone_number,
       provider: selectedProvider,
@@ -132,11 +139,11 @@ Deno.serve(async (req) => {
     // Clean phone number (remove spaces, dashes, etc.)
     const cleanPhone = phone_number.replace(/[\s\-\(\)]/g, '');
 
-    // Call Monime API to create payout
+    // Call Monime API to create payout (send net amount after fee)
     const payoutBody: Record<string, unknown> = {
       amount: {
         currency: 'SLE',
-        value: amountInCents,
+        value: amountToSendInCents, // Send net amount after 2% fee
       },
       destination: {
         type: 'momo',
@@ -148,6 +155,8 @@ Deno.serve(async (req) => {
         type: 'withdrawal',
         platform: 'market360',
         reference: reference,
+        original_amount: amountInCents,
+        fee: feeInCents,
       },
     };
 
@@ -189,13 +198,13 @@ Deno.serve(async (req) => {
 
     const payout = monimeData.result;
 
-    // Create pending ledger entry (debit)
+    // Create pending ledger entry (debit full amount including fee)
     const { data: ledgerEntry, error: ledgerError } = await supabase
       .from('wallet_ledger')
       .insert({
         user_id: user.id,
         transaction_type: 'withdrawal',
-        amount: amountInCents,
+        amount: amountInCents, // Full amount deducted from wallet
         status: 'processing', // Processing because payout is initiated
         provider: 'monime',
         reference: reference,
@@ -205,6 +214,9 @@ Deno.serve(async (req) => {
           destination_phone: cleanPhone,
           destination_provider: selectedProvider,
           created_via: 'api',
+          fee: feeInCents,
+          amount_sent: amountToSendInCents,
+          fee_percentage: 2,
         },
       })
       .select()
@@ -235,12 +247,14 @@ Deno.serve(async (req) => {
           ledger_id: ledgerEntry.id,
           reference: reference,
           amount: amount,
+          fee: feeInCents / 100,
+          amount_to_receive: amountToSendInCents / 100,
           status: 'processing',
           destination: {
             phone: cleanPhone,
             provider: selectedProvider === 'm17' ? 'Orange Money' : 'Africell Money',
           },
-          message: 'Withdrawal initiated. You will receive the funds shortly.',
+          message: `Withdrawal initiated. You will receive SLE ${(amountToSendInCents / 100).toLocaleString()} shortly (2% fee applied).`,
         },
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

@@ -78,6 +78,7 @@ import ReportIssue from "./pages/ReportIssue";
 import Onboarding from "./pages/Onboarding";
 import Deposit from "./pages/Deposit";
 import Withdrawal from "./pages/Withdrawal";
+import TransactionDetail from "./pages/TransactionDetail";
 import AdminStoreDetail from "./pages/AdminStoreDetail";
 import AdminUserWallet from "./pages/AdminUserWallet";
 import AdminStoreAppealDetail from "./pages/AdminStoreAppealDetail";
@@ -140,6 +141,7 @@ const App = () => (
                 <Route path="/wallet" element={<ProtectedRoute><Wallet /></ProtectedRoute>} />
                 <Route path="/deposit" element={<ProtectedRoute><Deposit /></ProtectedRoute>} />
                 <Route path="/withdrawal" element={<ProtectedRoute><Withdrawal /></ProtectedRoute>} />
+                <Route path="/transaction/:transactionId" element={<ProtectedRoute><TransactionDetail /></ProtectedRoute>} />
                 <Route path="/seller-dashboard" element={<ProtectedRoute><SellerDashboard /></ProtectedRoute>} />
                 <Route path="/add-product" element={<ProtectedRoute><AddProduct /></ProtectedRoute>} />
                 <Route path="/product-creation-success" element={<ProtectedRoute><ProductCreationSuccess /></ProtectedRoute>} />
