@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { ArrowLeft, Wallet as WalletIcon, ArrowUpCircle, ArrowDownCircle, Clock, RefreshCw, CheckCircle, XCircle, Loader2, Timer } from 'lucide-react';
+import { ArrowLeft, Wallet as WalletIcon, ArrowUpCircle, ArrowDownCircle, Clock, RefreshCw, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 
@@ -17,42 +17,6 @@ interface LedgerEntry {
   monime_ussd_code: string | null;
   created_at: string;
 }
-
-// Countdown timer component for pending deposits (10 minutes expiry)
-const CountdownTimer = ({ createdAt }: { createdAt: string }) => {
-  const [timeLeft, setTimeLeft] = useState('');
-  const [expired, setExpired] = useState(false);
-
-  useEffect(() => {
-    const expiryTime = new Date(createdAt).getTime() + 10 * 60 * 1000; // 10 minutes
-
-    const updateTimer = () => {
-      const now = Date.now();
-      const diff = expiryTime - now;
-
-      if (diff <= 0) {
-        setExpired(true);
-        setTimeLeft('Expired');
-        return;
-      }
-
-      const minutes = Math.floor(diff / 60000);
-      const seconds = Math.floor((diff % 60000) / 1000);
-      setTimeLeft(`${minutes}:${seconds.toString().padStart(2, '0')}`);
-    };
-
-    updateTimer();
-    const interval = setInterval(updateTimer, 1000);
-    return () => clearInterval(interval);
-  }, [createdAt]);
-
-  return (
-    <div className={`flex items-center gap-1 text-xs font-medium ${expired ? 'text-destructive' : 'text-warning'}`}>
-      <Timer className="h-3 w-3" />
-      <span>{timeLeft}</span>
-    </div>
-  );
-};
 
 const Wallet = () => {
   const { user } = useAuth();
@@ -323,14 +287,11 @@ const Wallet = () => {
                         )}
                       </div>
                     </div>
-                    <div className="text-right space-y-1">
+                    <div className="text-right">
                       <p className="font-bold text-lg">
                         {getAmountDisplay(entry)}
                       </p>
                       {getStatusBadge(entry.status)}
-                      {entry.status === 'pending' && entry.transaction_type === 'deposit' && (
-                        <CountdownTimer createdAt={entry.created_at} />
-                      )}
                     </div>
                   </div>
                 ))
