@@ -48,29 +48,17 @@ export default function Checkout() {
     if (!user) return;
     
     try {
-      const { data, error } = await supabase
-        .from("wallets")
-        .select("balance_leones")
-        .eq("user_id", user.id)
-        .maybeSingle();
+      // Use RPC for ledger-based balance
+      const { data: balance, error } = await supabase
+        .rpc('get_wallet_balance', { p_user_id: user.id });
 
       if (error) {
-        console.error('Wallet fetch error:', error);
-        throw error;
-      }
-
-      if (!data) {
-        console.log('No wallet found for user, creating one...');
-        const { data: newWallet } = await supabase
-          .from('wallets')
-          .insert({ user_id: user.id, balance_leones: 0 })
-          .select()
-          .single();
-        setWalletBalance(newWallet?.balance_leones || 0);
+        console.error('Wallet balance error:', error);
+        setWalletBalance(0);
         return;
       }
 
-      setWalletBalance(data.balance_leones || 0);
+      setWalletBalance(balance || 0);
     } catch (error) {
       console.error("Error loading wallet:", error);
       setWalletBalance(0);
@@ -254,31 +242,19 @@ export default function Checkout() {
 
       await Promise.all(orderPromises);
 
-      // Deduct from wallet
-      const { error: walletError } = await supabase
-        .from("wallets")
-        .update({ balance_leones: walletBalance - totalPrice })
-        .eq("user_id", user.id);
-
-      if (walletError) throw walletError;
-
-      // Create transaction record
-      const { data: wallet } = await supabase
-        .from("wallets")
-        .select("id")
-        .eq("user_id", user.id)
-        .single();
-
-      if (wallet) {
-        await supabase.from("transactions").insert({
-          wallet_id: wallet.id,
-          type: "withdrawal",
-          amount: -totalPrice,
-          status: "completed",
+      // Deduct from wallet using wallet_ledger
+      const { error: ledgerError } = await supabase
+        .from("wallet_ledger")
+        .insert({
+          user_id: user.id,
+          amount: totalPrice,
+          transaction_type: 'payment',
+          status: 'success',
           reference: `Order payment - ${items.length} items`,
           metadata: { payment_method: 'wallet', order_count: items.length }
         });
-      }
+
+      if (ledgerError) throw ledgerError;
 
       clearCart();
       

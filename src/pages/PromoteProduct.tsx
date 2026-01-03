@@ -62,14 +62,11 @@ const PromoteProduct = () => {
       if (productError) throw productError;
       setProduct(productData);
 
-      // Load wallet balance
-      const { data: walletData } = await supabase
-        .from('wallets')
-        .select('balance_leones')
-        .eq('user_id', user?.id)
-        .single();
+      // Load wallet balance using RPC
+      const { data: balance } = await supabase
+        .rpc('get_wallet_balance', { p_user_id: user?.id });
 
-      setWalletBalance(walletData?.balance_leones || 0);
+      setWalletBalance(balance || 0);
     } catch (error) {
       console.error('Error loading data:', error);
       toast({
@@ -96,32 +93,23 @@ const PromoteProduct = () => {
 
     setProcessing(true);
     try {
-      // Get wallet ID
-      const { data: wallet } = await supabase
-        .from('wallets')
-        .select('id, balance_leones')
-        .eq('user_id', user.id)
-        .single();
+      // Create wallet_ledger entry for promotion (debit)
+      const { error: ledgerError } = await supabase
+        .from('wallet_ledger')
+        .insert({
+          user_id: user.id,
+          amount: PROMOTION_COST,
+          transaction_type: 'payment',
+          status: 'success',
+          reference: `Product Promotion - ${product.title}`,
+          metadata: {
+            product_id: product.id,
+            product_title: product.title,
+            promotion_days: PROMOTION_DAYS
+          }
+        });
 
-      if (!wallet) throw new Error('Wallet not found');
-
-      // Deduct from wallet
-      const newBalance = wallet.balance_leones - PROMOTION_COST;
-      const { error: walletError } = await supabase
-        .from('wallets')
-        .update({ balance_leones: newBalance })
-        .eq('id', wallet.id);
-
-      if (walletError) throw walletError;
-
-      // Create transaction record
-      await supabase.from('transactions').insert({
-        wallet_id: wallet.id,
-        amount: -PROMOTION_COST,
-        type: 'withdrawal',
-        reference: `Product Promotion - ${product.title}`,
-        status: 'completed',
-      });
+      if (ledgerError) throw ledgerError;
 
       // Calculate promotion end date
       const promotedUntil = new Date();
@@ -140,7 +128,7 @@ const PromoteProduct = () => {
 
       setShowConfirmDialog(false);
       setShowSuccessDialog(true);
-      setWalletBalance(newBalance);
+      setWalletBalance(prev => prev - PROMOTION_COST);
       setProduct(prev => prev ? { ...prev, is_promoted: true, promoted_until: promotedUntil.toISOString() } : null);
     } catch (error) {
       console.error('Error promoting product:', error);
