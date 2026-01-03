@@ -92,23 +92,20 @@ Deno.serve(async (req) => {
         'Content-Type': 'application/json',
         'Idempotency-Key': idempotencyKey,
         'Monime-Space-Id': MONIME_SPACE_ID,
-        'Monime-Version': 'caph.2025-08-23',
       },
       body: JSON.stringify({
         name: `Market360 Deposit - ${reference}`,
-        mode: 'one_time',
-        enable: true,
+        mode: 'oneTime',
         amount: {
           currency: 'SLE',
           value: amountInCents,
         },
-        duration: '30m', // Payment code expires in 30 minutes
-        reference: reference,
-        authorizedProviders: ['m17', 'm18'], // Orange Money and Africell
+        allowedProviders: ['m17', 'm18'],
         metadata: {
           user_id: user.id,
           type: 'deposit',
           platform: 'market360',
+          reference: reference,
         },
       }),
     });
