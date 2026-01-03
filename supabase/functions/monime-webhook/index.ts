@@ -161,10 +161,30 @@ async function handleDepositSuccess(supabase: any, eventData: any): Promise<bool
     await supabase.from('notifications').insert({
       user_id: ledgerEntry.user_id,
       type: 'system',
-      title: 'Deposit Successful',
-      body: `Your deposit of SLE ${(ledgerEntry.amount / 100).toLocaleString()} has been credited to your wallet.`,
+      title: '💰 Deposit Received!',
+      body: `Le ${ledgerEntry.amount.toLocaleString()} has been added to your wallet.`,
+      link_url: '/wallet/activity',
       metadata: { ledger_id: ledgerEntry.id, type: 'deposit_success' },
     });
+
+    // Send push notification
+    try {
+      await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-onesignal-notification`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+        },
+        body: JSON.stringify({
+          user_id: ledgerEntry.user_id,
+          title: '💰 Deposit Received!',
+          body: `Le ${ledgerEntry.amount.toLocaleString()} has been added to your wallet.`,
+          link_url: '/wallet/activity',
+        }),
+      });
+    } catch (pushError) {
+      console.error('Failed to send deposit push notification:', pushError);
+    }
 
     console.log('Deposit success processed for user:', ledgerEntry.user_id);
     return true;
@@ -264,10 +284,30 @@ async function handlePayoutSuccess(supabase: any, eventData: any): Promise<boole
     await supabase.from('notifications').insert({
       user_id: ledgerEntry.user_id,
       type: 'system',
-      title: 'Withdrawal Successful',
-      body: `Your withdrawal of SLE ${(ledgerEntry.amount / 100).toLocaleString()} has been sent to your mobile money account.`,
+      title: '✅ Withdrawal Completed!',
+      body: `Your withdrawal of Le ${ledgerEntry.amount.toLocaleString()} has been sent to your mobile money account.`,
+      link_url: '/wallet/activity',
       metadata: { ledger_id: ledgerEntry.id, type: 'withdrawal_success' },
     });
+
+    // Send push notification
+    try {
+      await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-onesignal-notification`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+        },
+        body: JSON.stringify({
+          user_id: ledgerEntry.user_id,
+          title: '✅ Withdrawal Completed!',
+          body: `Your withdrawal of Le ${ledgerEntry.amount.toLocaleString()} has been sent to your mobile money account.`,
+          link_url: '/wallet/activity',
+        }),
+      });
+    } catch (pushError) {
+      console.error('Failed to send withdrawal push notification:', pushError);
+    }
 
     console.log('Payout success processed for user:', ledgerEntry.user_id);
     return true;
@@ -316,14 +356,34 @@ async function handlePayoutFailed(supabase: any, eventData: any): Promise<boolea
     await supabase.from('notifications').insert({
       user_id: ledgerEntry.user_id,
       type: 'system',
-      title: 'Withdrawal Failed',
-      body: `Your withdrawal of SLE ${(ledgerEntry.amount / 100).toLocaleString()} could not be completed. The funds remain in your wallet.`,
+      title: '❌ Withdrawal Failed',
+      body: `Your withdrawal of Le ${ledgerEntry.amount.toLocaleString()} could not be completed. The funds remain in your wallet.`,
+      link_url: '/wallet/activity',
       metadata: { 
         ledger_id: ledgerEntry.id, 
         type: 'withdrawal_failed',
         reason: failureMessage,
       },
     });
+
+    // Send push notification
+    try {
+      await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-onesignal-notification`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+        },
+        body: JSON.stringify({
+          user_id: ledgerEntry.user_id,
+          title: '❌ Withdrawal Failed',
+          body: `Your withdrawal of Le ${ledgerEntry.amount.toLocaleString()} could not be completed. The funds remain in your wallet.`,
+          link_url: '/wallet/activity',
+        }),
+      });
+    } catch (pushError) {
+      console.error('Failed to send withdrawal failed push notification:', pushError);
+    }
 
     console.log('Payout marked as failed:', ledgerEntry.id);
     return true;
