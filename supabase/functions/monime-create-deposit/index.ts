@@ -110,16 +110,34 @@ Deno.serve(async (req) => {
       }),
     });
 
-    const monimeData = await monimeResponse.json();
-    console.log('Monime response:', JSON.stringify(monimeData, null, 2));
+    const monimeRaw = await monimeResponse.text();
+    let monimeData: any;
+    try {
+      monimeData = JSON.parse(monimeRaw);
+    } catch (_e) {
+      monimeData = { success: false, raw: monimeRaw };
+    }
 
-    if (!monimeResponse.ok || !monimeData.success) {
-      console.error('Monime API error:', monimeData);
+    console.log('Monime response status:', monimeResponse.status);
+    console.log('Monime response body:', JSON.stringify(monimeData, null, 2));
+
+    if (!monimeResponse.ok || !monimeData?.success) {
+      const messages = Array.isArray(monimeData?.messages) ? monimeData.messages : [];
+      const errorObj = monimeData?.error;
+
+      const details =
+        messages.length > 0
+          ? messages
+          : (errorObj?.message ?? errorObj ?? monimeData ?? 'Unknown error');
+
+      console.error('Monime API error:', { status: monimeResponse.status, details });
+
       return new Response(
-        JSON.stringify({ 
-          success: false, 
+        JSON.stringify({
+          success: false,
           error: 'Failed to create payment code',
-          details: monimeData.messages || monimeData.error || 'Unknown error'
+          details,
+          monime_status: monimeResponse.status,
         }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
