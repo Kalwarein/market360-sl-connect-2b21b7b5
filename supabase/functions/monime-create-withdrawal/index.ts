@@ -150,23 +150,25 @@ Deno.serve(async (req) => {
     const idempotencyKey = `withdrawal-${reference}`;
 
     // Format phone number for Monime API
-    // Monime expects the phone number in local format without country code prefix for Sierra Leone
-    // or with country code. Let's normalize it.
-    let cleanPhone = phone_number.replace(/[\s\-\(\)]/g, '');
-    
-    // If starts with +232, remove it
-    if (cleanPhone.startsWith('+232')) {
-      cleanPhone = cleanPhone.substring(4);
-    } else if (cleanPhone.startsWith('232')) {
-      cleanPhone = cleanPhone.substring(3);
-    }
-    
-    // Remove leading zero if present
-    if (cleanPhone.startsWith('0')) {
-      cleanPhone = cleanPhone.substring(1);
+    // Payout destination expects a phoneNumber (E.164), e.g. +23278000000
+    const digitsOnly = String(phone_number).replace(/\D/g, '');
+
+    let national = digitsOnly;
+    if (national.startsWith('232')) national = national.substring(3);
+    if (national.startsWith('0')) national = national.substring(1);
+
+    if (national.length !== 8) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'Invalid phone number format. Please enter a Sierra Leone number like 076123456 or +23276123456.',
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    console.log('Formatted phone number:', cleanPhone);
+    const monimePhoneNumber = `+232${national}`;
+    console.log('Formatted phone number:', { input: phone_number, national, monimePhoneNumber });
 
     // Build payout request body according to Monime API v1 specs
     const payoutBody: Record<string, unknown> = {
@@ -177,7 +179,7 @@ Deno.serve(async (req) => {
       destination: {
         type: 'momo',
         providerId: selectedProvider, // m17 = Orange, m18 = Africell
-        accountNumber: cleanPhone, // Phone number without country code
+        phoneNumber: monimePhoneNumber,
       },
       // Monime expects metadata as a StringMap (all values must be strings)
       metadata: {
@@ -271,7 +273,7 @@ Deno.serve(async (req) => {
         monime_id: payout.id,
         metadata: {
           payout_status: payout.status,
-          destination_phone: cleanPhone,
+          destination_phone: monimePhoneNumber,
           destination_provider: selectedProvider,
           provider_name: selectedProvider === 'm17' ? 'Orange Money' : 'Africell Money',
           created_via: 'api',
@@ -314,7 +316,7 @@ Deno.serve(async (req) => {
           amount_to_receive: amountToSendInCents / 100,
           status: 'pending',
           destination: {
-            phone: cleanPhone,
+            phone: monimePhoneNumber,
             provider: selectedProvider === 'm17' ? 'Orange Money' : 'Africell Money',
           },
           message: `Withdrawal initiated. You will receive SLE ${(amountToSendInCents / 100).toLocaleString()} shortly (2% processing fee applied).`,
