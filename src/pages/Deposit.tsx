@@ -4,25 +4,35 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
-import { Upload, AlertCircle, ArrowLeft, Info } from 'lucide-react';
+import { ArrowLeft, Phone, Loader2, CheckCircle, Copy, RefreshCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+
+const QUICK_AMOUNTS = [10, 100, 200, 500];
+
+interface DepositResult {
+  ussd_code: string;
+  amount: number;
+  reference: string;
+  expires_at: string;
+  instructions: string;
+}
 
 const Deposit = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [amount, setAmount] = useState('');
-  const [phone, setPhone] = useState('');
-  const [referenceNumber, setReferenceNumber] = useState('');
-  const [screenshot, setScreenshot] = useState<File | null>(null);
-  const [submitting, setSubmitting] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [depositResult, setDepositResult] = useState<DepositResult | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!amount || !phone || !referenceNumber) {
-      toast.error('Please fill all required fields');
+  const handleQuickAmount = (value: number) => {
+    setAmount(value.toString());
+  };
+
+  const handleDeposit = async () => {
+    if (!amount) {
+      toast.error('Please enter an amount');
       return;
     }
 
@@ -32,52 +42,56 @@ const Deposit = () => {
       return;
     }
 
+    if (amountNum < 1) {
+      toast.error('Minimum deposit is SLE 1');
+      return;
+    }
+
     try {
-      setSubmitting(true);
-      let screenshotUrl = '';
+      setLoading(true);
 
-      if (screenshot) {
-        const fileExt = screenshot.name.split('.').pop();
-        const fileName = `deposit-${user?.id}-${Date.now()}.${fileExt}`;
-        const { error: uploadError } = await supabase.storage
-          .from('product-images')
-          .upload(fileName, screenshot);
-
-        if (uploadError) throw uploadError;
-
-        const { data: { publicUrl } } = supabase.storage
-          .from('product-images')
-          .getPublicUrl(fileName);
-        screenshotUrl = publicUrl;
-      }
-
-      const { error } = await supabase.from('wallet_requests').insert({
-        user_id: user?.id,
-        type: 'deposit',
-        amount: amountNum,
-        phone_number: phone,
-        reference_number: referenceNumber,
-        screenshot_url: screenshotUrl,
+      const { data, error } = await supabase.functions.invoke('monime-create-deposit', {
+        body: { amount: amountNum },
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Deposit error:', error);
+        throw new Error(error.message || 'Failed to initiate deposit');
+      }
 
-      toast.success('Deposit request submitted successfully!');
-      navigate('/wallet');
-    } catch (error) {
-      console.error('Error submitting deposit:', error);
-      toast.error('Failed to submit deposit request');
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to create deposit');
+      }
+
+      setDepositResult(data.data);
+      toast.success('Payment code generated!');
+    } catch (error: any) {
+      console.error('Deposit error:', error);
+      toast.error(error.message || 'Failed to initiate deposit');
     } finally {
-      setSubmitting(false);
+      setLoading(false);
     }
   };
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-accent/5 pb-24">
-      {/* Header */}
-      <div className="sticky top-0 z-10 bg-card/95 backdrop-blur-lg border-b border-border/50 shadow-sm">
-        <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+  const copyUssdCode = () => {
+    if (depositResult?.ussd_code) {
+      navigator.clipboard.writeText(depositResult.ussd_code);
+      toast.success('USSD code copied!');
+    }
+  };
+
+  const handleNewDeposit = () => {
+    setDepositResult(null);
+    setAmount('');
+  };
+
+  // Show USSD code screen after successful deposit initiation
+  if (depositResult) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-accent/5 pb-24">
+        {/* Header */}
+        <div className="sticky top-0 z-10 bg-card/95 backdrop-blur-lg border-b border-border/50 shadow-sm">
+          <div className="max-w-2xl mx-auto px-4 py-4 flex items-center gap-3">
             <Button
               variant="ghost"
               size="icon"
@@ -87,169 +101,216 @@ const Deposit = () => {
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div>
-              <h1 className="text-xl font-bold text-foreground">Top Up Wallet</h1>
-              <p className="text-sm text-muted-foreground">Add funds to your wallet</p>
+              <h1 className="text-xl font-bold text-foreground">Complete Payment</h1>
+              <p className="text-sm text-muted-foreground">Dial the code below</p>
             </div>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate('/how-to-top-up')}
-            className="text-primary hover:text-primary-hover rounded-full"
-          >
-            <Info className="h-4 w-4 mr-1" />
-            Guide
-          </Button>
         </div>
-      </div>
 
-      {/* Content */}
-      <div className="max-w-2xl mx-auto px-4 py-8">
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Info Banner */}
-          <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 via-accent/5 to-primary/10 shadow-lg">
+        <div className="max-w-2xl mx-auto px-4 py-8 space-y-6">
+          {/* Success Card */}
+          <Card className="border-2 border-success/30 bg-gradient-to-br from-success/10 to-success/5 shadow-lg">
             <CardContent className="p-6">
-              <div className="flex gap-4 items-start">
-                <div className="p-3 bg-primary/10 rounded-2xl">
-                  <AlertCircle className="h-6 w-6 text-primary" />
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-3 bg-success/20 rounded-full">
+                  <CheckCircle className="h-6 w-6 text-success" />
                 </div>
-                <div className="space-y-3 flex-1">
-                  <h3 className="font-bold text-lg text-foreground">Orange Money Payment</h3>
-                  <ol className="space-y-2 text-sm text-muted-foreground leading-relaxed">
-                    <li className="flex gap-2">
-                      <span className="font-bold text-primary">1.</span>
-                      Send money to: <strong className="text-primary">078444807</strong>
-                    </li>
-                    <li className="flex gap-2">
-                      <span className="font-bold text-primary">2.</span>
-                      Save the Orange Money reference number from SMS
-                    </li>
-                    <li className="flex gap-2">
-                      <span className="font-bold text-primary">3.</span>
-                      Enter details below and paste the reference number
-                    </li>
-                    <li className="flex gap-2">
-                      <span className="font-bold text-primary">4.</span>
-                      Upload screenshot of SMS (optional but recommended)
-                    </li>
-                  </ol>
-                  <div className="mt-4 pt-4 border-t border-primary/20">
-                    <p className="text-sm font-bold text-green-600 flex items-center gap-2">
-                      ✓ No fees! Full amount will be credited to your wallet
-                    </p>
-                  </div>
+                <div>
+                  <h3 className="font-bold text-lg text-foreground">Payment Code Ready</h3>
+                  <p className="text-sm text-muted-foreground">Dial this code to complete your payment</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Amount Input */}
-          <Card className="border-2 border-border hover:border-primary/50 transition-all shadow-md">
-            <CardContent className="p-6 space-y-3">
-              <Label htmlFor="amount" className="text-base font-bold text-foreground flex items-center gap-2">
-                Amount (SLL)
-                <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="amount"
-                type="number"
-                placeholder="Enter amount"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                className="h-14 text-xl font-bold rounded-2xl border-2 focus:border-primary shadow-sm"
-                required
-              />
+          {/* USSD Code Display */}
+          <Card className="border-2 border-primary shadow-xl bg-gradient-to-br from-primary/10 to-accent/10">
+            <CardContent className="p-8 text-center space-y-6">
+              <div className="p-6 bg-card rounded-2xl border-2 border-primary/30 shadow-inner">
+                <p className="text-sm text-muted-foreground mb-2">Dial this code:</p>
+                <p className="text-3xl md:text-4xl font-mono font-bold text-primary tracking-wider">
+                  {depositResult.ussd_code}
+                </p>
+              </div>
+
+              <Button
+                onClick={copyUssdCode}
+                variant="outline"
+                className="w-full h-14 rounded-2xl font-bold text-base border-2 hover:bg-primary/10"
+              >
+                <Copy className="mr-2 h-5 w-5" />
+                Copy Code
+              </Button>
+
+              <div className="pt-4 border-t border-border">
+                <p className="text-sm text-muted-foreground mb-2">Amount to pay:</p>
+                <p className="text-2xl font-bold text-foreground">
+                  SLE {depositResult.amount.toLocaleString()}
+                </p>
+              </div>
             </CardContent>
           </Card>
 
-          {/* Phone Number */}
-          <Card className="border-2 border-border hover:border-primary/50 transition-all shadow-md">
-            <CardContent className="p-6 space-y-3">
-              <Label htmlFor="phone" className="text-base font-bold text-foreground flex items-center gap-2">
-                Phone Number
-                <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="phone"
-                type="tel"
-                placeholder="Enter phone number"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                className="h-14 rounded-2xl border-2 focus:border-primary shadow-sm"
-                required
-              />
+          {/* Instructions */}
+          <Card className="border-2 border-border shadow-md">
+            <CardContent className="p-6 space-y-4">
+              <h3 className="font-bold text-lg text-foreground flex items-center gap-2">
+                <Phone className="h-5 w-5 text-primary" />
+                How to Complete Payment
+              </h3>
+              <ol className="space-y-3 text-sm text-muted-foreground">
+                <li className="flex gap-3">
+                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">1</span>
+                  <span>Open your phone's dialer app</span>
+                </li>
+                <li className="flex gap-3">
+                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">2</span>
+                  <span>Dial: <strong className="text-primary font-mono">{depositResult.ussd_code}</strong></span>
+                </li>
+                <li className="flex gap-3">
+                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">3</span>
+                  <span>Follow the prompts and enter your PIN to confirm</span>
+                </li>
+                <li className="flex gap-3">
+                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">4</span>
+                  <span>Your wallet will be credited instantly after payment</span>
+                </li>
+              </ol>
+
+              <div className="pt-4 border-t border-border">
+                <p className="text-xs text-muted-foreground">
+                  ⏰ This code expires in 30 minutes. Reference: {depositResult.reference}
+                </p>
+              </div>
             </CardContent>
           </Card>
 
-          {/* Reference Number */}
-          <Card className="border-2 border-border hover:border-primary/50 transition-all shadow-md">
-            <CardContent className="p-6 space-y-3">
-              <Label htmlFor="reference" className="text-base font-bold text-foreground flex items-center gap-2">
-                Orange Money Transaction ID
-                <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="reference"
-                type="text"
-                placeholder="Paste reference number from SMS"
-                value={referenceNumber}
-                onChange={(e) => setReferenceNumber(e.target.value)}
-                className="h-14 rounded-2xl border-2 focus:border-primary shadow-sm font-mono"
-                required
-              />
-              <p className="text-sm text-muted-foreground flex items-center gap-2">
-                📱 Copy the transaction Id number from your Orange Money SMS
-              </p>
-            </CardContent>
-          </Card>
-
-          {/* Screenshot Upload */}
-          <Card className="border-2 border-dashed border-border hover:border-primary/50 transition-all shadow-md">
-            <CardContent className="p-6 space-y-3">
-              <Label htmlFor="screenshot" className="text-base font-bold text-foreground">
-                Payment Proof
-              </Label>
-              <label className="flex flex-col items-center justify-center gap-4 p-8 cursor-pointer hover:bg-primary/5 rounded-2xl transition-all border-2 border-dashed border-border hover:border-primary group">
-                <div className="p-4 bg-primary/10 rounded-full group-hover:bg-primary/20 transition-colors">
-                  <Upload className="h-8 w-8 text-primary" />
-                </div>
-                <div className="text-center">
-                  <p className="font-semibold text-foreground">
-                    {screenshot ? screenshot.name : 'Click to upload screenshot'}
-                  </p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Upload SMS screenshot for faster processing
-                  </p>
-                </div>
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => setScreenshot(e.target.files?.[0] || null)}
-                />
-              </label>
-            </CardContent>
-          </Card>
-
-          {/* Submit Button */}
+          {/* Actions */}
           <div className="flex gap-4 pt-4">
-            <Button 
-              type="button"
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => navigate('/wallet')}
-              className="flex-1 h-14 rounded-2xl font-bold text-base border-2 hover:bg-muted transition-all"
+              className="flex-1 h-14 rounded-2xl font-bold text-base border-2"
             >
-              Cancel
+              Back to Wallet
             </Button>
-            <Button 
-              type="submit"
-              disabled={submitting}
-              className="flex-1 h-14 rounded-2xl font-bold text-base shadow-xl shadow-primary/40 hover:shadow-2xl hover:shadow-primary/50 transition-all bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90"
+            <Button
+              onClick={handleNewDeposit}
+              className="flex-1 h-14 rounded-2xl font-bold text-base shadow-xl shadow-primary/40"
             >
-              {submitting ? 'Submitting...' : 'Submit Request'}
+              <RefreshCw className="mr-2 h-5 w-5" />
+              New Deposit
             </Button>
           </div>
-        </form>
+        </div>
+      </div>
+    );
+  }
+
+  // Initial deposit form
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-accent/5 pb-24">
+      {/* Header */}
+      <div className="sticky top-0 z-10 bg-card/95 backdrop-blur-lg border-b border-border/50 shadow-sm">
+        <div className="max-w-2xl mx-auto px-4 py-4 flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate('/wallet')}
+            className="rounded-full hover:bg-primary/10"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div>
+            <h1 className="text-xl font-bold text-foreground">Top Up Wallet</h1>
+            <p className="text-sm text-muted-foreground">Add funds with Mobile Money</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="max-w-2xl mx-auto px-4 py-8 space-y-6">
+        {/* Amount Input */}
+        <Card className="border-2 border-border hover:border-primary/50 transition-all shadow-md">
+          <CardContent className="p-6 space-y-4">
+            <Label htmlFor="amount" className="text-base font-bold text-foreground">
+              Enter Amount (SLE)
+            </Label>
+            <Input
+              id="amount"
+              type="number"
+              placeholder="0"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              className="h-16 text-3xl font-bold text-center rounded-2xl border-2 focus:border-primary shadow-sm"
+              min="1"
+            />
+          </CardContent>
+        </Card>
+
+        {/* Quick Amount Buttons */}
+        <div className="grid grid-cols-4 gap-3">
+          {QUICK_AMOUNTS.map((value) => (
+            <Button
+              key={value}
+              variant={amount === value.toString() ? 'default' : 'outline'}
+              onClick={() => handleQuickAmount(value)}
+              className="h-14 text-lg font-bold rounded-2xl border-2 transition-all"
+            >
+              {value}
+            </Button>
+          ))}
+        </div>
+
+        {/* Info Card */}
+        <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-accent/5 shadow-lg">
+          <CardContent className="p-6">
+            <div className="flex gap-4 items-start">
+              <div className="p-3 bg-primary/10 rounded-2xl">
+                <Phone className="h-6 w-6 text-primary" />
+              </div>
+              <div className="space-y-2 flex-1">
+                <h3 className="font-bold text-lg text-foreground">How it Works</h3>
+                <ol className="space-y-1 text-sm text-muted-foreground">
+                  <li>1. Enter your amount and tap "Pay Now"</li>
+                  <li>2. You'll receive a USSD code to dial</li>
+                  <li>3. Dial the code and approve payment</li>
+                  <li>4. Wallet credited instantly!</li>
+                </ol>
+                <p className="text-sm font-bold text-success pt-2 border-t border-primary/20 mt-3">
+                  ✓ Supports Orange Money & Africell Money
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Submit Button */}
+        <Button
+          onClick={handleDeposit}
+          disabled={loading || !amount}
+          className="w-full h-16 rounded-2xl font-bold text-xl shadow-xl shadow-primary/40 hover:shadow-2xl hover:shadow-primary/50 transition-all bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90"
+        >
+          {loading ? (
+            <>
+              <Loader2 className="mr-2 h-6 w-6 animate-spin" />
+              Generating Code...
+            </>
+          ) : (
+            <>
+              Pay Now with Market360
+            </>
+          )}
+        </Button>
+
+        {/* Cancel Button */}
+        <Button
+          variant="outline"
+          onClick={() => navigate('/wallet')}
+          className="w-full h-14 rounded-2xl font-bold text-base border-2"
+        >
+          Cancel
+        </Button>
       </div>
     </div>
   );

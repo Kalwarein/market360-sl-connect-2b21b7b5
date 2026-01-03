@@ -4,16 +4,17 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { ArrowLeft, Wallet as WalletIcon, ArrowUpCircle, ArrowDownCircle, Clock, Info } from 'lucide-react';
+import { ArrowLeft, Wallet as WalletIcon, ArrowUpCircle, ArrowDownCircle, Clock, RefreshCw, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 
-interface Transaction {
+interface LedgerEntry {
   id: string;
+  transaction_type: string;
   amount: number;
-  type: string;
-  reference: string;
   status: string;
+  reference: string | null;
+  monime_ussd_code: string | null;
   created_at: string;
 }
 
@@ -21,100 +22,173 @@ const Wallet = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [balance, setBalance] = useState(0);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [transactions, setTransactions] = useState<LedgerEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     if (user) {
       loadWalletData();
+      // Subscribe to realtime updates on wallet_ledger
+      const channel = supabase
+        .channel('wallet-ledger-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'wallet_ledger',
+            filter: `user_id=eq.${user.id}`,
+          },
+          (payload) => {
+            console.log('Ledger change:', payload);
+            loadWalletData(); // Reload data on any change
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [user]);
 
   const loadWalletData = async () => {
     try {
-      // Load wallet balance
-      const { data: walletData, error: walletError } = await supabase
-        .from('wallets')
-        .select('id, balance_leones')
-        .eq('user_id', user?.id)
-        .maybeSingle();
+      // Get ledger-based balance
+      const { data: balanceData, error: balanceError } = await supabase.rpc('get_wallet_balance', { 
+        p_user_id: user?.id 
+      });
 
-      if (walletError) {
-        console.error('Wallet fetch error:', walletError);
-        throw walletError;
-      }
-
-      if (!walletData) {
-        console.log('No wallet found, creating one...');
-        const { data: newWallet, error: createError } = await supabase
+      if (balanceError) {
+        console.error('Balance fetch error:', balanceError);
+        // Fallback to old wallet table
+        const { data: walletData } = await supabase
           .from('wallets')
-          .insert({ user_id: user?.id, balance_leones: 0 })
-          .select('id, balance_leones')
-          .single();
+          .select('balance_leones')
+          .eq('user_id', user?.id)
+          .maybeSingle();
         
-        if (createError) {
-          console.error('Wallet creation error:', createError);
-          throw createError;
-        }
-        
-        setBalance(0);
-        setTransactions([]);
-        return;
+        setBalance(walletData?.balance_leones || 0);
+      } else {
+        // Balance from ledger is in cents
+        setBalance((balanceData || 0) / 100);
       }
 
-      setBalance(walletData.balance_leones);
-
-      // Load transactions
-      const { data: transData, error: transError } = await supabase
-        .from('transactions')
+      // Load recent transactions from ledger
+      const { data: ledgerData, error: ledgerError } = await supabase
+        .from('wallet_ledger')
         .select('*')
-        .eq('wallet_id', walletData.id)
+        .eq('user_id', user?.id)
         .order('created_at', { ascending: false })
         .limit(50);
 
-      if (transError) {
-        console.error('Transaction fetch error:', transError);
-        throw transError;
+      if (ledgerError) {
+        console.error('Ledger fetch error:', ledgerError);
+      } else {
+        setTransactions(ledgerData || []);
       }
-
-      setTransactions(transData || []);
     } catch (error) {
       console.error('Error loading wallet data:', error);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
-  const getTransactionIcon = (type: string) => {
+  const handleRefresh = () => {
+    setRefreshing(true);
+    loadWalletData();
+  };
+
+  const getTransactionIcon = (type: string, status: string) => {
+    if (status === 'pending' || status === 'processing') {
+      return <Loader2 className="h-5 w-5 text-warning animate-spin" />;
+    }
+    if (status === 'failed') {
+      return <XCircle className="h-5 w-5 text-destructive" />;
+    }
+    
     switch (type) {
       case 'deposit':
       case 'earning':
+      case 'refund':
         return <ArrowDownCircle className="h-5 w-5 text-success" />;
       case 'withdrawal':
-      case 'refund':
-        return <ArrowUpCircle className="h-5 w-5 text-destructive" />;
+      case 'payment':
+        return <ArrowUpCircle className="h-5 w-5 text-primary" />;
       default:
         return <Clock className="h-5 w-5 text-muted-foreground" />;
     }
   };
 
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'success':
+        return <Badge className="bg-success/10 text-success border-success/20">Completed</Badge>;
+      case 'pending':
+        return <Badge variant="secondary" className="bg-warning/10 text-warning border-warning/20">Pending</Badge>;
+      case 'processing':
+        return <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">Processing</Badge>;
+      case 'failed':
+        return <Badge variant="destructive">Failed</Badge>;
+      case 'reversed':
+        return <Badge variant="outline">Reversed</Badge>;
+      default:
+        return <Badge variant="secondary">{status}</Badge>;
+    }
+  };
+
+  const getAmountDisplay = (entry: LedgerEntry) => {
+    const amountInSLE = entry.amount / 100;
+    const isCredit = ['deposit', 'earning', 'refund'].includes(entry.transaction_type);
+    const isSuccessful = entry.status === 'success';
+    
+    // For failed withdrawals/payments, show as neutral (money wasn't actually deducted)
+    if (!isSuccessful && !isCredit) {
+      return (
+        <span className="text-muted-foreground">
+          SLE {amountInSLE.toLocaleString()}
+        </span>
+      );
+    }
+    
+    return (
+      <span className={isCredit ? 'text-success' : 'text-foreground'}>
+        {isCredit ? '+' : '-'}SLE {amountInSLE.toLocaleString()}
+      </span>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-background pb-8">
       <div className="bg-background border-b shadow-sm sticky top-0 z-10">
-        <div className="p-4 flex items-center gap-3">
+        <div className="p-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate(-1)}
+              className="rounded-full"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <h1 className="text-lg font-bold">My Wallet</h1>
+          </div>
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate(-1)}
+            onClick={handleRefresh}
+            disabled={refreshing}
             className="rounded-full"
           >
-            <ArrowLeft className="h-4 w-4" />
+            <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
           </Button>
-          <h1 className="text-lg font-bold">My Wallet</h1>
         </div>
       </div>
 
       <div className="p-6 space-y-6">
+        {/* Balance Card */}
         <Card className="bg-gradient-to-br from-primary to-primary-hover text-white shadow-lg">
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-4">
@@ -122,18 +196,23 @@ const Wallet = () => {
                 <WalletIcon className="h-6 w-6" />
                 <span className="text-sm opacity-90">Available Balance</span>
               </div>
+              {loading && <Loader2 className="h-4 w-4 animate-spin" />}
             </div>
             <p className="text-4xl font-bold mb-2">
-              SLL {loading ? '...' : balance.toLocaleString()}
+              SLE {loading ? '...' : balance.toLocaleString()}
+            </p>
+            <p className="text-sm opacity-75">
+              Powered by Market360 Wallet
             </p>
           </CardContent>
         </Card>
 
+        {/* Action Buttons */}
         <div className="grid grid-cols-2 gap-4">
           <Button
             size="lg"
             onClick={() => navigate('/deposit')}
-            className="h-16 text-base font-semibold"
+            className="h-16 text-base font-semibold rounded-2xl shadow-lg shadow-primary/30"
           >
             <ArrowUpCircle className="mr-2 h-5 w-5" />
             Top Up
@@ -142,23 +221,26 @@ const Wallet = () => {
             size="lg"
             variant="outline"
             onClick={() => navigate('/withdrawal')}
-            className="h-16 text-base font-semibold"
+            className="h-16 text-base font-semibold rounded-2xl border-2"
           >
             <ArrowDownCircle className="mr-2 h-5 w-5" />
             Withdraw
           </Button>
         </div>
-        
-        <Button
-          onClick={() => navigate('/how-to-topup')}
-          variant="ghost"
-          size="sm"
-          className="w-full text-sm text-muted-foreground hover:text-foreground"
-        >
-          <Info className="mr-2 h-4 w-4" />
-          How to Top Up with Orange Money
-        </Button>
 
+        {/* Info Banner */}
+        <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-accent/5">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <CheckCircle className="h-5 w-5 text-success flex-shrink-0" />
+              <p className="text-sm text-muted-foreground">
+                <strong className="text-foreground">Instant deposits</strong> via Orange Money & Africell Money. No admin approval needed!
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Transaction History */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -169,42 +251,46 @@ const Wallet = () => {
           <CardContent>
             <div className="space-y-3">
               {loading ? (
-                <div className="text-center py-8 text-muted-foreground">Loading...</div>
+                <div className="text-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+                  <p className="text-muted-foreground mt-2">Loading transactions...</p>
+                </div>
               ) : transactions.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  No transactions yet
+                  <WalletIcon className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                  <p>No transactions yet</p>
+                  <p className="text-sm mt-1">Top up your wallet to get started</p>
                 </div>
               ) : (
-                transactions.map((trans) => (
+                transactions.map((entry) => (
                   <div
-                    key={trans.id}
-                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                    key={entry.id}
+                    className="flex items-center justify-between p-4 border rounded-xl hover:bg-muted/50 transition-colors"
                   >
                     <div className="flex items-center gap-3">
-                      {getTransactionIcon(trans.type)}
+                      {getTransactionIcon(entry.transaction_type, entry.status)}
                       <div>
-                        <p className="font-medium capitalize">{trans.type}</p>
+                        <p className="font-medium capitalize">{entry.transaction_type}</p>
                         <p className="text-sm text-muted-foreground">
-                          {format(new Date(trans.created_at), 'MMM dd, yyyy - HH:mm')}
+                          {format(new Date(entry.created_at), 'MMM dd, yyyy - HH:mm')}
                         </p>
-                        {trans.reference && (
-                          <p className="text-xs text-muted-foreground/70">{trans.reference}</p>
+                        {entry.reference && (
+                          <p className="text-xs text-muted-foreground/70 font-mono">
+                            {entry.reference}
+                          </p>
+                        )}
+                        {entry.monime_ussd_code && entry.status === 'pending' && (
+                          <p className="text-xs text-primary font-mono mt-1">
+                            Dial: {entry.monime_ussd_code}
+                          </p>
                         )}
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className={`font-bold text-lg ${
-                        trans.amount > 0 ? 'text-success' : 'text-destructive'
-                      }`}>
-                        {trans.amount > 0 ? '+' : ''}SLL {Math.abs(trans.amount).toLocaleString()}
+                      <p className="font-bold text-lg">
+                        {getAmountDisplay(entry)}
                       </p>
-                      <Badge variant={
-                        trans.status === 'completed' ? 'default' : 
-                        trans.status === 'pending' ? 'secondary' : 
-                        'destructive'
-                      }>
-                        {trans.status}
-                      </Badge>
+                      {getStatusBadge(entry.status)}
                     </div>
                   </div>
                 ))

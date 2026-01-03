@@ -8,3 +8,12 @@ verify_jwt = false
 
 [functions.send-onesignal-notification]
 verify_jwt = false
+
+[functions.monime-create-deposit]
+verify_jwt = false
+
+[functions.monime-create-withdrawal]
+verify_jwt = false
+
+[functions.monime-webhook]
+verify_jwt = false
