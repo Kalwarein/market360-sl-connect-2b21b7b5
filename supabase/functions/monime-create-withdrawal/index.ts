@@ -179,13 +179,14 @@ Deno.serve(async (req) => {
         providerId: selectedProvider, // m17 = Orange, m18 = Africell
         accountNumber: cleanPhone, // Phone number without country code
       },
+      // Monime expects metadata as a StringMap (all values must be strings)
       metadata: {
         user_id: user.id,
         type: 'withdrawal',
         platform: 'market360',
         reference: reference,
-        original_amount: amountInCents,
-        fee: feeInCents,
+        original_amount: String(amountInCents),
+        fee: String(feeInCents),
       },
     };
 
