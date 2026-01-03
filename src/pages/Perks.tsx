@@ -182,15 +182,12 @@ const Perks = () => {
     if (!user) return;
     
     try {
-      // Load wallet balance
-      const { data: walletData } = await supabase
-        .from('wallets')
-        .select('balance_leones')
-        .eq('user_id', user.id)
-        .single();
+      // Load wallet balance using RPC (ledger-based)
+      const { data: balance, error: balanceError } = await supabase
+        .rpc('get_wallet_balance', { p_user_id: user.id });
       
-      if (walletData) {
-        setWalletBalance(walletData.balance_leones);
+      if (!balanceError && balance !== null) {
+        setWalletBalance(balance);
       }
 
       // Check if user has a store
@@ -260,39 +257,23 @@ const Perks = () => {
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + daysToAdd);
 
-      // Deduct from wallet
-      const { data: walletData, error: walletError } = await supabase
-        .from('wallets')
-        .select('id, balance_leones')
-        .eq('user_id', user.id)
-        .single();
-
-      if (walletError) throw walletError;
-
-      const newBalance = walletData.balance_leones - selectedPerk.price;
-
-      const { error: updateError } = await supabase
-        .from('wallets')
-        .update({ balance_leones: newBalance })
-        .eq('id', walletData.id);
-
-      if (updateError) throw updateError;
-
-      // Create transaction record
-      await supabase
-        .from('transactions')
+      // Create wallet_ledger entry for perk purchase (debit)
+      const { error: ledgerError } = await supabase
+        .from('wallet_ledger')
         .insert({
-          wallet_id: walletData.id,
-          amount: -selectedPerk.price,
-          type: 'withdrawal',
+          user_id: user.id,
+          amount: selectedPerk.price,
+          transaction_type: 'payment',
+          status: 'success',
           reference: `Perk: ${selectedPerk.title}`,
-          status: 'completed',
           metadata: {
             perk_type: selectedPerk.perkType,
             perk_name: selectedPerk.title,
             duration_days: daysToAdd
           }
         });
+
+      if (ledgerError) throw ledgerError;
 
       // Add perk to store_perks
       const { error: perkError } = await supabase
@@ -402,7 +383,7 @@ const Perks = () => {
                 </div>
                 <div>
                   <p className="text-sm opacity-90">Wallet Balance</p>
-                  <p className="text-2xl font-bold">SLL {walletBalance.toLocaleString()}</p>
+                  <p className="text-2xl font-bold">LE {walletBalance.toLocaleString()}</p>
                 </div>
               </div>
               <Button 

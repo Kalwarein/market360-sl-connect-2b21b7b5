@@ -69,49 +69,61 @@ const AdminUserWallet = () => {
 
       setUserProfile(profile);
 
-      // Load wallet
-      const { data: walletData } = await supabase
-        .from('wallets')
+      // Load wallet balance using RPC
+      const { data: balance } = await supabase
+        .rpc('get_wallet_balance', { p_user_id: userId });
+
+      // Create a mock wallet object for display
+      setWallet({
+        id: userId || '',
+        user_id: userId || '',
+        balance_leones: balance || 0,
+        created_at: new Date().toISOString()
+      });
+
+      // Load transactions from wallet_ledger
+      const { data: txData } = await supabase
+        .from('wallet_ledger')
         .select('*')
         .eq('user_id', userId)
-        .single();
+        .order('created_at', { ascending: false });
 
-      setWallet(walletData);
+      // Map ledger entries to transaction format
+      const mappedTx = (txData || []).map(entry => ({
+        id: entry.id,
+        amount: entry.amount,
+        type: entry.transaction_type as 'deposit' | 'withdrawal' | 'earning' | 'refund',
+        status: entry.status,
+        reference: entry.reference,
+        created_at: entry.created_at,
+        metadata: entry.metadata
+      }));
 
-      if (walletData) {
-        // Load transactions
-        const { data: txData } = await supabase
-          .from('transactions')
-          .select('*')
-          .eq('wallet_id', walletData.id)
-          .order('created_at', { ascending: false });
+      setTransactions(mappedTx);
 
-        setTransactions(txData || []);
+      // Calculate stats from ledger
+      const earnings = (txData || [])
+        .filter(t => (t.transaction_type === 'earning' || t.transaction_type === 'refund') && t.status === 'success')
+        .reduce((sum, t) => sum + Number(t.amount), 0);
+      
+      const withdrawals = (txData || [])
+        .filter(t => t.transaction_type === 'withdrawal' && t.status === 'success')
+        .reduce((sum, t) => sum + Number(t.amount), 0);
+      
+      const deposits = (txData || [])
+        .filter(t => t.transaction_type === 'deposit' && t.status === 'success')
+        .reduce((sum, t) => sum + Number(t.amount), 0);
+      
+      const pending = (txData || [])
+        .filter(t => t.status === 'pending')
+        .reduce((sum, t) => sum + Number(t.amount), 0);
 
-        // Calculate stats
-        const earnings = (txData || [])
-          .filter(t => t.type === 'earning' && t.status === 'completed')
-          .reduce((sum, t) => sum + Number(t.amount), 0);
-        
-        const withdrawals = (txData || [])
-          .filter(t => t.type === 'withdrawal' && t.status === 'completed')
-          .reduce((sum, t) => sum + Number(t.amount), 0);
-        
-        const deposits = (txData || [])
-          .filter(t => t.type === 'deposit' && t.status === 'completed')
-          .reduce((sum, t) => sum + Number(t.amount), 0);
-        
-        const pending = (txData || [])
-          .filter(t => t.status === 'pending')
-          .reduce((sum, t) => sum + Number(t.amount), 0);
-
-        setStats({
-          totalEarnings: earnings,
-          totalWithdrawals: withdrawals,
-          totalDeposits: deposits,
-          pendingBalance: pending,
-        });
-      }
+      setStats({
+        totalEarnings: earnings,
+        totalWithdrawals: withdrawals,
+        totalDeposits: deposits,
+        pendingBalance: pending,
+      });
     } catch (error) {
       console.error('Error loading wallet:', error);
     } finally {
