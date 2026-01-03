@@ -1371,6 +1371,87 @@ export type Database = {
         }
         Relationships: []
       }
+      wallet_freezes: {
+        Row: {
+          created_at: string
+          frozen_at: string
+          frozen_by: string
+          id: string
+          is_active: boolean
+          reason: string
+          unfrozen_at: string | null
+          unfrozen_by: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          frozen_at?: string
+          frozen_by: string
+          id?: string
+          is_active?: boolean
+          reason: string
+          unfrozen_at?: string | null
+          unfrozen_by?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          frozen_at?: string
+          frozen_by?: string
+          id?: string
+          is_active?: boolean
+          reason?: string
+          unfrozen_at?: string | null
+          unfrozen_by?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      wallet_ledger: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          metadata: Json | null
+          monime_id: string | null
+          monime_ussd_code: string | null
+          provider: string | null
+          reference: string | null
+          status: string
+          transaction_type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          monime_id?: string | null
+          monime_ussd_code?: string | null
+          provider?: string | null
+          reference?: string | null
+          status?: string
+          transaction_type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          monime_id?: string | null
+          monime_ussd_code?: string | null
+          provider?: string | null
+          reference?: string | null
+          status?: string
+          transaction_type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       wallet_requests: {
         Row: {
           admin_notes: string | null
@@ -1443,6 +1524,33 @@ export type Database = {
         }
         Relationships: []
       }
+      webhook_events: {
+        Row: {
+          created_at: string
+          event_id: string
+          event_type: string
+          id: string
+          payload: Json
+          processed_at: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          event_type: string
+          id?: string
+          payload: Json
+          processed_at?: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          event_type?: string
+          id?: string
+          payload?: Json
+          processed_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -1453,6 +1561,7 @@ export type Database = {
         Returns: undefined
       }
       delete_expired_products: { Args: never; Returns: undefined }
+      get_wallet_balance: { Args: { p_user_id: string }; Returns: number }
       has_active_moderation: { Args: { user_uuid: string }; Returns: boolean }
       has_role: {
         Args: {
@@ -1461,6 +1570,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_wallet_frozen: { Args: { p_user_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "buyer" | "seller" | "admin"
