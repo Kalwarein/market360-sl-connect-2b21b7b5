@@ -85,6 +85,13 @@ const Deposit = () => {
     setAmount('');
   };
 
+  const handleCall = () => {
+    if (depositResult?.ussd_code) {
+      // Use tel: protocol to open phone dialer with the USSD code
+      window.location.href = `tel:${encodeURIComponent(depositResult.ussd_code)}`;
+    }
+  };
+
   // Show USSD code screen after successful deposit initiation
   if (depositResult) {
     return (
@@ -102,37 +109,36 @@ const Deposit = () => {
             </Button>
             <div>
               <h1 className="text-xl font-bold text-foreground">Complete Payment</h1>
-              <p className="text-sm text-muted-foreground">Dial the code below</p>
             </div>
           </div>
         </div>
 
         <div className="max-w-2xl mx-auto px-4 py-8 space-y-6">
-          {/* Success Card */}
-          <Card className="border-2 border-success/30 bg-gradient-to-br from-success/10 to-success/5 shadow-lg">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-3 bg-success/20 rounded-full">
-                  <CheckCircle className="h-6 w-6 text-success" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-lg text-foreground">Payment Code Ready</h3>
-                  <p className="text-sm text-muted-foreground">Dial this code to complete your payment</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
           {/* USSD Code Display */}
           <Card className="border-2 border-primary shadow-xl bg-gradient-to-br from-primary/10 to-accent/10">
             <CardContent className="p-8 text-center space-y-6">
               <div className="p-6 bg-card rounded-2xl border-2 border-primary/30 shadow-inner">
-                <p className="text-sm text-muted-foreground mb-2">Dial this code:</p>
                 <p className="text-3xl md:text-4xl font-mono font-bold text-primary tracking-wider">
                   {depositResult.ussd_code}
                 </p>
               </div>
 
+              <div className="pt-4 border-t border-border">
+                <p className="text-2xl font-bold text-foreground">
+                  SLE {depositResult.amount.toLocaleString()}
+                </p>
+              </div>
+
+              {/* Call Button - Primary action */}
+              <Button
+                onClick={handleCall}
+                className="w-full h-16 rounded-2xl font-bold text-xl shadow-xl shadow-primary/40 bg-gradient-to-r from-success to-success/80 hover:from-success/90 hover:to-success/70"
+              >
+                <Phone className="mr-3 h-6 w-6" />
+                Call
+              </Button>
+
+              {/* Copy Button - Secondary action */}
               <Button
                 onClick={copyUssdCode}
                 variant="outline"
@@ -142,46 +148,9 @@ const Deposit = () => {
                 Copy Code
               </Button>
 
-              <div className="pt-4 border-t border-border">
-                <p className="text-sm text-muted-foreground mb-2">Amount to pay:</p>
-                <p className="text-2xl font-bold text-foreground">
-                  SLE {depositResult.amount.toLocaleString()}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Instructions */}
-          <Card className="border-2 border-border shadow-md">
-            <CardContent className="p-6 space-y-4">
-              <h3 className="font-bold text-lg text-foreground flex items-center gap-2">
-                <Phone className="h-5 w-5 text-primary" />
-                How to Complete Payment
-              </h3>
-              <ol className="space-y-3 text-sm text-muted-foreground">
-                <li className="flex gap-3">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">1</span>
-                  <span>Open your phone's dialer app</span>
-                </li>
-                <li className="flex gap-3">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">2</span>
-                  <span>Dial: <strong className="text-primary font-mono">{depositResult.ussd_code}</strong></span>
-                </li>
-                <li className="flex gap-3">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">3</span>
-                  <span>Follow the prompts and enter your PIN to confirm</span>
-                </li>
-                <li className="flex gap-3">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">4</span>
-                  <span>Your wallet will be credited instantly after payment</span>
-                </li>
-              </ol>
-
-              <div className="pt-4 border-t border-border">
-                <p className="text-xs text-muted-foreground">
-                  ⏰ This code expires in 30 minutes. Reference: {depositResult.reference}
-                </p>
-              </div>
+              <p className="text-xs text-muted-foreground">
+                ⏰ Expires in 10 minutes
+              </p>
             </CardContent>
           </Card>
 
@@ -261,29 +230,6 @@ const Deposit = () => {
             </Button>
           ))}
         </div>
-
-        {/* Info Card */}
-        <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-accent/5 shadow-lg">
-          <CardContent className="p-6">
-            <div className="flex gap-4 items-start">
-              <div className="p-3 bg-primary/10 rounded-2xl">
-                <Phone className="h-6 w-6 text-primary" />
-              </div>
-              <div className="space-y-2 flex-1">
-                <h3 className="font-bold text-lg text-foreground">How it Works</h3>
-                <ol className="space-y-1 text-sm text-muted-foreground">
-                  <li>1. Enter your amount and tap "Pay Now"</li>
-                  <li>2. You'll receive a USSD code to dial</li>
-                  <li>3. Dial the code and approve payment</li>
-                  <li>4. Wallet credited instantly!</li>
-                </ol>
-                <p className="text-sm font-bold text-success pt-2 border-t border-primary/20 mt-3">
-                  ✓ Supports Orange Money & Africell Money
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
 
         {/* Submit Button */}
         <Button
