@@ -228,6 +228,18 @@ const Wallet = () => {
           </Button>
         </div>
 
+        {/* Info Banner */}
+        <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-accent/5">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <CheckCircle className="h-5 w-5 text-success flex-shrink-0" />
+              <p className="text-sm text-muted-foreground">
+                <strong className="text-foreground">Instant deposits</strong> via Orange Money & Africell Money. No admin approval needed!
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Transaction History */}
         <Card>
           <CardHeader>

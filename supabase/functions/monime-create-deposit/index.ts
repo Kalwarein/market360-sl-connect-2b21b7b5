@@ -84,9 +84,6 @@ Deno.serve(async (req) => {
       reference 
     });
 
-    // Calculate expiry time (10 minutes from now)
-    const expireTime = new Date(Date.now() + 10 * 60 * 1000).toISOString();
-
     // Call Monime API to create payment code
     const monimeResponse = await fetch(`${MONIME_API_URL}/v1/payment-codes`, {
       method: 'POST',
@@ -103,7 +100,6 @@ Deno.serve(async (req) => {
           currency: 'SLE',
           value: amountInCents,
         },
-        expireTime: expireTime,
         authorizedProviders: ['m17', 'm18'],
         metadata: {
           user_id: user.id,
