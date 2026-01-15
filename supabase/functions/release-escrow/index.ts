@@ -57,19 +57,21 @@ serve(async (req) => {
       );
     }
 
-    // Update order status
+    // Update order status FIRST (idempotency check)
     const { error: updateOrderError } = await supabase
       .from('orders')
       .update({ 
         status: 'completed',
         escrow_status: 'released'
       })
-      .eq('id', order_id);
+      .eq('id', order_id)
+      .eq('escrow_status', 'holding'); // Additional check for idempotency
 
     if (updateOrderError) throw updateOrderError;
 
     // Get seller's wallet
-    const { data: sellerWallet, error: walletError } = await supabase
+    let sellerWallet;
+    const { data: existingWallet, error: walletError } = await supabase
       .from('wallets')
       .select('id, balance_leones')
       .eq('user_id', order.seller_id)
@@ -84,54 +86,50 @@ serve(async (req) => {
         .single();
 
       if (createWalletError) throw createWalletError;
-      
-      // Use the newly created wallet
-      const { data: createdWallet } = await supabase
-        .from('wallets')
-        .select('id, balance_leones')
-        .eq('user_id', order.seller_id)
-        .single();
-        
-      if (!createdWallet) throw new Error('Failed to create wallet');
+      sellerWallet = newWallet;
+    } else {
+      sellerWallet = existingWallet;
     }
 
-    // Refetch wallet to ensure we have the latest data
-    const { data: currentWallet } = await supabase
-      .from('wallets')
-      .select('id, balance_leones')
-      .eq('user_id', order.seller_id)
-      .single();
+    if (!sellerWallet) throw new Error('Wallet not found');
 
-    if (!currentWallet) throw new Error('Wallet not found');
-
-    // Calculate amount after 2% fee
-    const escrowAmount = order.total_amount || 0;
-    const fee = escrowAmount * 0.02;
-    const amountToRelease = escrowAmount - fee;
+    // ========================================
+    // CRITICAL FIX: NO FEE DEDUCTION ON SALES
+    // Sellers receive 100% of product price
+    // Fees are ONLY applied on withdrawals
+    // ========================================
+    const escrowAmount = Number(order.total_amount) || 0;
+    const amountToRelease = escrowAmount; // FULL AMOUNT - NO FEE
 
     // Update seller wallet balance (using service role)
     const { error: balanceError } = await supabase
       .from('wallets')
       .update({ 
-        balance_leones: (currentWallet.balance_leones || 0) + amountToRelease 
+        balance_leones: Number(sellerWallet.balance_leones || 0) + amountToRelease 
       })
-      .eq('id', currentWallet.id);
+      .eq('id', sellerWallet.id);
 
     if (balanceError) {
       console.error('Balance update error:', balanceError);
       throw balanceError;
     }
 
-    // Create transaction record
+    // Create transaction record in transactions table
     const { error: transactionError } = await supabase
       .from('transactions')
       .insert({
-        wallet_id: currentWallet.id,
+        wallet_id: sellerWallet.id,
         type: 'earning',
         amount: amountToRelease,
         status: 'completed',
         reference: `Order ${order_id}`,
-        metadata: { order_id, fee_deducted: fee }
+        metadata: { 
+          order_id, 
+          fee_deducted: 0, // NO FEE ON EARNINGS
+          original_amount: escrowAmount,
+          product_title: order.products?.title || 'Unknown',
+          buyer_id: buyer_id
+        }
       });
 
     if (transactionError) {
@@ -139,21 +137,65 @@ serve(async (req) => {
       throw transactionError;
     }
 
+    // Also create entry in wallet_ledger for consistency
+    const { error: ledgerError } = await supabase
+      .from('wallet_ledger')
+      .insert({
+        user_id: order.seller_id,
+        transaction_type: 'earning',
+        amount: amountToRelease * 100, // Convert to cents for ledger
+        status: 'success',
+        reference: `Order ${order_id} - Sale earnings`,
+        metadata: { 
+          order_id, 
+          fee_deducted: 0,
+          original_amount: escrowAmount,
+          product_title: order.products?.title || 'Unknown',
+          buyer_id: buyer_id
+        }
+      });
+
+    if (ledgerError) {
+      console.error('Ledger error:', ledgerError);
+      // Don't throw - transactions table entry is primary
+    }
+
     // Create notification for seller
     await supabase.from('notifications').insert({
       user_id: order.seller_id,
       type: 'order',
       title: 'Payment Released! 🎉',
-      body: `Buyer confirmed delivery for ${order.products?.title}. Le ${amountToRelease.toFixed(2)} added to your wallet.`,
+      body: `Buyer confirmed delivery for ${order.products?.title}. Le ${amountToRelease.toLocaleString()} added to your wallet.`,
       link_url: `/seller/order/${order_id}`,
       metadata: { order_id, amount: amountToRelease }
     });
+
+    // Send SMS to seller about payment release
+    try {
+      const { data: sellerProfile } = await supabase
+        .from('profiles')
+        .select('phone')
+        .eq('id', order.seller_id)
+        .single();
+
+      if (sellerProfile?.phone) {
+        await supabase.functions.invoke('send-sms', {
+          body: {
+            to: sellerProfile.phone,
+            message: `💰 Market360 - Payment Released!\n\nBuyer confirmed delivery for ${order.products?.title}.\n\nLe ${amountToRelease.toLocaleString()} has been added to your wallet.\n\nWithdraw anytime at market360.app`
+          }
+        });
+      }
+    } catch (smsError) {
+      console.error('SMS notification error:', smsError);
+      // Don't fail the release for SMS errors
+    }
 
     return new Response(
       JSON.stringify({ 
         success: true, 
         amount_released: amountToRelease,
-        fee_deducted: fee 
+        fee_deducted: 0 // NO FEE ON EARNINGS
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
