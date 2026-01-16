@@ -202,6 +202,17 @@ const App = () => (
                 <Route path="/how-to-top-up" element={<ProtectedRoute><HowToTopUp /></ProtectedRoute>} />
                 <Route path="/product-management/:id" element={<ProtectedRoute><ProductManagement /></ProtectedRoute>} />
                 <Route path="/promote-product" element={<ProtectedRoute><PromoteProduct /></ProtectedRoute>} />
+                
+                {/* Finance Portal Routes */}
+                <Route path="/finance" element={<FinanceOverview />} />
+                <Route path="/finance/analytics" element={<FinanceAnalytics />} />
+                <Route path="/finance/users" element={<FinanceUsersWallets />} />
+                <Route path="/finance/users/:userId" element={<FinanceUserDetail />} />
+                <Route path="/finance/transactions" element={<FinanceTransactions />} />
+                <Route path="/finance/perks" element={<FinancePerksRevenue />} />
+                <Route path="/finance/fraud" element={<FinanceFraudRisk />} />
+                <Route path="/finance/settings" element={<FinanceSettings />} />
+                
                 <Route path="*" element={<NotFound />} />
                   </Routes>
                 </CartProvider>
