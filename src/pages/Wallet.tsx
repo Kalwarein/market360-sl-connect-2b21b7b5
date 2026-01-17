@@ -59,14 +59,27 @@ const Wallet = () => {
   const checkFrozenStatus = async () => {
     if (!user) return;
     
-    const { data: frozen } = await supabase
-      .from('wallet_freezes')
-      .select('id')
-      .eq('user_id', user.id)
-      .eq('is_active', true)
-      .maybeSingle();
-    
-    setIsFrozen(!!frozen);
+    try {
+      // Use RPC function for consistent freeze check
+      const { data: isFrozenResult, error } = await supabase
+        .rpc('is_wallet_frozen', { p_user_id: user.id });
+      
+      if (error) {
+        console.error('Error checking freeze status:', error);
+        // Fallback to direct query
+        const { data: frozen } = await supabase
+          .from('wallet_freezes')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('is_active', true)
+          .maybeSingle();
+        setIsFrozen(!!frozen);
+      } else {
+        setIsFrozen(!!isFrozenResult);
+      }
+    } catch (error) {
+      console.error('Error checking freeze status:', error);
+    }
   };
 
   const loadWalletData = async () => {
