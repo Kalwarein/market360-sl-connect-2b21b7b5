@@ -1,8 +1,7 @@
-import { ReactNode, useState, useEffect } from 'react';
+import { ReactNode, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { useToast } from '@/hooks/use-toast';
 import {
   LayoutDashboard,
   Wallet,
@@ -37,50 +36,7 @@ const navItems = [
 const FinanceLayout = ({ children, title, subtitle }: FinanceLayoutProps) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { toast } = useToast();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [isAuthorized, setIsAuthorized] = useState(false);
-
-  // Check admin authentication on mount
-  useEffect(() => {
-    const isAuthenticated = sessionStorage.getItem('admin_authenticated');
-    const authTime = sessionStorage.getItem('admin_auth_time');
-    
-    if (!isAuthenticated || !authTime) {
-      toast({
-        title: 'Authentication Required',
-        description: 'Please log in to access the Finance Portal',
-        variant: 'destructive',
-      });
-      navigate('/admin-auth');
-      return;
-    }
-
-    // Check if session expired (24 hours)
-    const elapsed = Date.now() - parseInt(authTime);
-    if (elapsed > 24 * 60 * 60 * 1000) {
-      sessionStorage.removeItem('admin_authenticated');
-      sessionStorage.removeItem('admin_auth_time');
-      toast({
-        title: 'Session Expired',
-        description: 'Please authenticate again',
-        variant: 'destructive',
-      });
-      navigate('/admin-auth');
-      return;
-    }
-
-    setIsAuthorized(true);
-  }, [navigate, toast]);
-
-  // Show nothing while checking auth
-  if (!isAuthorized) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-muted/30">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-muted/30">
