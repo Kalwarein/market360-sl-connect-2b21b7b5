@@ -54,40 +54,7 @@ serve(async (req) => {
     }
 
     const refundAmount = Number(order.total_amount);
-    const refundAmountInCents = Math.round(refundAmount * 100); // Convert to cents for ledger
-
-    // ========================================
-    // IDEMPOTENCY CHECK: Check if refund already exists
-    // ========================================
-    const { data: existingRefund } = await supabase
-      .from('wallet_ledger')
-      .select('id')
-      .eq('user_id', order.buyer_id)
-      .eq('transaction_type', 'refund')
-      .ilike('reference', `%${order_id}%`)
-      .eq('status', 'success')
-      .maybeSingle();
-
-    if (existingRefund) {
-      // Already processed - just update order status and return success
-      await supabase
-        .from('orders')
-        .update({ 
-          status: refund_type === 'dispute' ? 'disputed' : 'cancelled',
-          escrow_status: 'refunded'
-        })
-        .eq('id', order_id);
-      
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          message: 'Already processed',
-          refund_amount: refundAmount,
-          order_status: refund_type === 'dispute' ? 'disputed' : 'cancelled'
-        }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    const refundAmountInCents = refundAmount * 100; // Convert to cents for ledger
 
     // Update order status FIRST (idempotency check)
     const newStatus = refund_type === 'dispute' ? 'disputed' : 'cancelled';
@@ -110,68 +77,81 @@ serve(async (req) => {
     if (updateOrderError) throw updateOrderError;
 
     // ========================================
-    // CRITICAL: Create refund entry in wallet_ledger FIRST
-    // This is the source of truth for balance
+    // CRITICAL FIX: Use wallet_ledger for refunds
+    // This ensures ledger-based balance is correct
     // ========================================
-    const refundReasons = {
-      'buyer_cancel': `Order cancelled by buyer`,
-      'seller_decline': `Order declined by seller`,
-      'dispute': `Dispute refund - ${reason || 'No reason provided'}`
-    };
-
-    const { error: ledgerError } = await supabase
+    
+    // Generate unique reference for idempotency
+    const refundReference = `refund-${order_id}-${Date.now()}`;
+    
+    // Check if refund already exists (idempotency)
+    const { data: existingRefund } = await supabase
       .from('wallet_ledger')
-      .insert({
-        user_id: order.buyer_id,
-        transaction_type: 'refund',
-        amount: refundAmountInCents,
-        status: 'success',
-        reference: `Order #${order_id.slice(0, 8)} - ${refundReasons[refund_type]}`,
-        metadata: { 
-          order_id, 
-          refund_type, 
-          reason,
-          product_title: order.products?.title || 'Unknown',
-          original_amount: refundAmount
-        }
-      });
-
-    if (ledgerError) {
-      console.error('Ledger error:', ledgerError);
-      return new Response(
-        JSON.stringify({ error: 'Failed to process refund. Please try again.' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // ========================================
-    // Update wallets table for backward compatibility
-    // ========================================
-    const { data: buyerWallet } = await supabase
-      .from('wallets')
-      .select('id, balance_leones')
+      .select('id')
       .eq('user_id', order.buyer_id)
-      .single();
+      .eq('transaction_type', 'refund')
+      .ilike('reference', `%${order_id}%`)
+      .maybeSingle();
 
-    if (buyerWallet) {
-      await supabase
+    if (!existingRefund) {
+      // Create refund entry in wallet_ledger
+      const refundReasons = {
+        'buyer_cancel': `Order cancelled by buyer`,
+        'seller_decline': `Order declined by seller`,
+        'dispute': `Dispute refund - ${reason || 'No reason provided'}`
+      };
+
+      const { error: ledgerError } = await supabase
+        .from('wallet_ledger')
+        .insert({
+          user_id: order.buyer_id,
+          transaction_type: 'refund',
+          amount: refundAmountInCents,
+          status: 'success',
+          reference: `Order #${order_id.slice(0, 8)} - ${refundReasons[refund_type]}`,
+          metadata: { 
+            order_id, 
+            refund_type, 
+            reason,
+            product_title: order.products?.title || 'Unknown',
+            original_amount: refundAmount
+          }
+        });
+
+      if (ledgerError) {
+        console.error('Ledger error:', ledgerError);
+        throw ledgerError;
+      }
+
+      // Also update wallets table for backward compatibility
+      const { data: buyerWallet } = await supabase
         .from('wallets')
-        .update({ 
-          balance_leones: Number(buyerWallet.balance_leones) + refundAmount
-        })
-        .eq('id', buyerWallet.id);
+        .select('id, balance_leones')
+        .eq('user_id', order.buyer_id)
+        .single();
+
+      if (buyerWallet) {
+        await supabase
+          .from('wallets')
+          .update({ 
+            balance_leones: Number(buyerWallet.balance_leones) + refundAmount
+          })
+          .eq('id', buyerWallet.id);
+      }
 
       // Create transaction record for backward compatibility
-      await supabase
-        .from('transactions')
-        .insert({
-          wallet_id: buyerWallet.id,
-          type: 'refund',
-          amount: refundAmount,
-          status: 'completed',
-          reference: `Order #${order_id.slice(0, 8)} - ${refundReasons[refund_type]}`,
-          metadata: { order_id, refund_type, reason }
-        });
+      if (buyerWallet) {
+        await supabase
+          .from('transactions')
+          .insert({
+            wallet_id: buyerWallet.id,
+            type: 'refund',
+            amount: refundAmount,
+            status: 'completed',
+            reference: `Order #${order_id.slice(0, 8)} - ${refundReasons[refund_type]}`,
+            metadata: { order_id, refund_type, reason }
+          });
+      }
     }
 
     // Send notification to buyer
