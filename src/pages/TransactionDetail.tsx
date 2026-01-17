@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { ArrowLeft, Copy, Share2, Download, CheckCircle, XCircle, Clock, Loader2, ArrowDownCircle, ArrowUpCircle, Wallet } from 'lucide-react';
+import { ArrowLeft, Copy, Share2, Download, CheckCircle, XCircle, Clock, Loader2, ArrowDownCircle, ArrowUpCircle, Wallet, ShoppingBag, ExternalLink } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
@@ -24,6 +24,14 @@ interface Transaction {
   metadata: unknown;
 }
 
+interface OrderInfo {
+  id: string;
+  status: string;
+  total_amount: number;
+  product_title: string;
+  product_image: string;
+}
+
 const TransactionDetail = () => {
   const { transactionId } = useParams();
   const { user } = useAuth();
@@ -31,6 +39,8 @@ const TransactionDetail = () => {
   const [transaction, setTransaction] = useState<Transaction | null>(null);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
+  const [linkedOrder, setLinkedOrder] = useState<OrderInfo | null>(null);
+  const [balanceBeforeAfter, setBalanceBeforeAfter] = useState<{ before: number; after: number } | null>(null);
   const receiptRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -56,6 +66,71 @@ const TransactionDetail = () => {
       }
 
       setTransaction(data);
+
+      // Try to extract order info from metadata or reference
+      const metadata = typeof data.metadata === 'object' && data.metadata !== null
+        ? data.metadata as Record<string, unknown>
+        : null;
+      
+      const orderId = metadata?.order_id as string | undefined;
+      
+      if (orderId) {
+        const { data: orderData } = await supabase
+          .from('orders')
+          .select('id, status, total_amount, products(title, images)')
+          .eq('id', orderId)
+          .single();
+        
+        if (orderData) {
+          setLinkedOrder({
+            id: orderData.id,
+            status: orderData.status,
+            total_amount: orderData.total_amount,
+            product_title: (orderData.products as any)?.title || 'Unknown',
+            product_image: (orderData.products as any)?.images?.[0] || '/placeholder.svg'
+          });
+        }
+      }
+
+      // Calculate balance before/after this transaction
+      const { data: allTx } = await supabase
+        .from('wallet_ledger')
+        .select('id, amount, transaction_type, status, created_at')
+        .eq('user_id', user?.id)
+        .eq('status', 'success')
+        .order('created_at', { ascending: true });
+
+      if (allTx) {
+        let runningBalance = 0;
+        let balanceBefore = 0;
+        let balanceAfter = 0;
+        let found = false;
+
+        for (const tx of allTx) {
+          if (tx.id === transactionId) {
+            balanceBefore = runningBalance;
+            found = true;
+          }
+          
+          const amountInSLE = tx.amount / 100;
+          const isCredit = ['deposit', 'earning', 'refund'].includes(tx.transaction_type);
+          
+          if (isCredit) {
+            runningBalance += amountInSLE;
+          } else {
+            runningBalance -= amountInSLE;
+          }
+
+          if (found && tx.id === transactionId) {
+            balanceAfter = runningBalance;
+            break;
+          }
+        }
+
+        if (found) {
+          setBalanceBeforeAfter({ before: balanceBefore, after: balanceAfter });
+        }
+      }
     } catch (error) {
       console.error('Error loading transaction:', error);
       toast.error('Failed to load transaction');
@@ -114,6 +189,17 @@ const TransactionDetail = () => {
     }
   };
 
+  const getTransactionLabel = (type: string) => {
+    switch (type) {
+      case 'deposit': return 'Wallet Top-up';
+      case 'withdrawal': return 'Withdrawal';
+      case 'earning': return 'Sale Earnings';
+      case 'refund': return 'Order Refund';
+      case 'payment': return 'Order Payment';
+      default: return type;
+    }
+  };
+
   const isCredit = (type: string) => ['deposit', 'earning', 'refund'].includes(type);
 
   const exportReceipt = async () => {
@@ -129,7 +215,6 @@ const TransactionDetail = () => {
       
       const dataUrl = canvas.toDataURL('image/png');
       
-      // Create download link
       const link = document.createElement('a');
       link.download = `receipt-${transaction?.reference || transaction?.id}.png`;
       link.href = dataUrl;
@@ -172,7 +257,6 @@ const TransactionDetail = () => {
           });
           toast.success('Receipt shared successfully');
         } else {
-          // Fallback: download the file
           const dataUrl = canvas.toDataURL('image/png');
           const link = document.createElement('a');
           link.download = `receipt-${transaction?.reference || transaction?.id}.png`;
@@ -240,20 +324,65 @@ const TransactionDetail = () => {
               <CardTitle className="text-2xl">
                 {isCredit(transaction.transaction_type) ? '+' : '-'}SLE {amountInSLE.toLocaleString()}
               </CardTitle>
-              <p className="text-muted-foreground capitalize mt-1">
-                {transaction.transaction_type}
+              <p className="text-muted-foreground mt-1">
+                {getTransactionLabel(transaction.transaction_type)}
               </p>
               <div className="mt-3">
                 {getStatusBadge(transaction.status)}
               </div>
             </CardHeader>
             <CardContent className="pt-6 space-y-4">
+              {/* Balance Before/After (for successful transactions) */}
+              {balanceBeforeAfter && transaction.status === 'success' && (
+                <div className="bg-muted/50 p-4 rounded-lg space-y-2">
+                  <p className="text-sm font-medium text-muted-foreground mb-2">Balance Change</p>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">Before</span>
+                    <span className="font-medium">SLE {balanceBeforeAfter.before.toLocaleString()}</span>
+                  </div>
+                  <div className="flex items-center justify-center">
+                    {isCredit(transaction.transaction_type) ? (
+                      <ArrowDownCircle className="h-4 w-4 text-success" />
+                    ) : (
+                      <ArrowUpCircle className="h-4 w-4 text-primary" />
+                    )}
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">After</span>
+                    <span className="font-bold text-primary">SLE {balanceBeforeAfter.after.toLocaleString()}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Linked Order Card */}
+              {linkedOrder && (
+                <Card 
+                  className="cursor-pointer hover:bg-muted/50 transition-colors"
+                  onClick={() => navigate(`/order-detail/${linkedOrder.id}`)}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <img 
+                        src={linkedOrder.product_image} 
+                        alt={linkedOrder.product_title}
+                        className="w-12 h-12 rounded-lg object-cover"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">{linkedOrder.product_title}</p>
+                        <p className="text-xs text-muted-foreground capitalize">{linkedOrder.status}</p>
+                      </div>
+                      <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
               {/* Transaction Type */}
               <div className="flex items-center justify-between py-3 border-b">
                 <span className="text-muted-foreground">Type</span>
                 <div className="flex items-center gap-2">
                   {getTransactionIcon(transaction.transaction_type)}
-                  <span className="font-medium capitalize">{transaction.transaction_type}</span>
+                  <span className="font-medium">{getTransactionLabel(transaction.transaction_type)}</span>
                 </div>
               </div>
 
@@ -261,9 +390,27 @@ const TransactionDetail = () => {
               <div className="flex items-center justify-between py-3 border-b">
                 <span className="text-muted-foreground">Amount</span>
                 <span className={`font-bold text-lg ${isCredit(transaction.transaction_type) ? 'text-success' : 'text-foreground'}`}>
-                  SLE {amountInSLE.toLocaleString()}
+                  {isCredit(transaction.transaction_type) ? '+' : '-'}SLE {amountInSLE.toLocaleString()}
                 </span>
               </div>
+
+              {/* Fee Breakdown (for withdrawals) */}
+              {metadata?.fee && (
+                <>
+                  <div className="flex items-center justify-between py-3 border-b">
+                    <span className="text-muted-foreground">Gross Amount</span>
+                    <span className="font-medium">SLE {amountInSLE.toLocaleString()}</span>
+                  </div>
+                  <div className="flex items-center justify-between py-3 border-b">
+                    <span className="text-muted-foreground">Processing Fee (2%)</span>
+                    <span className="font-medium text-destructive">-SLE {((metadata.fee as number) / 100).toLocaleString()}</span>
+                  </div>
+                  <div className="flex items-center justify-between py-3 border-b">
+                    <span className="text-muted-foreground">Net Amount</span>
+                    <span className="font-bold text-primary">SLE {((metadata.net_amount as number || 0) / 100).toLocaleString()}</span>
+                  </div>
+                </>
+              )}
 
               {/* Status */}
               <div className="flex items-center justify-between py-3 border-b">
@@ -304,7 +451,7 @@ const TransactionDetail = () => {
                 <div className="flex items-center justify-between py-3 border-b">
                   <span className="text-muted-foreground">Reference</span>
                   <div className="flex items-center gap-2">
-                    <span className="font-mono text-sm">{transaction.reference}</span>
+                    <span className="font-mono text-sm max-w-[180px] truncate">{transaction.reference}</span>
                     <Button
                       variant="ghost"
                       size="icon"
@@ -379,11 +526,11 @@ const TransactionDetail = () => {
                 </div>
               )}
 
-              {/* Fee (from metadata) */}
-              {metadata?.fee && (
+              {/* Product Info (for payments/earnings) */}
+              {metadata?.product_title && (
                 <div className="flex items-center justify-between py-3 border-b">
-                  <span className="text-muted-foreground">Processing Fee</span>
-                  <span className="font-medium">SLE {((metadata.fee as number) / 100).toLocaleString()}</span>
+                  <span className="text-muted-foreground">Product</span>
+                  <span className="font-medium text-sm max-w-[180px] truncate">{metadata.product_title as string}</span>
                 </div>
               )}
 
@@ -434,6 +581,19 @@ const TransactionDetail = () => {
             Share
           </Button>
         </div>
+
+        {/* View Order Button (if linked) */}
+        {linkedOrder && (
+          <Button
+            variant="outline"
+            size="lg"
+            onClick={() => navigate(`/order-detail/${linkedOrder.id}`)}
+            className="w-full h-12 rounded-2xl"
+          >
+            <ShoppingBag className="mr-2 h-5 w-5" />
+            View Related Order
+          </Button>
+        )}
 
         {/* Back to Wallet */}
         <Button

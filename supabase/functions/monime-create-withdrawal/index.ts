@@ -20,9 +20,22 @@ Deno.serve(async (req) => {
     const monimeToken = Deno.env.get('MONIME_API_TOKEN')!;
     const financialAccountId = Deno.env.get('MONIME_FINANCIAL_ACCOUNT_ID');
 
+    console.log('Withdrawal function called');
+    console.log('Financial account ID configured:', financialAccountId);
+
+    // Financial account ID is REQUIRED for payouts
+    if (!financialAccountId) {
+      console.error('MONIME_FINANCIAL_ACCOUNT_ID not configured');
+      return new Response(
+        JSON.stringify({ success: false, error: 'Withdrawal service not configured. Please contact support.' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Get auth token from request
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
+      console.error('Missing authorization header');
       return new Response(
         JSON.stringify({ success: false, error: 'Missing authorization header' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -43,9 +56,13 @@ Deno.serve(async (req) => {
       );
     }
 
+    console.log('User authenticated:', user.id);
+
     // Parse request body
     const { amount, phone_number, provider_id } = await req.json();
     
+    console.log('Request body:', { amount, phone_number, provider_id });
+
     if (!amount || typeof amount !== 'number' || amount <= 0) {
       return new Response(
         JSON.stringify({ success: false, error: 'Invalid amount. Must be a positive number.' }),
@@ -82,13 +99,14 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (freezeData) {
+      console.log('Wallet is frozen for user:', user.id);
       return new Response(
         JSON.stringify({ success: false, error: 'Your wallet is frozen. Please contact support.' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Get wallet balance using the ledger function
+    // Get wallet balance using the ledger function (returns in cents)
     const { data: balanceData, error: balanceError } = await supabase
       .rpc('get_wallet_balance', { p_user_id: user.id });
 
@@ -100,7 +118,10 @@ Deno.serve(async (req) => {
       );
     }
 
-    const currentBalance = balanceData || 0;
+    // Balance is in cents from the RPC function
+    const currentBalanceInCents = balanceData || 0;
+    
+    // Amount from frontend is in SLE (not cents), convert to cents
     const amountInCents = Math.round(amount * 100);
     
     // Calculate 2% fee
@@ -108,24 +129,25 @@ Deno.serve(async (req) => {
     const feeInCents = Math.round(amountInCents * feePercentage);
     const amountToSendInCents = amountInCents - feeInCents;
 
-    console.log('Withdrawal request:', {
+    console.log('Withdrawal calculations:', {
       userId: user.id,
-      amount,
+      amountSLE: amount,
       amountInCents,
       feeInCents,
       amountToSendInCents,
-      currentBalance,
+      currentBalanceInCents,
       phoneNumber: phone_number,
       provider: selectedProvider,
     });
 
-    // Check sufficient balance
-    if (amountInCents > currentBalance) {
+    // Check sufficient balance (both in cents now)
+    if (amountInCents > currentBalanceInCents) {
+      console.log('Insufficient balance:', { amountInCents, currentBalanceInCents });
       return new Response(
         JSON.stringify({ 
           success: false, 
           error: 'Insufficient balance',
-          current_balance: currentBalance / 100,
+          current_balance: currentBalanceInCents / 100,
           requested_amount: amount,
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -136,38 +158,55 @@ Deno.serve(async (req) => {
     const reference = `WDR-${user.id.substring(0, 8)}-${Date.now()}`;
     const idempotencyKey = `withdrawal-${reference}`;
 
-    // Clean phone number (remove spaces, dashes, etc.)
-    const cleanPhone = phone_number.replace(/[\s\-\(\)]/g, '');
+    // Format phone number for Monime API
+    // Payout destination expects a phoneNumber (E.164), e.g. +23278000000
+    const digitsOnly = String(phone_number).replace(/\D/g, '');
 
-    // Call Monime API to create payout (send net amount after fee)
+    let national = digitsOnly;
+    if (national.startsWith('232')) national = national.substring(3);
+    if (national.startsWith('0')) national = national.substring(1);
+
+    if (national.length !== 8) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'Invalid phone number format. Please enter a Sierra Leone number like 076123456 or +23276123456.',
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const monimePhoneNumber = `+232${national}`;
+    console.log('Formatted phone number:', { input: phone_number, national, monimePhoneNumber });
+
+    // Build payout request body according to Monime API v1 specs
+    // IMPORTANT: source.financialAccountId is REQUIRED - must be fac-xxx, NOT spc-xxx (Space ID)
     const payoutBody: Record<string, unknown> = {
       amount: {
         currency: 'SLE',
-        value: amountToSendInCents, // Send net amount after 2% fee
+        value: amountToSendInCents, // Amount in cents (minor unit)
+      },
+      source: {
+        financialAccountId: financialAccountId, // Must be fac-xxx format
       },
       destination: {
         type: 'momo',
-        providerId: selectedProvider,
-        accountNumber: cleanPhone,
+        providerId: selectedProvider, // m17 = Orange, m18 = Africell
+        phoneNumber: monimePhoneNumber,
       },
+      // Monime expects metadata as a StringMap (all values must be strings)
       metadata: {
         user_id: user.id,
         type: 'withdrawal',
         platform: 'market360',
         reference: reference,
-        original_amount: amountInCents,
-        fee: feeInCents,
+        original_amount: String(amountInCents),
+        fee: String(feeInCents),
       },
     };
 
-    // Only add source if financial account ID is provided
-    if (financialAccountId) {
-      payoutBody.source = {
-        financialAccountId: financialAccountId,
-      };
-    }
-
-    console.log('Creating Monime payout:', payoutBody);
+    console.log('Creating Monime payout with financial account:', financialAccountId);
+    console.log('Payout body:', JSON.stringify(payoutBody, null, 2));
 
     const monimeResponse = await fetch(`${MONIME_API_URL}/v1/payouts`, {
       method: 'POST',
@@ -176,46 +215,76 @@ Deno.serve(async (req) => {
         'Content-Type': 'application/json',
         'Idempotency-Key': idempotencyKey,
         'Monime-Space-Id': MONIME_SPACE_ID,
-        'Monime-Version': 'caph.2025-06-20',
+        'Monime-Version': 'caph.2025-08-23', // Use latest API version
       },
       body: JSON.stringify(payoutBody),
     });
 
-    const monimeData = await monimeResponse.json();
-    console.log('Monime payout response:', JSON.stringify(monimeData, null, 2));
+    const monimeRaw = await monimeResponse.text();
+    let monimeData: any;
+    try {
+      monimeData = JSON.parse(monimeRaw);
+    } catch (_e) {
+      monimeData = { success: false, raw: monimeRaw };
+    }
+
+    console.log('Monime payout response status:', monimeResponse.status);
+    console.log('Monime payout response body:', JSON.stringify(monimeData, null, 2));
 
     if (!monimeResponse.ok || !monimeData.success) {
-      console.error('Monime API error:', monimeData);
+      // Extract error details
+      const messages = Array.isArray(monimeData?.messages) ? monimeData.messages : [];
+      const errorObj = monimeData?.error;
+      const failureDetail = monimeData?.result?.failureDetail;
+      
+      const errorDetails = 
+        failureDetail?.message || 
+        failureDetail?.code ||
+        (messages.length > 0 ? messages.join(', ') : null) ||
+        errorObj?.message || 
+        errorObj || 
+        'Unknown error from payment provider';
+
+      console.error('Monime API error:', { 
+        status: monimeResponse.status, 
+        errorDetails,
+        fullResponse: monimeData 
+      });
+      
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: 'Failed to initiate withdrawal',
-          details: monimeData.messages || monimeData.error || 'Unknown error'
+          error: 'Failed to initiate withdrawal. Please try again later.',
+          details: errorDetails,
+          monime_status: monimeResponse.status,
         }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     const payout = monimeData.result;
+    console.log('Payout created successfully:', { payoutId: payout.id, status: payout.status });
 
-    // Create pending ledger entry (debit full amount including fee)
+    // Create pending ledger entry (full amount deducted from wallet)
+    // Status is 'pending' until webhook confirms completion
     const { data: ledgerEntry, error: ledgerError } = await supabase
       .from('wallet_ledger')
       .insert({
         user_id: user.id,
         transaction_type: 'withdrawal',
-        amount: amountInCents, // Full amount deducted from wallet
-        status: 'processing', // Processing because payout is initiated
+        amount: amountInCents, // Full amount deducted from wallet balance
+        status: 'pending', // Will be updated by webhook to 'success' or 'failed'
         provider: 'monime',
         reference: reference,
         monime_id: payout.id,
         metadata: {
           payout_status: payout.status,
-          destination_phone: cleanPhone,
+          destination_phone: monimePhoneNumber,
           destination_provider: selectedProvider,
+          provider_name: selectedProvider === 'm17' ? 'Orange Money' : 'Africell Money',
           created_via: 'api',
-          fee: feeInCents,
-          amount_sent: amountToSendInCents,
+          fee_cents: feeInCents,
+          amount_sent_cents: amountToSendInCents,
           fee_percentage: 2,
         },
       })
@@ -224,11 +293,12 @@ Deno.serve(async (req) => {
 
     if (ledgerError) {
       console.error('Ledger insert error:', ledgerError);
-      // Note: Payout was already initiated with Monime - webhook will handle it
+      // Payout was already initiated - webhook should still handle it
+      // But warn the user
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: 'Failed to create transaction record. Payout may still process.' 
+          error: 'Failed to create transaction record. Your withdrawal may still process - check your mobile money account.' 
         }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -238,6 +308,7 @@ Deno.serve(async (req) => {
       ledgerId: ledgerEntry.id,
       payoutId: payout.id,
       reference,
+      status: 'pending',
     });
 
     return new Response(
@@ -249,12 +320,12 @@ Deno.serve(async (req) => {
           amount: amount,
           fee: feeInCents / 100,
           amount_to_receive: amountToSendInCents / 100,
-          status: 'processing',
+          status: 'pending',
           destination: {
-            phone: cleanPhone,
+            phone: monimePhoneNumber,
             provider: selectedProvider === 'm17' ? 'Orange Money' : 'Africell Money',
           },
-          message: `Withdrawal initiated. You will receive SLE ${(amountToSendInCents / 100).toLocaleString()} shortly (2% fee applied).`,
+          message: `Withdrawal initiated. You will receive SLE ${(amountToSendInCents / 100).toLocaleString()} shortly (2% processing fee applied).`,
         },
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

@@ -85,6 +85,16 @@ import AdminUserWallet from "./pages/AdminUserWallet";
 import AdminStoreAppealDetail from "./pages/AdminStoreAppealDetail";
 import AdminWebhookStatus from "./pages/AdminWebhookStatus";
 
+// Finance Portal Pages
+import FinanceOverview from "./pages/finance/FinanceOverview";
+import FinanceAnalytics from "./pages/finance/FinanceAnalytics";
+import FinanceUsersWallets from "./pages/finance/FinanceUsersWallets";
+import FinanceUserDetail from "./pages/finance/FinanceUserDetail";
+import FinanceTransactions from "./pages/finance/FinanceTransactions";
+import FinancePerksRevenue from "./pages/finance/FinancePerksRevenue";
+import FinanceFraudRisk from "./pages/finance/FinanceFraudRisk";
+import FinanceSettings from "./pages/finance/FinanceSettings";
+
 // Configure QueryClient with smart caching defaults
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -192,6 +202,17 @@ const App = () => (
                 <Route path="/how-to-top-up" element={<ProtectedRoute><HowToTopUp /></ProtectedRoute>} />
                 <Route path="/product-management/:id" element={<ProtectedRoute><ProductManagement /></ProtectedRoute>} />
                 <Route path="/promote-product" element={<ProtectedRoute><PromoteProduct /></ProtectedRoute>} />
+                
+                {/* Finance Portal Routes */}
+                <Route path="/finance" element={<FinanceOverview />} />
+                <Route path="/finance/analytics" element={<FinanceAnalytics />} />
+                <Route path="/finance/users" element={<FinanceUsersWallets />} />
+                <Route path="/finance/users/:userId" element={<FinanceUserDetail />} />
+                <Route path="/finance/transactions" element={<FinanceTransactions />} />
+                <Route path="/finance/perks" element={<FinancePerksRevenue />} />
+                <Route path="/finance/fraud" element={<FinanceFraudRisk />} />
+                <Route path="/finance/settings" element={<FinanceSettings />} />
+                
                 <Route path="*" element={<NotFound />} />
                   </Routes>
                 </CartProvider>

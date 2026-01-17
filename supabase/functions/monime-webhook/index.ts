@@ -38,6 +38,7 @@ Deno.serve(async (req) => {
       eventId,
       eventType,
       object: payload?.object,
+      dataId: eventData?.id,
     });
 
     if (!eventType) {
@@ -76,18 +77,22 @@ Deno.serve(async (req) => {
     // Process based on event type
     let processed = false;
 
+    console.log('Processing event type:', eventType);
+
+    // Deposit events (payment codes)
     if (eventType === 'payment_code.processed' || eventType === 'payment_code.completed') {
-      // Deposit completed - credit the wallet
       processed = await handleDepositSuccess(supabase, eventData);
     } else if (eventType === 'payment_code.expired' || eventType === 'payment_code.cancelled') {
-      // Deposit failed/expired
       processed = await handleDepositFailed(supabase, eventData, eventType);
-    } else if (eventType === 'payout.completed') {
-      // Withdrawal completed
+    } 
+    // Payout events (withdrawals)
+    else if (eventType === 'payout.completed' || eventType === 'payout.processed') {
       processed = await handlePayoutSuccess(supabase, eventData);
     } else if (eventType === 'payout.failed') {
-      // Withdrawal failed - reverse the ledger entry
       processed = await handlePayoutFailed(supabase, eventData);
+    } else if (eventType === 'payout.pending' || eventType === 'payout.processing') {
+      // Update status but don't finalize
+      processed = await handlePayoutPending(supabase, eventData, eventType);
     } else {
       console.log('Unhandled event type:', eventType);
     }
@@ -110,7 +115,6 @@ Deno.serve(async (req) => {
 
 async function handleDepositSuccess(supabase: any, eventData: any): Promise<boolean> {
   try {
-    // Find the ledger entry by payment code ID or reference
     const monimeId = eventData.id || eventData.paymentCodeId;
     const reference = eventData.reference || eventData.metadata?.reference;
 
@@ -158,12 +162,21 @@ async function handleDepositSuccess(supabase: any, eventData: any): Promise<bool
     }
 
     // Create notification for user
+    const amountFormatted = (ledgerEntry.amount / 100).toLocaleString();
     await supabase.from('notifications').insert({
       user_id: ledgerEntry.user_id,
       type: 'system',
-      title: 'Deposit Successful',
-      body: `Your deposit of SLE ${(ledgerEntry.amount / 100).toLocaleString()} has been credited to your wallet.`,
+      title: '💰 Deposit Received!',
+      body: `SLE ${amountFormatted} has been added to your wallet.`,
+      link_url: '/wallet/activity',
       metadata: { ledger_id: ledgerEntry.id, type: 'deposit_success' },
+    });
+
+    // Send push notification
+    await sendPushNotification(supabase, ledgerEntry.user_id, {
+      title: '💰 Deposit Received!',
+      body: `SLE ${amountFormatted} has been added to your wallet.`,
+      link_url: '/wallet/activity',
     });
 
     console.log('Deposit success processed for user:', ledgerEntry.user_id);
@@ -226,9 +239,11 @@ async function handleDepositFailed(supabase: any, eventData: any, reason: string
 async function handlePayoutSuccess(supabase: any, eventData: any): Promise<boolean> {
   try {
     const monimeId = eventData.id || eventData.payoutId;
+    const destinationRef = eventData.destination?.transactionReference;
 
-    console.log('Processing payout success:', { monimeId });
+    console.log('Processing payout success:', { monimeId, destinationRef });
 
+    // Find the ledger entry by monime_id
     const { data: ledgerEntry, error: fetchError } = await supabase
       .from('wallet_ledger')
       .select('*')
@@ -238,11 +253,11 @@ async function handlePayoutSuccess(supabase: any, eventData: any): Promise<boole
       .maybeSingle();
 
     if (fetchError || !ledgerEntry) {
-      console.error('Ledger entry not found for payout:', fetchError, monimeId);
+      console.error('Ledger entry not found for payout:', fetchError, { monimeId });
       return false;
     }
 
-    // Update ledger entry to success
+    // Update ledger entry to success - funds have left the system
     const { error: updateError } = await supabase
       .from('wallet_ledger')
       .update({
@@ -250,7 +265,8 @@ async function handlePayoutSuccess(supabase: any, eventData: any): Promise<boole
         metadata: {
           ...ledgerEntry.metadata,
           completed_at: new Date().toISOString(),
-          destination_reference: eventData.destination?.transactionReference,
+          destination_reference: destinationRef,
+          payout_status: 'completed',
         },
       })
       .eq('id', ledgerEntry.id);
@@ -261,12 +277,23 @@ async function handlePayoutSuccess(supabase: any, eventData: any): Promise<boole
     }
 
     // Create notification for user
+    const amountFormatted = (ledgerEntry.amount / 100).toLocaleString();
+    const providerName = ledgerEntry.metadata?.provider_name || 'mobile money';
+    
     await supabase.from('notifications').insert({
       user_id: ledgerEntry.user_id,
       type: 'system',
-      title: 'Withdrawal Successful',
-      body: `Your withdrawal of SLE ${(ledgerEntry.amount / 100).toLocaleString()} has been sent to your mobile money account.`,
+      title: '✅ Withdrawal Completed!',
+      body: `SLE ${amountFormatted} has been sent to your ${providerName} account.`,
+      link_url: '/wallet/activity',
       metadata: { ledger_id: ledgerEntry.id, type: 'withdrawal_success' },
+    });
+
+    // Send push notification
+    await sendPushNotification(supabase, ledgerEntry.user_id, {
+      title: '✅ Withdrawal Completed!',
+      body: `SLE ${amountFormatted} has been sent to your ${providerName} account.`,
+      link_url: '/wallet/activity',
     });
 
     console.log('Payout success processed for user:', ledgerEntry.user_id);
@@ -281,10 +308,12 @@ async function handlePayoutFailed(supabase: any, eventData: any): Promise<boolea
   try {
     const monimeId = eventData.id || eventData.payoutId;
     const failureDetail = eventData.failureDetail || {};
-    const failureMessage = failureDetail.message || failureDetail.explanation || failureDetail.code;
+    const failureCode = failureDetail.code || 'unknown';
+    const failureMessage = failureDetail.message || failureDetail.explanation || failureCode;
 
-    console.log('Processing payout failure:', { monimeId, failureDetail });
+    console.log('Processing payout failure:', { monimeId, failureCode, failureMessage });
 
+    // Find the ledger entry
     const { data: ledgerEntry, error: fetchError } = await supabase
       .from('wallet_ledger')
       .select('*')
@@ -294,30 +323,42 @@ async function handlePayoutFailed(supabase: any, eventData: any): Promise<boolea
       .maybeSingle();
 
     if (fetchError || !ledgerEntry) {
-      console.log('No pending withdrawal found to fail');
+      console.log('No pending withdrawal found to fail:', { monimeId });
       return false;
     }
 
-    // Update ledger entry to failed (funds will be returned to balance)
-    await supabase
+    // Update ledger entry to failed
+    // This is CRITICAL: By marking as 'failed', the get_wallet_balance function
+    // will NOT deduct this amount from the balance (since it only counts 'success' status)
+    // This effectively "refunds" the balance automatically
+    const { error: updateError } = await supabase
       .from('wallet_ledger')
       .update({
         status: 'failed',
         metadata: {
           ...ledgerEntry.metadata,
           failed_at: new Date().toISOString(),
-          failure_code: failureDetail.code,
+          failure_code: failureCode,
           failure_message: failureMessage,
+          payout_status: 'failed',
         },
       })
       .eq('id', ledgerEntry.id);
 
-    // Notify user
+    if (updateError) {
+      console.error('Failed to update ledger entry:', updateError);
+      return false;
+    }
+
+    // Notify user about the failure
+    const amountFormatted = (ledgerEntry.amount / 100).toLocaleString();
+    
     await supabase.from('notifications').insert({
       user_id: ledgerEntry.user_id,
       type: 'system',
-      title: 'Withdrawal Failed',
-      body: `Your withdrawal of SLE ${(ledgerEntry.amount / 100).toLocaleString()} could not be completed. The funds remain in your wallet.`,
+      title: '❌ Withdrawal Failed',
+      body: `Your withdrawal of SLE ${amountFormatted} could not be completed. The funds remain in your wallet.`,
+      link_url: '/wallet/activity',
       metadata: { 
         ledger_id: ledgerEntry.id, 
         type: 'withdrawal_failed',
@@ -325,10 +366,81 @@ async function handlePayoutFailed(supabase: any, eventData: any): Promise<boolea
       },
     });
 
-    console.log('Payout marked as failed:', ledgerEntry.id);
+    // Send push notification
+    await sendPushNotification(supabase, ledgerEntry.user_id, {
+      title: '❌ Withdrawal Failed',
+      body: `Your withdrawal of SLE ${amountFormatted} could not be completed. The funds remain in your wallet.`,
+      link_url: '/wallet/activity',
+    });
+
+    console.log('Payout marked as failed, balance restored for user:', ledgerEntry.user_id);
     return true;
   } catch (error) {
     console.error('Error processing payout failure:', error);
     return false;
+  }
+}
+
+async function handlePayoutPending(supabase: any, eventData: any, status: string): Promise<boolean> {
+  try {
+    const monimeId = eventData.id || eventData.payoutId;
+
+    console.log('Processing payout status update:', { monimeId, status });
+
+    // Find the ledger entry
+    const { data: ledgerEntry, error: fetchError } = await supabase
+      .from('wallet_ledger')
+      .select('*')
+      .eq('monime_id', monimeId)
+      .eq('transaction_type', 'withdrawal')
+      .eq('status', 'pending')
+      .maybeSingle();
+
+    if (fetchError || !ledgerEntry) {
+      console.log('No pending withdrawal found to update:', { monimeId });
+      return false;
+    }
+
+    // Update to processing status
+    await supabase
+      .from('wallet_ledger')
+      .update({
+        status: 'processing',
+        metadata: {
+          ...ledgerEntry.metadata,
+          processing_at: new Date().toISOString(),
+          payout_status: status.replace('payout.', ''),
+        },
+      })
+      .eq('id', ledgerEntry.id);
+
+    console.log('Payout status updated to processing:', ledgerEntry.id);
+    return true;
+  } catch (error) {
+    console.error('Error processing payout pending:', error);
+    return false;
+  }
+}
+
+async function sendPushNotification(supabase: any, userId: string, notification: { title: string; body: string; link_url: string }) {
+  try {
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    
+    await fetch(`${supabaseUrl}/functions/v1/send-onesignal-notification`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${serviceKey}`,
+      },
+      body: JSON.stringify({
+        user_id: userId,
+        title: notification.title,
+        body: notification.body,
+        link_url: notification.link_url,
+      }),
+    });
+  } catch (error) {
+    console.error('Failed to send push notification:', error);
   }
 }
