@@ -1,14 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowLeft, Phone, Loader2, CheckCircle, Copy, RefreshCw, Snowflake } from 'lucide-react';
+import { ArrowLeft, Phone, Loader2, CheckCircle, Copy, RefreshCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import FrozenWalletOverlay from '@/components/FrozenWalletOverlay';
 
 const QUICK_AMOUNTS = [10, 100, 200, 500];
 
@@ -26,34 +25,6 @@ const Deposit = () => {
   const [amount, setAmount] = useState('');
   const [loading, setLoading] = useState(false);
   const [depositResult, setDepositResult] = useState<DepositResult | null>(null);
-  const [isFrozen, setIsFrozen] = useState(false);
-  const [checkingFreeze, setCheckingFreeze] = useState(true);
-
-  useEffect(() => {
-    checkFrozenStatus();
-  }, [user]);
-
-  const checkFrozenStatus = async () => {
-    if (!user) {
-      setCheckingFreeze(false);
-      return;
-    }
-    
-    try {
-      const { data: frozen } = await supabase
-        .from('wallet_freezes')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('is_active', true)
-        .maybeSingle();
-      
-      setIsFrozen(!!frozen);
-    } catch (error) {
-      console.error('Error checking freeze status:', error);
-    } finally {
-      setCheckingFreeze(false);
-    }
-  };
 
   const handleQuickAmount = (value: number) => {
     setAmount(value.toString());
@@ -113,54 +84,6 @@ const Deposit = () => {
     setDepositResult(null);
     setAmount('');
   };
-
-  // Loading state while checking freeze status
-  if (checkingFreeze) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  // Frozen wallet state
-  if (isFrozen) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-cyan-50 to-blue-100 dark:from-blue-950 dark:via-cyan-950 dark:to-blue-900 pb-24">
-        <div className="sticky top-0 z-10 bg-card/95 backdrop-blur-lg border-b border-border/50 shadow-sm">
-          <div className="max-w-2xl mx-auto px-4 py-4 flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate('/wallet')}
-              className="rounded-full hover:bg-primary/10"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <div>
-              <h1 className="text-xl font-bold text-foreground">Top Up Wallet</h1>
-              <p className="text-sm text-muted-foreground">Add funds with Mobile Money</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="max-w-2xl mx-auto px-4 py-8">
-          <Card className="border-4 border-blue-300/50 shadow-2xl relative overflow-hidden">
-            <FrozenWalletOverlay message="Your wallet is frozen and cannot receive deposits. Please contact support for assistance." />
-            <CardContent className="p-12 h-64" />
-          </Card>
-          
-          <Button
-            variant="outline"
-            onClick={() => navigate('/wallet')}
-            className="w-full h-14 rounded-2xl font-bold text-base border-2 mt-6"
-          >
-            Back to Wallet
-          </Button>
-        </div>
-      </div>
-    );
-  }
 
   // Show USSD code screen after successful deposit initiation
   if (depositResult) {

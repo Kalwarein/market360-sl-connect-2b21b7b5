@@ -11,12 +11,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, MapPin, Wallet, AlertCircle, Shield, Loader2 } from "lucide-react";
+import { ArrowLeft, MapPin, Wallet, AlertCircle, Shield } from "lucide-react";
 import { NumericInput } from "@/components/NumericInput";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SIERRA_LEONE_REGIONS, getAllDistricts } from "@/lib/sierraLeoneData";
 import { sendOrderConfirmationEmail, sendNewOrderSellerEmail } from "@/lib/emailService";
-import FrozenWalletOverlay from "@/components/FrozenWalletOverlay";
 
 export default function Checkout() {
   const navigate = useNavigate();
@@ -28,8 +27,6 @@ export default function Checkout() {
   const [loadingBalance, setLoadingBalance] = useState(true);
   const [showInsufficientModal, setShowInsufficientModal] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false); // Prevent double-clicks
-  const [isFrozen, setIsFrozen] = useState(false);
-  const [checkingFreeze, setCheckingFreeze] = useState(true);
   
   const [deliveryInfo, setDeliveryInfo] = useState({
     name: "",
@@ -46,30 +43,7 @@ export default function Checkout() {
       navigate("/cart");
     }
     loadWalletBalance();
-    checkFrozenStatus();
   }, [items, navigate]);
-
-  const checkFrozenStatus = async () => {
-    if (!user) {
-      setCheckingFreeze(false);
-      return;
-    }
-    
-    try {
-      const { data: frozen } = await supabase
-        .from('wallet_freezes')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('is_active', true)
-        .maybeSingle();
-      
-      setIsFrozen(!!frozen);
-    } catch (error) {
-      console.error('Error checking freeze status:', error);
-    } finally {
-      setCheckingFreeze(false);
-    }
-  };
 
   const loadWalletBalance = async () => {
     if (!user) return;
@@ -101,16 +75,6 @@ export default function Checkout() {
     // ========================================
     if (isProcessing || loading) {
       console.log('Order already processing, ignoring click');
-      return;
-    }
-
-    // Check if wallet is frozen
-    if (isFrozen) {
-      toast({
-        title: "Wallet Frozen",
-        description: "Your wallet is frozen. Please contact support.",
-        variant: "destructive",
-      });
       return;
     }
 
@@ -458,16 +422,7 @@ export default function Checkout() {
     }
   };
 
-  // Loading state
-  if (checkingFreeze) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  const isBalanceSufficient = walletBalance >= totalPrice && !isFrozen;
+  const isBalanceSufficient = walletBalance >= totalPrice;
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -487,11 +442,10 @@ export default function Checkout() {
 
       <div className="max-w-4xl mx-auto p-4 space-y-4">
         {/* Wallet Balance Card - Now the payment method */}
-        <Card className={`p-4 border-2 ${isFrozen ? 'border-blue-300 bg-blue-50/50' : 'border-primary bg-primary/5'} relative overflow-hidden`}>
-          {isFrozen && <FrozenWalletOverlay message="Your wallet is frozen. You cannot place orders." />}
+        <Card className="p-4 border-2 border-primary bg-primary/5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className={`w-12 h-12 rounded-full ${isFrozen ? 'bg-blue-500' : 'bg-primary'} flex items-center justify-center`}>
+              <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center">
                 <Wallet className="h-6 w-6 text-primary-foreground" />
               </div>
               <div>
