@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { ArrowLeft, Wallet as WalletIcon, ArrowUpCircle, ArrowDownCircle, Clock, RefreshCw, CheckCircle, XCircle, Loader2, BarChart3 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
+import FrozenWalletOverlay from '@/components/FrozenWalletOverlay';
 
 interface LedgerEntry {
   id: string;
@@ -25,10 +26,12 @@ const Wallet = () => {
   const [transactions, setTransactions] = useState<LedgerEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [isFrozen, setIsFrozen] = useState(false);
 
   useEffect(() => {
     if (user) {
       loadWalletData();
+      checkFrozenStatus();
       // Subscribe to realtime updates on wallet_ledger
       const channel = supabase
         .channel('wallet-ledger-changes')
@@ -52,6 +55,19 @@ const Wallet = () => {
       };
     }
   }, [user]);
+
+  const checkFrozenStatus = async () => {
+    if (!user) return;
+    
+    const { data: frozen } = await supabase
+      .from('wallet_freezes')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('is_active', true)
+      .maybeSingle();
+    
+    setIsFrozen(!!frozen);
+  };
 
   const loadWalletData = async () => {
     try {
@@ -189,7 +205,8 @@ const Wallet = () => {
 
       <div className="p-6 space-y-6">
         {/* Balance Card */}
-        <Card className="bg-gradient-to-br from-primary to-primary-hover text-white shadow-lg">
+        <Card className="bg-gradient-to-br from-primary to-primary-hover text-white shadow-lg relative overflow-hidden">
+          {isFrozen && <FrozenWalletOverlay />}
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
@@ -211,8 +228,9 @@ const Wallet = () => {
         <div className="grid grid-cols-2 gap-4">
           <Button
             size="lg"
-            onClick={() => navigate('/deposit')}
-            className="h-16 text-base font-semibold rounded-2xl shadow-lg shadow-primary/30"
+            onClick={() => !isFrozen && navigate('/deposit')}
+            disabled={isFrozen}
+            className={`h-16 text-base font-semibold rounded-2xl shadow-lg shadow-primary/30 ${isFrozen ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             <ArrowUpCircle className="mr-2 h-5 w-5" />
             Top Up
@@ -220,8 +238,9 @@ const Wallet = () => {
           <Button
             size="lg"
             variant="outline"
-            onClick={() => navigate('/withdrawal')}
-            className="h-16 text-base font-semibold rounded-2xl border-2"
+            onClick={() => !isFrozen && navigate('/withdrawal')}
+            disabled={isFrozen}
+            className={`h-16 text-base font-semibold rounded-2xl border-2 ${isFrozen ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             <ArrowDownCircle className="mr-2 h-5 w-5" />
             Withdraw
