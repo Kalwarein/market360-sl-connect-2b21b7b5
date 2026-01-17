@@ -4,12 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
-import { AlertCircle, ArrowLeft, Wallet, Loader2, CheckCircle, Phone, AlertTriangle, Snowflake } from 'lucide-react';
+import { AlertCircle, ArrowLeft, Wallet, Loader2, CheckCircle, Phone, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
-import FrozenWalletOverlay from '@/components/FrozenWalletOverlay';
 
 type Provider = 'm17' | 'm18';
 
@@ -23,44 +22,10 @@ const Withdrawal = () => {
   const [currentBalance, setCurrentBalance] = useState(0);
   const [detectedProvider, setDetectedProvider] = useState<Provider | null>(null);
   const [withdrawalSuccess, setWithdrawalSuccess] = useState(false);
-  const [isFrozen, setIsFrozen] = useState(false);
-  const [checkingFreeze, setCheckingFreeze] = useState(true);
 
   useEffect(() => {
     loadBalance();
-    checkFrozenStatus();
   }, [user]);
-
-  const checkFrozenStatus = async () => {
-    if (!user) {
-      setCheckingFreeze(false);
-      return;
-    }
-    
-    try {
-      // Use RPC function for consistent freeze check
-      const { data: isFrozenResult, error } = await supabase
-        .rpc('is_wallet_frozen', { p_user_id: user.id });
-      
-      if (error) {
-        console.error('Error checking freeze status:', error);
-        // Fallback to direct query
-        const { data: frozen } = await supabase
-          .from('wallet_freezes')
-          .select('id')
-          .eq('user_id', user.id)
-          .eq('is_active', true)
-          .maybeSingle();
-        setIsFrozen(!!frozen);
-      } else {
-        setIsFrozen(!!isFrozenResult);
-      }
-    } catch (error) {
-      console.error('Error checking freeze status:', error);
-    } finally {
-      setCheckingFreeze(false);
-    }
-  };
 
   // Detect provider based on phone number
   const detectProvider = (phoneNumber: string): Provider | null => {
@@ -101,7 +66,7 @@ const Withdrawal = () => {
     try {
       setLoadingBalance(true);
       
-      // Use the ledger-based balance function (returns balance in cents)
+      // Use the ledger-based balance function
       const { data, error } = await supabase.rpc('get_wallet_balance', { 
         p_user_id: user.id 
       });
@@ -115,14 +80,10 @@ const Withdrawal = () => {
           .eq('user_id', user.id)
           .maybeSingle();
         
-        // Old table stores balance in SLE directly
         setCurrentBalance(walletData?.balance_leones || 0);
       } else {
-        // RPC returns balance in cents, convert to SLE for display
-        const balanceInCents = data || 0;
-        const balanceInSLE = balanceInCents / 100;
-        console.log('Balance loaded:', { balanceInCents, balanceInSLE });
-        setCurrentBalance(balanceInSLE);
+        // Balance from ledger is in cents, convert to SLE
+        setCurrentBalance((data || 0) / 100);
       }
     } catch (error) {
       console.error('Error loading balance:', error);
@@ -184,54 +145,6 @@ const Withdrawal = () => {
       setLoading(false);
     }
   };
-
-  // Loading state while checking freeze status
-  if (checkingFreeze) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  // Frozen wallet state
-  if (isFrozen) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-cyan-50 to-blue-100 dark:from-blue-950 dark:via-cyan-950 dark:to-blue-900 pb-24">
-        <div className="sticky top-0 z-10 bg-card/95 backdrop-blur-lg border-b border-border/50 shadow-sm">
-          <div className="max-w-2xl mx-auto px-4 py-4 flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate('/wallet')}
-              className="rounded-full hover:bg-primary/10"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <div>
-              <h1 className="text-xl font-bold text-foreground">Withdraw Funds</h1>
-              <p className="text-sm text-muted-foreground">Send to Mobile Money</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="max-w-2xl mx-auto px-4 py-8">
-          <Card className="border-4 border-blue-300/50 shadow-2xl relative overflow-hidden">
-            <FrozenWalletOverlay message="Your wallet is frozen and cannot process withdrawals. Please contact support for assistance." />
-            <CardContent className="p-12 h-64" />
-          </Card>
-          
-          <Button
-            variant="outline"
-            onClick={() => navigate('/wallet')}
-            className="w-full h-14 rounded-2xl font-bold text-base border-2 mt-6"
-          >
-            Back to Wallet
-          </Button>
-        </div>
-      </div>
-    );
-  }
 
   // Success screen
   if (withdrawalSuccess) {

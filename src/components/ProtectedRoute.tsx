@@ -109,7 +109,12 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     return <Navigate to="/moderation" replace />;
   }
 
-  // No longer blocking - onboarding prompts will be shown in-app instead
+  // Check onboarding completion (allow access to onboarding page itself)
+  const currentPath = window.location.pathname;
+  if (!onboardingCompleted && currentPath !== '/onboarding') {
+    return <Navigate to="/onboarding" replace />;
+  }
+
   return <>{children}</>;
 };
 

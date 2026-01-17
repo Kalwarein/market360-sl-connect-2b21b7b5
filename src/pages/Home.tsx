@@ -14,7 +14,6 @@ import { MarketplaceProductCard } from '@/components/MarketplaceProductCard';
 import { StoreCard } from '@/components/StoreCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { GuidedTour } from '@/components/GuidedTour';
-import OnboardingPrompt from '@/components/OnboardingPrompt';
 import { useScrollRestoration } from '@/hooks/useScrollRestoration';
 
 interface Product {
@@ -487,7 +486,6 @@ const Home = () => {
   return (
     <div className="min-h-screen bg-background overflow-x-hidden pb-20">
       <GuidedTour />
-      <OnboardingPrompt />
       {/* Header - Fixed */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-b border-border shadow-md">
         <div className="max-w-7xl mx-auto px-4 py-3">

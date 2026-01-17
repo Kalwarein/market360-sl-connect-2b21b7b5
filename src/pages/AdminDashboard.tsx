@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { 
   Shield, Users, Store, Package, ShoppingBag, 
   FileText, MessageSquare, CheckCircle, XCircle, Clock,
-  Wallet, Radio, AlertCircle, AlertTriangle, Webhook, TrendingUp
+  Wallet, Radio, AlertCircle, AlertTriangle, Webhook
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -333,15 +333,6 @@ const AdminDashboard = () => {
             >
               <Webhook className="h-6 w-6" />
               <span className="text-xs font-semibold">Webhooks</span>
-            </Button>
-            
-            <Button
-              size="lg"
-              onClick={() => navigate('/finance')}
-              className="h-auto flex-col gap-2 py-4 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white border-0 col-span-2 sm:col-span-4"
-            >
-              <TrendingUp className="h-6 w-6" />
-              <span className="text-xs font-semibold">Finance Portal</span>
             </Button>
           </div>
         </div>
