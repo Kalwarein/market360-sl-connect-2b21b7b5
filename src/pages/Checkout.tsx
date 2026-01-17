@@ -56,23 +56,14 @@ export default function Checkout() {
     }
     
     try {
-      // Use RPC function for consistent freeze check
-      const { data: isFrozenResult, error } = await supabase
-        .rpc('is_wallet_frozen', { p_user_id: user.id });
+      const { data: frozen } = await supabase
+        .from('wallet_freezes')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .maybeSingle();
       
-      if (error) {
-        console.error('Error checking freeze status:', error);
-        // Fallback to direct query if RPC fails
-        const { data: frozen } = await supabase
-          .from('wallet_freezes')
-          .select('id')
-          .eq('user_id', user.id)
-          .eq('is_active', true)
-          .maybeSingle();
-        setIsFrozen(!!frozen);
-      } else {
-        setIsFrozen(!!isFrozenResult);
-      }
+      setIsFrozen(!!frozen);
     } catch (error) {
       console.error('Error checking freeze status:', error);
     } finally {
