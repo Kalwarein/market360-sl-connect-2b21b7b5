@@ -105,10 +105,10 @@ const FinanceUserDetail = () => {
         setProfile(profileData);
       }
 
-      // Get balance
+      // Get balance - RPC returns CENTS, convert to SLE
       const { data: balanceData } = await supabase
         .rpc('get_wallet_balance', { p_user_id: userId });
-      setBalance(balanceData || 0);
+      setBalance((balanceData || 0) / 100);
 
       // Load transactions
       const { data: txData } = await supabase
@@ -120,12 +120,12 @@ const FinanceUserDetail = () => {
       if (txData) {
         setTransactions(txData);
 
-        // Calculate stats
+        // Calculate stats - amounts are in CENTS, convert to SLE
         const successTx = txData.filter(t => t.status === 'success');
         setStats({
-          totalDeposits: successTx.filter(t => t.transaction_type === 'deposit').reduce((s, t) => s + Number(t.amount), 0),
-          totalWithdrawals: successTx.filter(t => t.transaction_type === 'withdrawal').reduce((s, t) => s + Number(t.amount), 0),
-          totalEarnings: successTx.filter(t => t.transaction_type === 'earning').reduce((s, t) => s + Number(t.amount), 0),
+          totalDeposits: successTx.filter(t => t.transaction_type === 'deposit').reduce((s, t) => s + Number(t.amount), 0) / 100,
+          totalWithdrawals: successTx.filter(t => t.transaction_type === 'withdrawal').reduce((s, t) => s + Number(t.amount), 0) / 100,
+          totalEarnings: successTx.filter(t => t.transaction_type === 'earning').reduce((s, t) => s + Number(t.amount), 0) / 100,
           transactionCount: txData.length
         });
       }

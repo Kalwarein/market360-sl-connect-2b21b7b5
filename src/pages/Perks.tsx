@@ -182,12 +182,13 @@ const Perks = () => {
     if (!user) return;
     
     try {
-      // Load wallet balance using RPC (ledger-based)
-      const { data: balance, error: balanceError } = await supabase
+      // Load wallet balance using RPC (ledger-based) - returns CENTS
+      const { data: balanceInCents, error: balanceError } = await supabase
         .rpc('get_wallet_balance', { p_user_id: user.id });
       
-      if (!balanceError && balance !== null) {
-        setWalletBalance(balance);
+      if (!balanceError && balanceInCents !== null) {
+        // CRITICAL: Convert from cents to whole currency (SLE)
+        setWalletBalance((balanceInCents || 0) / 100);
       }
 
       // Check if user has a store
@@ -258,37 +259,41 @@ const Perks = () => {
       expiresAt.setDate(expiresAt.getDate() + daysToAdd);
 
       // Create wallet_ledger entry for perk purchase (debit)
+      // CRITICAL: Convert SLE to cents for ledger storage
+      const priceInCents = Math.round(selectedPerk.price * 100);
       const { error: ledgerError } = await supabase
         .from('wallet_ledger')
         .insert({
           user_id: user.id,
-          amount: selectedPerk.price,
+          amount: priceInCents,
           transaction_type: 'payment',
           status: 'success',
           reference: `Perk: ${selectedPerk.title}`,
           metadata: {
             perk_type: selectedPerk.perkType,
             perk_name: selectedPerk.title,
-            duration_days: daysToAdd
+            duration_days: daysToAdd,
+            price_sle: selectedPerk.price
           }
         });
 
       if (ledgerError) throw ledgerError;
 
-      // Add perk to store_perks
+      // Add perk to store_perks (store price in cents for consistency)
       const { error: perkError } = await supabase
         .from('store_perks')
         .insert({
           store_id: storeId,
           perk_type: selectedPerk.perkType,
           perk_name: selectedPerk.title,
-          price_paid: selectedPerk.price,
+          price_paid: priceInCents,
           expires_at: expiresAt.toISOString(),
           is_active: true,
           metadata: {
             duration_days: daysToAdd,
             features: selectedPerk.features,
-            category: selectedPerk.category
+            category: selectedPerk.category,
+            price_sle: selectedPerk.price
           }
         });
 

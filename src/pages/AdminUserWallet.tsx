@@ -69,15 +69,16 @@ const AdminUserWallet = () => {
 
       setUserProfile(profile);
 
-      // Load wallet balance using RPC
-      const { data: balance } = await supabase
+      // Load wallet balance using RPC - returns CENTS
+      const { data: balanceInCents } = await supabase
         .rpc('get_wallet_balance', { p_user_id: userId });
 
       // Create a mock wallet object for display
+      // CRITICAL: Convert from cents to whole currency (SLE)
       setWallet({
         id: userId || '',
         user_id: userId || '',
-        balance_leones: balance || 0,
+        balance_leones: (balanceInCents || 0) / 100,
         created_at: new Date().toISOString()
       });
 
@@ -89,9 +90,10 @@ const AdminUserWallet = () => {
         .order('created_at', { ascending: false });
 
       // Map ledger entries to transaction format
+      // CRITICAL: Convert amounts from cents to SLE for display
       const mappedTx = (txData || []).map(entry => ({
         id: entry.id,
-        amount: entry.amount,
+        amount: Number(entry.amount) / 100, // Convert cents to SLE
         type: entry.transaction_type as 'deposit' | 'withdrawal' | 'earning' | 'refund',
         status: entry.status,
         reference: entry.reference,
@@ -101,22 +103,22 @@ const AdminUserWallet = () => {
 
       setTransactions(mappedTx);
 
-      // Calculate stats from ledger
+      // Calculate stats from ledger - amounts are in CENTS, convert to SLE
       const earnings = (txData || [])
         .filter(t => (t.transaction_type === 'earning' || t.transaction_type === 'refund') && t.status === 'success')
-        .reduce((sum, t) => sum + Number(t.amount), 0);
+        .reduce((sum, t) => sum + Number(t.amount), 0) / 100;
       
       const withdrawals = (txData || [])
         .filter(t => t.transaction_type === 'withdrawal' && t.status === 'success')
-        .reduce((sum, t) => sum + Number(t.amount), 0);
+        .reduce((sum, t) => sum + Number(t.amount), 0) / 100;
       
       const deposits = (txData || [])
         .filter(t => t.transaction_type === 'deposit' && t.status === 'success')
-        .reduce((sum, t) => sum + Number(t.amount), 0);
+        .reduce((sum, t) => sum + Number(t.amount), 0) / 100;
       
       const pending = (txData || [])
         .filter(t => t.status === 'pending')
-        .reduce((sum, t) => sum + Number(t.amount), 0);
+        .reduce((sum, t) => sum + Number(t.amount), 0) / 100;
 
       setStats({
         totalEarnings: earnings,

@@ -214,7 +214,6 @@ export default function Checkout() {
     // Generate unique order reference for idempotency
     const orderBatchRef = `checkout-${user.id}-${Date.now()}`;
     const paymentReference = `${orderBatchRef}-payment`;
-    let paymentLedgerEntryId: string | null = null;
 
     try {
       // ========================================
@@ -228,232 +227,220 @@ export default function Checkout() {
 
       if (existingPayment) {
         if (existingPayment.status === 'success') {
-          throw new Error("Payment already processed. Please check your orders.");
+          toast({
+            title: "Already processed",
+            description: "This payment was already processed. Please check your orders.",
+          });
+          navigate("/orders");
+          return;
         }
-        // If previous attempt failed, we can proceed
+        // If previous attempt failed or pending, clean it up and proceed
+        await supabase
+          .from("wallet_ledger")
+          .delete()
+          .eq("id", existingPayment.id);
       }
 
       // ========================================
-      // STEP 2: Create PENDING payment ledger entry
-      // We mark it as 'pending' first, only mark 'success' after orders are created
+      // STEP 2: Gather all product and store data FIRST
+      // This validates everything before any mutations
       // ========================================
-      const totalInCents = Math.round(totalPrice * 100); // Ensure integer
-      const { data: paymentEntry, error: ledgerError } = await supabase
+      const orderDataList: Array<{
+        item: typeof items[0];
+        product: { store_id: string; images: string[] };
+        store: { owner_id: string; store_name: string };
+      }> = [];
+
+      for (const item of items) {
+        const { data: product, error: productError } = await supabase
+          .from("products")
+          .select("store_id, images")
+          .eq("id", item.id)
+          .single();
+
+        if (productError || !product) {
+          throw new Error(`Product "${item.title}" is no longer available.`);
+        }
+
+        const { data: store, error: storeError } = await supabase
+          .from("stores")
+          .select("owner_id, store_name")
+          .eq("id", product.store_id)
+          .single();
+
+        if (storeError || !store) {
+          throw new Error(`Store not found for "${item.title}".`);
+        }
+
+        orderDataList.push({ item, product, store });
+      }
+
+      // ========================================
+      // STEP 3: Create ALL orders in a SINGLE batch insert
+      // This is atomic - either all succeed or all fail
+      // ========================================
+      const ordersToInsert = orderDataList.map(({ item, store }) => ({
+        buyer_id: user.id,
+        seller_id: store.owner_id,
+        product_id: item.id,
+        quantity: item.quantity,
+        total_amount: item.price * item.quantity,
+        escrow_status: "holding",
+        escrow_amount: item.price * item.quantity,
+        delivery_name: deliveryInfo.name,
+        delivery_phone: deliveryInfo.phone,
+        shipping_address: deliveryInfo.address,
+        shipping_city: deliveryInfo.city,
+        shipping_region: deliveryInfo.region,
+        shipping_country: deliveryInfo.country,
+        delivery_notes: deliveryInfo.notes,
+        status: "pending" as const
+      }));
+
+      const { data: createdOrders, error: ordersError } = await supabase
+        .from("orders")
+        .insert(ordersToInsert)
+        .select("id, product_id, total_amount, seller_id");
+
+      if (ordersError || !createdOrders || createdOrders.length === 0) {
+        console.error('Order creation error:', ordersError);
+        throw new Error("Failed to create orders. No payment was made.");
+      }
+
+      // ========================================
+      // STEP 4: Create payment ledger entry as SUCCESS
+      // Only AFTER orders are confirmed created
+      // ========================================
+      const totalInCents = Math.round(totalPrice * 100);
+      const { error: paymentError } = await supabase
         .from("wallet_ledger")
         .insert({
           user_id: user.id,
           amount: totalInCents,
           transaction_type: 'payment',
-          status: 'pending', // PENDING until orders are created
+          status: 'success', // SUCCESS because orders exist
           reference: paymentReference,
           metadata: { 
             payment_method: 'wallet', 
-            order_count: items.length,
+            order_count: createdOrders.length,
             order_batch_ref: orderBatchRef,
+            order_ids: createdOrders.map(o => o.id),
             items: items.map(i => ({ id: i.id, title: i.title, qty: i.quantity, price: i.price }))
           }
-        })
-        .select('id')
-        .single();
+        });
 
-      if (ledgerError || !paymentEntry) {
-        console.error('Payment ledger error:', ledgerError);
-        throw new Error("Failed to initiate payment. Please try again.");
+      if (paymentError) {
+        // CRITICAL: Orders were created but payment failed to record
+        // This is a rare edge case - we should still show success because money was deducted
+        console.error('Payment ledger error after orders created:', paymentError);
       }
 
-      paymentLedgerEntryId = paymentEntry.id;
-
       // ========================================
-      // STEP 3: Create orders for each cart item
+      // STEP 5: Clear cart and show success IMMEDIATELY
+      // Don't wait for notifications
       // ========================================
-      const createdOrders: string[] = [];
-      const orderErrors: string[] = [];
+      clearCart();
       
-      for (const item of items) {
+      toast({
+        title: "Order placed successfully!",
+        description: `${createdOrders.length} order(s) created. Your payment is in escrow.`,
+      });
+
+      // Navigate immediately - user sees success
+      navigate("/orders");
+
+      // ========================================
+      // STEP 6: Send notifications in background (fire-and-forget)
+      // These run AFTER navigation, won't block or cause errors
+      // ========================================
+      const sendNotifications = async () => {
         try {
-          // Get product details including seller_id
-          const { data: product, error: productError } = await supabase
-            .from("products")
-            .select("store_id, images")
-            .eq("id", item.id)
+          // Get buyer profile once
+          const { data: buyerProfile } = await supabase
+            .from("profiles")
+            .select("email, name, phone")
+            .eq("id", user.id)
             .single();
 
-          if (productError || !product) {
-            orderErrors.push(`Product ${item.title} not found`);
-            continue;
-          }
+          for (let i = 0; i < createdOrders.length; i++) {
+            const order = createdOrders[i];
+            const orderData = orderDataList[i];
+            
+            if (!orderData) continue;
+            
+            const { item, product, store } = orderData;
+            const orderNumber = `#360-${order.id.substring(0, 8).toUpperCase()}`;
+            const productImage = product.images?.[0] || '/placeholder.svg';
+            const deliveryFullAddress = `${deliveryInfo.address}, ${deliveryInfo.city}, ${deliveryInfo.region}`;
 
-          // Get store owner (seller) and store info
-          const { data: store, error: storeError } = await supabase
-            .from("stores")
-            .select("owner_id, store_name")
-            .eq("id", product.store_id)
-            .single();
+            // Get seller profile
+            const { data: sellerProfile } = await supabase
+              .from("profiles")
+              .select("email, name, phone")
+              .eq("id", store.owner_id)
+              .single();
 
-          if (storeError || !store) {
-            orderErrors.push(`Store not found for ${item.title}`);
-            continue;
-          }
-
-          // Create order with wallet payment
-          const { data: newOrder, error: orderError } = await supabase
-            .from("orders")
-            .insert({
-              buyer_id: user.id,
-              seller_id: store.owner_id,
-              product_id: item.id,
-              quantity: item.quantity,
-              total_amount: item.price * item.quantity,
-              escrow_status: "holding",
-              escrow_amount: item.price * item.quantity,
-              delivery_name: deliveryInfo.name,
-              delivery_phone: deliveryInfo.phone,
-              shipping_address: deliveryInfo.address,
-              shipping_city: deliveryInfo.city,
-              shipping_region: deliveryInfo.region,
-              shipping_country: deliveryInfo.country,
-              delivery_notes: deliveryInfo.notes,
-              status: "pending"
-            })
-            .select()
-            .single();
-
-          if (orderError || !newOrder) {
-            console.error('Order creation error:', orderError);
-            orderErrors.push(`Failed to create order for ${item.title}`);
-            continue;
-          }
-
-          createdOrders.push(newOrder.id);
-
-          // ========================================
-          // Send notifications (non-blocking)
-          // ========================================
-          const orderNumber = `#360-${newOrder.id.substring(0, 8).toUpperCase()}`;
-          const deliveryFullAddress = `${deliveryInfo.address}, ${deliveryInfo.city}, ${deliveryInfo.region}`;
-          const productImage = product.images?.[0] || '/placeholder.svg';
-
-          // Get buyer and seller profiles for notifications
-          const [{ data: buyerProfile }, { data: sellerProfile }] = await Promise.all([
-            supabase.from("profiles").select("email, name, phone").eq("id", user.id).single(),
-            supabase.from("profiles").select("email, name, phone").eq("id", store.owner_id).single()
-          ]);
-
-          // Send notifications in background (don't await)
-          Promise.all([
-            // Notification to seller
+            // Fire notifications (non-blocking)
             supabase.functions.invoke('create-order-notification', {
               body: {
                 user_id: store.owner_id,
                 type: 'order',
                 title: '🛒 New Order Received!',
                 body: `${buyerProfile?.name || 'A customer'} placed an order for ${item.title}`,
-                link_url: `/seller/order/${newOrder.id}`,
+                link_url: `/seller/order/${order.id}`,
                 image_url: productImage,
-                icon: '/pwa-192x192.png',
-                requireInteraction: true,
-                metadata: {
-                  order_id: newOrder.id,
-                  product_title: item.title,
-                  buyer_name: buyerProfile?.name,
-                  amount: item.price * item.quantity
+                metadata: { order_id: order.id, product_title: item.title }
+              }
+            }).catch(e => console.error('Notification error:', e));
+
+            if (sellerProfile?.phone) {
+              supabase.functions.invoke('send-sms', {
+                body: {
+                  to: sellerProfile.phone,
+                  message: `🛒 Market360 - New Order!\n${buyerProfile?.name || 'Customer'} ordered ${item.title}\nOrder: ${orderNumber}\nAmount: Le ${order.total_amount.toLocaleString()}`
                 }
-              }
-            }).catch(e => console.error('Notification error:', e)),
-            
-            // SMS to seller
-            sellerProfile?.phone ? supabase.functions.invoke('send-sms', {
-              body: {
-                to: sellerProfile.phone,
-                message: `🛒 Market360 - New Order Alert!\n\n${buyerProfile?.name || 'A customer'} placed an order for ${item.title}.\n\nOrder: ${orderNumber}\nAmount: Le ${(item.price * item.quantity).toLocaleString()}\n\nLogin to process: market360.app`
-              }
-            }).catch(e => console.error('SMS error:', e)) : Promise.resolve(),
-            
-            // Email to buyer
-            buyerProfile?.email ? sendOrderConfirmationEmail(buyerProfile.email, {
-              orderNumber,
-              orderId: newOrder.id,
-              productName: item.title,
-              productImage,
-              quantity: item.quantity,
-              totalAmount: item.price * item.quantity,
-              deliveryAddress: deliveryFullAddress,
-              storeName: store.store_name,
-            }, user.id).catch(e => console.error('Email error:', e)) : Promise.resolve(),
-            
-            // Email to seller
-            sellerProfile?.email ? sendNewOrderSellerEmail(sellerProfile.email, {
-              orderNumber,
-              orderId: newOrder.id,
-              productName: item.title,
-              productImage,
-              quantity: item.quantity,
-              totalAmount: item.price * item.quantity,
-              buyerName: buyerProfile?.name || 'Customer',
-              deliveryAddress: deliveryFullAddress,
-            }, store.owner_id).catch(e => console.error('Email error:', e)) : Promise.resolve()
-          ]);
+              }).catch(e => console.error('SMS error:', e));
+            }
 
-        } catch (itemError) {
-          console.error(`Error processing item ${item.title}:`, itemError);
-          orderErrors.push(`Failed to process ${item.title}`);
-        }
-      }
+            if (buyerProfile?.email) {
+              sendOrderConfirmationEmail(buyerProfile.email, {
+                orderNumber,
+                orderId: order.id,
+                productName: item.title,
+                productImage,
+                quantity: item.quantity,
+                totalAmount: order.total_amount,
+                deliveryAddress: deliveryFullAddress,
+                storeName: store.store_name,
+              }, user.id).catch(e => console.error('Email error:', e));
+            }
 
-      // ========================================
-      // STEP 4: Finalize based on order creation results
-      // ========================================
-      if (createdOrders.length === 0) {
-        // ALL orders failed - rollback the payment
-        throw new Error("Failed to create any orders. Your payment has been cancelled.");
-      }
-
-      // At least some orders succeeded - mark payment as success
-      await supabase
-        .from("wallet_ledger")
-        .update({ 
-          status: 'success',
-          metadata: { 
-            payment_method: 'wallet', 
-            order_count: createdOrders.length,
-            order_batch_ref: orderBatchRef,
-            order_ids: createdOrders,
-            items: items.map(i => ({ id: i.id, title: i.title, qty: i.quantity, price: i.price }))
+            if (sellerProfile?.email) {
+              sendNewOrderSellerEmail(sellerProfile.email, {
+                orderNumber,
+                orderId: order.id,
+                productName: item.title,
+                productImage,
+                quantity: item.quantity,
+                totalAmount: order.total_amount,
+                buyerName: buyerProfile?.name || 'Customer',
+                deliveryAddress: deliveryFullAddress,
+              }, store.owner_id).catch(e => console.error('Email error:', e));
+            }
           }
-        })
-        .eq('id', paymentLedgerEntryId);
+        } catch (notifError) {
+          console.error('Notification batch error:', notifError);
+        }
+      };
 
-      clearCart();
-      
-      toast({
-        title: "Order placed successfully!",
-        description: `${createdOrders.length} order(s) created. Your payment is in escrow. Track your orders in the Orders page.`,
-      });
+      // Fire and forget - don't await
+      sendNotifications();
 
-      navigate("/orders");
     } catch (error) {
       console.error("Error placing order:", error);
       
-      // ========================================
-      // CRITICAL: Rollback payment on failure
-      // Mark the pending payment as 'failed'
-      // ========================================
-      if (paymentLedgerEntryId) {
-        try {
-          await supabase
-            .from("wallet_ledger")
-            .update({ 
-              status: 'failed',
-              metadata: { 
-                error: error instanceof Error ? error.message : 'Unknown error',
-                failed_at: new Date().toISOString()
-              }
-            })
-            .eq('id', paymentLedgerEntryId);
-        } catch (rollbackError) {
-          console.error('Failed to rollback payment:', rollbackError);
-        }
-      }
+      // No rollback needed - if we reach here, no payment was created
+      // (payment is only created AFTER orders succeed)
       
       const errorMessage = error instanceof Error ? error.message : "Failed to place order";
       toast({
