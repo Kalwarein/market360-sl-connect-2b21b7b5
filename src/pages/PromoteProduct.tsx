@@ -62,11 +62,12 @@ const PromoteProduct = () => {
       if (productError) throw productError;
       setProduct(productData);
 
-      // Load wallet balance using RPC
-      const { data: balance } = await supabase
+      // Load wallet balance using RPC - returns CENTS
+      const { data: balanceInCents } = await supabase
         .rpc('get_wallet_balance', { p_user_id: user?.id });
 
-      setWalletBalance(balance || 0);
+      // CRITICAL: Convert from cents to whole currency (SLE)
+      setWalletBalance((balanceInCents || 0) / 100);
     } catch (error) {
       console.error('Error loading data:', error);
       toast({
@@ -94,18 +95,21 @@ const PromoteProduct = () => {
     setProcessing(true);
     try {
       // Create wallet_ledger entry for promotion (debit)
+      // CRITICAL: Convert SLE to cents for ledger storage
+      const promotionCostInCents = Math.round(PROMOTION_COST * 100);
       const { error: ledgerError } = await supabase
         .from('wallet_ledger')
         .insert({
           user_id: user.id,
-          amount: PROMOTION_COST,
+          amount: promotionCostInCents,
           transaction_type: 'payment',
           status: 'success',
           reference: `Product Promotion - ${product.title}`,
           metadata: {
             product_id: product.id,
             product_title: product.title,
-            promotion_days: PROMOTION_DAYS
+            promotion_days: PROMOTION_DAYS,
+            price_sle: PROMOTION_COST
           }
         });
 
