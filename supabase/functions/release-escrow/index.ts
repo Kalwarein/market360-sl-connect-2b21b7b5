@@ -57,7 +57,12 @@ serve(async (req) => {
       );
     }
 
-    // Update order status
+    // Calculate amount after 2% fee
+    const escrowAmount = order.total_amount || 0;
+    const fee = escrowAmount * 0.02;
+    const amountToRelease = escrowAmount - fee;
+
+    // Update order status first
     const { error: updateOrderError } = await supabase
       .from('orders')
       .update({ 
@@ -68,75 +73,26 @@ serve(async (req) => {
 
     if (updateOrderError) throw updateOrderError;
 
-    // Get seller's wallet
-    const { data: sellerWallet, error: walletError } = await supabase
-      .from('wallets')
-      .select('id, balance_leones')
-      .eq('user_id', order.seller_id)
-      .single();
-
-    if (walletError) {
-      // Create wallet if it doesn't exist
-      const { data: newWallet, error: createWalletError } = await supabase
-        .from('wallets')
-        .insert({ user_id: order.seller_id, balance_leones: 0 })
-        .select('id, balance_leones')
-        .single();
-
-      if (createWalletError) throw createWalletError;
-      
-      // Use the newly created wallet
-      const { data: createdWallet } = await supabase
-        .from('wallets')
-        .select('id, balance_leones')
-        .eq('user_id', order.seller_id)
-        .single();
-        
-      if (!createdWallet) throw new Error('Failed to create wallet');
-    }
-
-    // Refetch wallet to ensure we have the latest data
-    const { data: currentWallet } = await supabase
-      .from('wallets')
-      .select('id, balance_leones')
-      .eq('user_id', order.seller_id)
-      .single();
-
-    if (!currentWallet) throw new Error('Wallet not found');
-
-    // Calculate amount after 2% fee
-    const escrowAmount = order.total_amount || 0;
-    const fee = escrowAmount * 0.02;
-    const amountToRelease = escrowAmount - fee;
-
-    // Update seller wallet balance (using service role)
-    const { error: balanceError } = await supabase
-      .from('wallets')
-      .update({ 
-        balance_leones: (currentWallet.balance_leones || 0) + amountToRelease 
-      })
-      .eq('id', currentWallet.id);
-
-    if (balanceError) {
-      console.error('Balance update error:', balanceError);
-      throw balanceError;
-    }
-
-    // Create transaction record
-    const { error: transactionError } = await supabase
-      .from('transactions')
+    // Add earning to seller's wallet_ledger (new Monime system)
+    const { error: ledgerError } = await supabase
+      .from('wallet_ledger')
       .insert({
-        wallet_id: currentWallet.id,
-        type: 'earning',
+        user_id: order.seller_id,
         amount: amountToRelease,
-        status: 'completed',
-        reference: `Order ${order_id}`,
-        metadata: { order_id, fee_deducted: fee }
+        transaction_type: 'earning',
+        status: 'success',
+        reference: `Order #${order_id.slice(0, 8)} - Payment released`,
+        metadata: { 
+          order_id, 
+          fee_deducted: fee,
+          gross_amount: escrowAmount,
+          product_title: order.products?.title
+        }
       });
 
-    if (transactionError) {
-      console.error('Transaction error:', transactionError);
-      throw transactionError;
+    if (ledgerError) {
+      console.error('Ledger entry error:', ledgerError);
+      throw ledgerError;
     }
 
     // Create notification for seller
@@ -144,7 +100,7 @@ serve(async (req) => {
       user_id: order.seller_id,
       type: 'order',
       title: 'Payment Released! 🎉',
-      body: `Buyer confirmed delivery for ${order.products?.title}. Le ${amountToRelease.toFixed(2)} added to your wallet.`,
+      body: `Buyer confirmed delivery for ${order.products?.title}. Le ${amountToRelease.toLocaleString()} added to your wallet.`,
       link_url: `/seller/order/${order_id}`,
       metadata: { order_id, amount: amountToRelease }
     });

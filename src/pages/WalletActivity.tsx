@@ -86,19 +86,17 @@ const WalletActivity = () => {
 
   const loadWalletData = async () => {
     try {
+      // Get ledger-based balance (Monime wallet system)
       const { data: balanceData, error: balanceError } = await supabase.rpc('get_wallet_balance', { 
         p_user_id: user?.id 
       });
 
       if (balanceError) {
-        const { data: walletData } = await supabase
-          .from('wallets')
-          .select('balance_leones')
-          .eq('user_id', user?.id)
-          .maybeSingle();
-        setBalance(walletData?.balance_leones || 0);
+        console.error('Balance fetch error:', balanceError);
+        setBalance(0);
       } else {
-        setBalance((balanceData || 0) / 100);
+        // Balance from ledger is in Leones (not cents)
+        setBalance(balanceData || 0);
       }
 
       const { data: ledgerData, error: ledgerError } = await supabase

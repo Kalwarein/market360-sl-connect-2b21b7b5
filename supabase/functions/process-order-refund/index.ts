@@ -55,53 +55,9 @@ serve(async (req) => {
 
     const refundAmount = order.total_amount;
 
-    // Get buyer wallet
-    const { data: buyerWallet, error: walletError } = await supabase
-      .from('wallets')
-      .select('id, balance_leones')
-      .eq('user_id', order.buyer_id)
-      .single();
-
-    if (walletError || !buyerWallet) {
-      return new Response(
-        JSON.stringify({ error: 'Buyer wallet not found' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Process refund to buyer wallet
-    const { error: balanceError } = await supabase
-      .from('wallets')
-      .update({ 
-        balance_leones: Number(buyerWallet.balance_leones) + Number(refundAmount)
-      })
-      .eq('id', buyerWallet.id);
-
-    if (balanceError) throw balanceError;
-
-    // Create transaction record
-    const refundReasons = {
-      'buyer_cancel': `Order cancelled by buyer`,
-      'seller_decline': `Order declined by seller`,
-      'dispute': `Dispute refund - ${reason || 'No reason provided'}`
-    };
-
-    const { error: transactionError } = await supabase
-      .from('transactions')
-      .insert({
-        wallet_id: buyerWallet.id,
-        type: 'refund',
-        amount: refundAmount,
-        status: 'completed',
-        reference: `Order #${order_id.slice(0, 8)} - ${refundReasons[refund_type]}`,
-        metadata: { order_id, refund_type, reason }
-      });
-
-    if (transactionError) throw transactionError;
-
-    // Update order status
+    // Update order status first
     const newStatus = refund_type === 'dispute' ? 'disputed' : 'cancelled';
-    const updateData: any = {
+    const updateData: Record<string, unknown> = {
       status: newStatus,
       escrow_status: 'refunded'
     };
@@ -117,6 +73,34 @@ serve(async (req) => {
       .eq('id', order_id);
 
     if (updateOrderError) throw updateOrderError;
+
+    // Add refund to buyer's wallet_ledger (new Monime system)
+    const refundReasons = {
+      'buyer_cancel': `Order cancelled by buyer`,
+      'seller_decline': `Order declined by seller`,
+      'dispute': `Dispute refund - ${reason || 'No reason provided'}`
+    };
+
+    const { error: ledgerError } = await supabase
+      .from('wallet_ledger')
+      .insert({
+        user_id: order.buyer_id,
+        amount: refundAmount,
+        transaction_type: 'refund',
+        status: 'success',
+        reference: `Order #${order_id.slice(0, 8)} - ${refundReasons[refund_type]}`,
+        metadata: { 
+          order_id, 
+          refund_type, 
+          reason,
+          product_title: order.products?.title
+        }
+      });
+
+    if (ledgerError) {
+      console.error('Ledger entry error:', ledgerError);
+      throw ledgerError;
+    }
 
     // Send notification to buyer
     const buyerNotifications = {

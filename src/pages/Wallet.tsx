@@ -55,24 +55,17 @@ const Wallet = () => {
 
   const loadWalletData = async () => {
     try {
-      // Get ledger-based balance
+      // Get ledger-based balance (Monime wallet system)
       const { data: balanceData, error: balanceError } = await supabase.rpc('get_wallet_balance', { 
         p_user_id: user?.id 
       });
 
       if (balanceError) {
         console.error('Balance fetch error:', balanceError);
-        // Fallback to old wallet table
-        const { data: walletData } = await supabase
-          .from('wallets')
-          .select('balance_leones')
-          .eq('user_id', user?.id)
-          .maybeSingle();
-        
-        setBalance(walletData?.balance_leones || 0);
+        setBalance(0);
       } else {
-        // Balance from ledger is in cents
-        setBalance((balanceData || 0) / 100);
+        // Balance from ledger is in Leones (not cents)
+        setBalance(balanceData || 0);
       }
 
       // Load recent transactions from ledger
@@ -140,7 +133,8 @@ const Wallet = () => {
   };
 
   const getAmountDisplay = (entry: LedgerEntry) => {
-    const amountInSLE = entry.amount / 100;
+    // Amount stored in Leones directly (no conversion needed)
+    const amount = entry.amount;
     const isCredit = ['deposit', 'earning', 'refund'].includes(entry.transaction_type);
     const isSuccessful = entry.status === 'success';
     
@@ -148,14 +142,14 @@ const Wallet = () => {
     if (!isSuccessful && !isCredit) {
       return (
         <span className="text-muted-foreground">
-          SLE {amountInSLE.toLocaleString()}
+          Le {amount.toLocaleString()}
         </span>
       );
     }
     
     return (
       <span className={isCredit ? 'text-success' : 'text-foreground'}>
-        {isCredit ? '+' : '-'}SLE {amountInSLE.toLocaleString()}
+        {isCredit ? '+' : '-'}Le {amount.toLocaleString()}
       </span>
     );
   };
@@ -199,7 +193,7 @@ const Wallet = () => {
               {loading && <Loader2 className="h-4 w-4 animate-spin" />}
             </div>
             <p className="text-4xl font-bold mb-2">
-              SLE {loading ? '...' : balance.toLocaleString()}
+              Le {loading ? '...' : balance.toLocaleString()}
             </p>
             <p className="text-sm opacity-75">
               Powered by Market360 Wallet
