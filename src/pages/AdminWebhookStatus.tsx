@@ -109,7 +109,8 @@ const AdminWebhookStatus = () => {
   const getAmountFromPayload = (payload: any): string | null => {
     const amount = payload?.data?.amount?.value;
     if (amount) {
-      return `LE ${(amount / 100).toLocaleString()}`;
+      // Monime webhook amounts are in cents, convert to whole Leones
+      return `Le ${Math.round(amount / 100).toLocaleString()}`;
     }
     return null;
   };
