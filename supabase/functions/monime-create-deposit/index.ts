@@ -74,13 +74,14 @@ Deno.serve(async (req) => {
     const reference = `DEP-${user.id.substring(0, 8)}-${Date.now()}`;
     const idempotencyKey = `deposit-${reference}`;
 
-    // Convert amount to minor units (cents)
-    const amountInCents = Math.round(amount * 100);
+    // Ensure whole Leones (no decimals) - Monime API expects cents, DB stores Leones
+    const amountWholeLeones = Math.round(amount);
+    const amountInCentsForMonime = amountWholeLeones * 100;
 
     console.log('Creating Monime payment code:', { 
       userId: user.id, 
-      amount, 
-      amountInCents, 
+      amount: amountWholeLeones, 
+      amountInCentsForMonime, 
       reference 
     });
 
@@ -98,7 +99,7 @@ Deno.serve(async (req) => {
         mode: 'one_time',
         amount: {
           currency: 'SLE',
-          value: amountInCents,
+          value: amountInCentsForMonime, // Monime expects cents
         },
         authorizedProviders: ['m17', 'm18'],
         metadata: {
@@ -145,13 +146,13 @@ Deno.serve(async (req) => {
 
     const paymentCode = monimeData.result;
 
-    // Create pending ledger entry
+    // Create pending ledger entry - store in whole Leones (not cents)
     const { data: ledgerEntry, error: ledgerError } = await supabase
       .from('wallet_ledger')
       .insert({
         user_id: user.id,
         transaction_type: 'deposit',
-        amount: amountInCents,
+        amount: amountWholeLeones, // Store in whole Leones, NOT cents
         status: 'pending',
         provider: 'monime',
         reference: reference,
@@ -161,6 +162,7 @@ Deno.serve(async (req) => {
           payment_code_status: paymentCode.status,
           expire_time: paymentCode.expireTime,
           created_via: 'api',
+          amount_cents_sent_to_monime: amountInCentsForMonime,
         },
       })
       .select()
@@ -187,10 +189,10 @@ Deno.serve(async (req) => {
           ledger_id: ledgerEntry.id,
           reference: reference,
           ussd_code: paymentCode.ussdCode,
-          amount: amount,
+          amount: amountWholeLeones, // Return whole Leones
           expires_at: paymentCode.expireTime,
           status: 'pending',
-          instructions: `Dial ${paymentCode.ussdCode} to complete your payment of SLE ${amount.toLocaleString()}`,
+          instructions: `Dial ${paymentCode.ussdCode} to complete your payment of Le ${amountWholeLeones.toLocaleString()}`,
         },
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

@@ -106,7 +106,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Get wallet balance using the ledger function (returns in cents)
+    // Get wallet balance using the ledger function (returns in whole Leones)
     const { data: balanceData, error: balanceError } = await supabase
       .rpc('get_wallet_balance', { p_user_id: user.id });
 
@@ -118,37 +118,40 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Balance is in cents from the RPC function
-    const currentBalanceInCents = balanceData || 0;
+    // Balance is in whole Leones from the RPC function
+    const currentBalance = balanceData || 0;
     
-    // Amount from frontend is in SLE (not cents), convert to cents
-    const amountInCents = Math.round(amount * 100);
+    // Amount from frontend is in whole Leones (no decimals in our system)
+    const amountWholeLeones = Math.round(amount);
     
-    // Calculate 2% fee
+    // Calculate 2% fee (in whole Leones)
     const feePercentage = 0.02;
-    const feeInCents = Math.round(amountInCents * feePercentage);
-    const amountToSendInCents = amountInCents - feeInCents;
+    const feeAmount = Math.round(amountWholeLeones * feePercentage);
+    const amountToSend = amountWholeLeones - feeAmount;
+
+    // Convert to cents for Monime API
+    const amountInCentsForMonime = amountToSend * 100;
 
     console.log('Withdrawal calculations:', {
       userId: user.id,
-      amountSLE: amount,
-      amountInCents,
-      feeInCents,
-      amountToSendInCents,
-      currentBalanceInCents,
+      amountWholeLeones,
+      feeAmount,
+      amountToSend,
+      amountInCentsForMonime,
+      currentBalance,
       phoneNumber: phone_number,
       provider: selectedProvider,
     });
 
-    // Check sufficient balance (both in cents now)
-    if (amountInCents > currentBalanceInCents) {
-      console.log('Insufficient balance:', { amountInCents, currentBalanceInCents });
+    // Check sufficient balance (both in whole Leones now)
+    if (amountWholeLeones > currentBalance) {
+      console.log('Insufficient balance:', { amountWholeLeones, currentBalance });
       return new Response(
         JSON.stringify({ 
           success: false, 
           error: 'Insufficient balance',
-          current_balance: Math.round(currentBalanceInCents / 100),
-          requested_amount: amount,
+          current_balance: currentBalance,
+          requested_amount: amountWholeLeones,
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -184,7 +187,7 @@ Deno.serve(async (req) => {
     const payoutBody: Record<string, unknown> = {
       amount: {
         currency: 'SLE',
-        value: amountToSendInCents, // Amount in cents (minor unit)
+        value: amountInCentsForMonime, // Amount in cents (minor unit) for Monime API
       },
       source: {
         financialAccountId: financialAccountId, // Must be fac-xxx format
@@ -200,8 +203,9 @@ Deno.serve(async (req) => {
         type: 'withdrawal',
         platform: 'market360',
         reference: reference,
-        original_amount: String(amountInCents),
-        fee: String(feeInCents),
+        original_amount_leones: String(amountWholeLeones),
+        fee_leones: String(feeAmount),
+        amount_to_send_leones: String(amountToSend),
       },
     };
 
@@ -265,14 +269,14 @@ Deno.serve(async (req) => {
     const payout = monimeData.result;
     console.log('Payout created successfully:', { payoutId: payout.id, status: payout.status });
 
-    // Create pending ledger entry (full amount deducted from wallet)
+    // Create pending ledger entry (full amount deducted from wallet) - store in whole Leones
     // Status is 'pending' until webhook confirms completion
     const { data: ledgerEntry, error: ledgerError } = await supabase
       .from('wallet_ledger')
       .insert({
         user_id: user.id,
         transaction_type: 'withdrawal',
-        amount: amountInCents, // Full amount deducted from wallet balance
+        amount: amountWholeLeones, // Full amount in whole Leones
         status: 'pending', // Will be updated by webhook to 'success' or 'failed'
         provider: 'monime',
         reference: reference,
@@ -283,8 +287,9 @@ Deno.serve(async (req) => {
           destination_provider: selectedProvider,
           provider_name: selectedProvider === 'm17' ? 'Orange Money' : 'Africell Money',
           created_via: 'api',
-          fee_cents: feeInCents,
-          amount_sent_cents: amountToSendInCents,
+          fee_leones: feeAmount,
+          amount_sent_leones: amountToSend,
+          amount_sent_cents_to_monime: amountInCentsForMonime,
           fee_percentage: 2,
         },
       })
@@ -317,15 +322,15 @@ Deno.serve(async (req) => {
         data: {
           ledger_id: ledgerEntry.id,
           reference: reference,
-          amount: amount,
-          fee: Math.round(feeInCents / 100),
-          amount_to_receive: Math.round(amountToSendInCents / 100),
+          amount: amountWholeLeones,
+          fee: feeAmount,
+          amount_to_receive: amountToSend,
           status: 'pending',
           destination: {
             phone: monimePhoneNumber,
             provider: selectedProvider === 'm17' ? 'Orange Money' : 'Africell Money',
           },
-          message: `Withdrawal initiated. You will receive Le ${Math.round(amountToSendInCents / 100).toLocaleString()} shortly (2% processing fee applied).`,
+          message: `Withdrawal initiated. You will receive Le ${amountToSend.toLocaleString()} shortly (2% processing fee applied).`,
         },
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
