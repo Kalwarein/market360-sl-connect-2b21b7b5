@@ -36,14 +36,15 @@ const Deposit = () => {
       return;
     }
 
-    const amountNum = parseFloat(amount);
+    // Parse and enforce whole numbers only (no decimals)
+    const amountNum = Math.floor(parseFloat(amount));
     if (isNaN(amountNum) || amountNum <= 0) {
-      toast.error('Please enter a valid amount');
+      toast.error('Please enter a valid whole number amount');
       return;
     }
 
     if (amountNum < 1) {
-      toast.error('Minimum deposit is SLE 1');
+      toast.error('Minimum deposit is Le 1');
       return;
     }
 
@@ -156,7 +157,7 @@ const Deposit = () => {
               <div className="pt-4 border-t border-border">
                 <p className="text-sm text-muted-foreground mb-2">Amount to pay:</p>
                 <p className="text-2xl font-bold text-foreground">
-                  SLE {depositResult.amount.toLocaleString()}
+                  Le {Math.floor(depositResult.amount).toLocaleString()}
                 </p>
               </div>
 
@@ -215,16 +216,21 @@ const Deposit = () => {
         <Card className="border-2 border-border hover:border-primary/50 transition-all shadow-md">
           <CardContent className="p-6 space-y-4">
             <Label htmlFor="amount" className="text-base font-bold text-foreground">
-              Enter Amount (SLE)
+              Enter Amount (Le) - Whole numbers only
             </Label>
             <Input
               id="amount"
               type="number"
               placeholder="0"
               value={amount}
-              onChange={(e) => setAmount(e.target.value)}
+              onChange={(e) => {
+                // Only allow whole numbers
+                const val = e.target.value.replace(/\./g, '');
+                setAmount(val);
+              }}
               className="h-16 text-3xl font-bold text-center rounded-2xl border-2 focus:border-primary shadow-sm"
               min="1"
+              step="1"
             />
           </CardContent>
         </Card>

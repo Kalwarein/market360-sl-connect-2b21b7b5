@@ -276,15 +276,15 @@ async function handlePayoutSuccess(supabase: any, eventData: any): Promise<boole
       return false;
     }
 
-    // Create notification for user
-    const amountFormatted = (ledgerEntry.amount / 100).toLocaleString();
+    // Create notification for user - amounts stored in whole Leones
+    const amountFormatted = Math.round(ledgerEntry.amount).toLocaleString();
     const providerName = ledgerEntry.metadata?.provider_name || 'mobile money';
     
     await supabase.from('notifications').insert({
       user_id: ledgerEntry.user_id,
       type: 'system',
       title: '✅ Withdrawal Completed!',
-      body: `SLE ${amountFormatted} has been sent to your ${providerName} account.`,
+      body: `Le ${amountFormatted} has been sent to your ${providerName} account.`,
       link_url: '/wallet/activity',
       metadata: { ledger_id: ledgerEntry.id, type: 'withdrawal_success' },
     });
@@ -292,7 +292,7 @@ async function handlePayoutSuccess(supabase: any, eventData: any): Promise<boole
     // Send push notification
     await sendPushNotification(supabase, ledgerEntry.user_id, {
       title: '✅ Withdrawal Completed!',
-      body: `SLE ${amountFormatted} has been sent to your ${providerName} account.`,
+      body: `Le ${amountFormatted} has been sent to your ${providerName} account.`,
       link_url: '/wallet/activity',
     });
 
