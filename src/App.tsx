@@ -85,16 +85,6 @@ import AdminUserWallet from "./pages/AdminUserWallet";
 import AdminStoreAppealDetail from "./pages/AdminStoreAppealDetail";
 import AdminWebhookStatus from "./pages/AdminWebhookStatus";
 
-// Finance Portal Pages
-import FinanceOverview from "./pages/finance/FinanceOverview";
-import FinanceAnalytics from "./pages/finance/FinanceAnalytics";
-import FinanceUsersWallets from "./pages/finance/FinanceUsersWallets";
-import FinanceUserDetail from "./pages/finance/FinanceUserDetail";
-import FinanceTransactions from "./pages/finance/FinanceTransactions";
-import FinancePerksRevenue from "./pages/finance/FinancePerksRevenue";
-import FinanceFraudRisk from "./pages/finance/FinanceFraudRisk";
-import FinanceSettings from "./pages/finance/FinanceSettings";
-
 // Configure QueryClient with smart caching defaults
 const queryClient = new QueryClient({
   defaultOptions: {
