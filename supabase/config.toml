@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.monime-webhook]
 verify_jwt = false
+
+[functions.admin-webhook-events]
+verify_jwt = false

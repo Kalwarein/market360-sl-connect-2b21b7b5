@@ -16,6 +16,7 @@ import { NumericInput } from "@/components/NumericInput";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SIERRA_LEONE_REGIONS, getAllDistricts } from "@/lib/sierraLeoneData";
 import { sendOrderConfirmationEmail, sendNewOrderSellerEmail } from "@/lib/emailService";
+import { formatSLE } from "@/lib/currency";
 
 export default function Checkout() {
   const navigate = useNavigate();
@@ -309,7 +310,7 @@ export default function Checkout() {
                 {loadingBalance ? (
                   <Skeleton className="h-6 w-24" />
                 ) : (
-                  <p className="text-xl font-bold">Le {walletBalance.toLocaleString()}</p>
+                  <p className="text-xl font-bold">{formatSLE(walletBalance)}</p>
                 )}
               </div>
             </div>
@@ -343,12 +344,12 @@ export default function Checkout() {
                   <p className="font-medium text-sm">{item.title}</p>
                   <p className="text-xs text-muted-foreground">{item.store_name}</p>
                   <p className="text-sm">
-                    Le {item.price.toLocaleString()} × {item.quantity}
+                    {formatSLE(item.price)} × {item.quantity}
                   </p>
                 </div>
                 <div className="text-right">
                   <p className="font-semibold">
-                    Le {(item.price * item.quantity).toLocaleString()}
+                    {formatSLE(item.price * item.quantity)}
                   </p>
                 </div>
               </div>
@@ -356,7 +357,7 @@ export default function Checkout() {
             <div className="pt-3 border-t border-border flex items-center justify-between">
               <span className="font-semibold">Total Amount</span>
               <span className="text-xl font-bold text-primary">
-                Le {totalPrice.toLocaleString()}
+                {formatSLE(totalPrice)}
               </span>
             </div>
           </div>
@@ -469,7 +470,7 @@ export default function Checkout() {
           className="w-full h-12 text-base font-semibold"
           size="lg"
         >
-          {loading ? "Processing..." : `Pay Le ${totalPrice.toLocaleString()}`}
+          {loading ? "Processing..." : `Pay ${formatSLE(totalPrice)}`}
         </Button>
 
         {!isBalanceSufficient && !loadingBalance && (

@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { ArrowLeft, Wallet as WalletIcon, ArrowUpCircle, ArrowDownCircle, Clock, RefreshCw, CheckCircle, XCircle, Loader2, BarChart3 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
+import { formatSLE } from '@/lib/currency';
 
 interface LedgerEntry {
   id: string;
@@ -133,7 +134,6 @@ const Wallet = () => {
   };
 
   const getAmountDisplay = (entry: LedgerEntry) => {
-    // Amount stored in Leones directly (no conversion needed)
     const amount = entry.amount;
     const isCredit = ['deposit', 'earning', 'refund'].includes(entry.transaction_type);
     const isSuccessful = entry.status === 'success';
@@ -142,14 +142,14 @@ const Wallet = () => {
     if (!isSuccessful && !isCredit) {
       return (
         <span className="text-muted-foreground">
-          Le {amount.toLocaleString()}
+          {formatSLE(amount)}
         </span>
       );
     }
     
     return (
       <span className={isCredit ? 'text-success' : 'text-foreground'}>
-        {isCredit ? '+' : '-'}Le {amount.toLocaleString()}
+        {formatSLE(amount, { showSign: true, isCredit })}
       </span>
     );
   };
@@ -193,7 +193,7 @@ const Wallet = () => {
               {loading && <Loader2 className="h-4 w-4 animate-spin" />}
             </div>
             <p className="text-4xl font-bold mb-2">
-              Le {loading ? '...' : balance.toLocaleString()}
+              {loading ? 'Le ...' : formatSLE(balance)}
             </p>
             <p className="text-sm opacity-75">
               Powered by Market360 Wallet

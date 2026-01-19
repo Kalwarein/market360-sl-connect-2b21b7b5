@@ -8,6 +8,7 @@ import { ArrowLeft, Phone, Loader2, CheckCircle, Copy, RefreshCw } from 'lucide-
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { formatSLE, parseSLE } from '@/lib/currency';
 
 const QUICK_AMOUNTS = [10, 100, 200, 500];
 
@@ -37,8 +38,8 @@ const Deposit = () => {
     }
 
     // Parse and enforce whole numbers only (no decimals)
-    const amountNum = Math.floor(parseFloat(amount));
-    if (isNaN(amountNum) || amountNum <= 0) {
+    const amountNum = parseSLE(amount);
+    if (amountNum === null || amountNum <= 0) {
       toast.error('Please enter a valid whole number amount');
       return;
     }
@@ -157,7 +158,7 @@ const Deposit = () => {
               <div className="pt-4 border-t border-border">
                 <p className="text-sm text-muted-foreground mb-2">Amount to pay:</p>
                 <p className="text-2xl font-bold text-foreground">
-                  Le {Math.floor(depositResult.amount).toLocaleString()}
+                  {formatSLE(depositResult.amount)}
                 </p>
               </div>
 
