@@ -109,15 +109,15 @@ const FinancePerksRevenue = () => {
 
       setSales(enrichedSales);
 
-      // Calculate totals - price_paid is stored in CENTS, convert to SLE
-      const total = perksData.reduce((sum, p) => sum + Number(p.price_paid), 0) / 100;
+      // Calculate totals
+      const total = perksData.reduce((sum, p) => sum + Number(p.price_paid), 0);
       setTotalRevenue(total);
 
       // Today's revenue
       const today = new Date().toISOString().split('T')[0];
       const todayTotal = perksData
         .filter(p => p.purchased_at.startsWith(today))
-        .reduce((sum, p) => sum + Number(p.price_paid), 0) / 100;
+        .reduce((sum, p) => sum + Number(p.price_paid), 0);
       setTodayRevenue(todayTotal);
 
       // This month's revenue
@@ -128,7 +128,7 @@ const FinancePerksRevenue = () => {
           const date = new Date(p.purchased_at);
           return date >= monthStart && date <= monthEnd;
         })
-        .reduce((sum, p) => sum + Number(p.price_paid), 0) / 100;
+        .reduce((sum, p) => sum + Number(p.price_paid), 0);
       setMonthRevenue(monthTotal);
 
       // Calculate stats per perk type
@@ -142,8 +142,7 @@ const FinancePerksRevenue = () => {
           icon: PERK_ICONS[p.perk_type] || Gift,
           color: PERK_COLORS[p.perk_type] || 'hsl(var(--primary))'
         };
-        // Convert cents to SLE
-        existing.totalRevenue += Number(p.price_paid) / 100;
+        existing.totalRevenue += Number(p.price_paid);
         existing.salesCount += 1;
         statsMap.set(p.perk_type, existing);
       });
@@ -158,8 +157,7 @@ const FinancePerksRevenue = () => {
       perksData.forEach(p => {
         const date = p.purchased_at.split('T')[0];
         if (dailyMap.has(date)) {
-          // Convert cents to SLE
-          dailyMap.set(date, (dailyMap.get(date) || 0) + Number(p.price_paid) / 100);
+          dailyMap.set(date, (dailyMap.get(date) || 0) + Number(p.price_paid));
         }
       });
       setDailyRevenue(

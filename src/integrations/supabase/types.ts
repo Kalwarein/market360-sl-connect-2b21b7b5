@@ -398,7 +398,6 @@ export type Database = {
           escrow_amount: number | null
           escrow_status: string | null
           id: string
-          order_batch_ref: string | null
           product_id: string
           quantity: number
           seller_id: string
@@ -421,7 +420,6 @@ export type Database = {
           escrow_amount?: number | null
           escrow_status?: string | null
           id?: string
-          order_batch_ref?: string | null
           product_id: string
           quantity?: number
           seller_id: string
@@ -444,7 +442,6 @@ export type Database = {
           escrow_amount?: number | null
           escrow_status?: string | null
           id?: string
-          order_batch_ref?: string | null
           product_id?: string
           quantity?: number
           seller_id?: string
@@ -1745,24 +1742,6 @@ export type Database = {
         Returns: boolean
       }
       is_wallet_frozen: { Args: { p_user_id: string }; Returns: boolean }
-      place_order_batch: {
-        Args: {
-          p_buyer_id: string
-          p_delivery_name: string
-          p_delivery_notes: string
-          p_delivery_phone: string
-          p_idempotency_key: string
-          p_items: Json
-          p_shipping_address: string
-          p_shipping_city: string
-          p_shipping_country: string
-          p_shipping_region: string
-        }
-        Returns: {
-          order_ids: string[]
-          total_amount: number
-        }[]
-      }
     }
     Enums: {
       app_role: "buyer" | "seller" | "admin"

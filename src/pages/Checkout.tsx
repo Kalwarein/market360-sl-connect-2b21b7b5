@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -11,29 +11,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, MapPin, Wallet, AlertCircle, Shield, Loader2 } from "lucide-react";
+import { ArrowLeft, MapPin, Wallet, AlertCircle, Shield } from "lucide-react";
 import { NumericInput } from "@/components/NumericInput";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SIERRA_LEONE_REGIONS, getAllDistricts } from "@/lib/sierraLeoneData";
 import { sendOrderConfirmationEmail, sendNewOrderSellerEmail } from "@/lib/emailService";
-import FrozenWalletOverlay from "@/components/FrozenWalletOverlay";
-
-// Generate a stable idempotency key based on cart contents
-function generateIdempotencyKey(userId: string, items: Array<{ id: string; quantity: number }>): string {
-  const itemsHash = items
-    .map(i => `${i.id}:${i.quantity}`)
-    .sort()
-    .join('|');
-  // Use a simple hash to create a stable key
-  let hash = 0;
-  const str = `${userId}-${itemsHash}`;
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // Convert to 32bit integer
-  }
-  return `${Math.abs(hash).toString(36)}-${Date.now().toString(36)}`;
-}
 
 export default function Checkout() {
   const navigate = useNavigate();
@@ -44,15 +26,6 @@ export default function Checkout() {
   const [walletBalance, setWalletBalance] = useState<number>(0);
   const [loadingBalance, setLoadingBalance] = useState(true);
   const [showInsufficientModal, setShowInsufficientModal] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [isFrozen, setIsFrozen] = useState(false);
-  const [checkingFreeze, setCheckingFreeze] = useState(true);
-  
-  // CRITICAL: Stable idempotency key generated ONCE per checkout session
-  // This prevents duplicate orders on retries while allowing new checkouts
-  const [idempotencyKey] = useState(() => 
-    user ? generateIdempotencyKey(user.id, items.map(i => ({ id: i.id, quantity: i.quantity }))) : ''
-  );
   
   const [deliveryInfo, setDeliveryInfo] = useState({
     name: "",
@@ -69,46 +42,14 @@ export default function Checkout() {
       navigate("/cart");
     }
     loadWalletBalance();
-    checkFrozenStatus();
   }, [items, navigate]);
-
-  const checkFrozenStatus = async () => {
-    if (!user) {
-      setCheckingFreeze(false);
-      return;
-    }
-    
-    try {
-      // Use RPC function for consistent freeze check
-      const { data: isFrozenResult, error } = await supabase
-        .rpc('is_wallet_frozen', { p_user_id: user.id });
-      
-      if (error) {
-        console.error('Error checking freeze status:', error);
-        // Fallback to direct query if RPC fails
-        const { data: frozen } = await supabase
-          .from('wallet_freezes')
-          .select('id')
-          .eq('user_id', user.id)
-          .eq('is_active', true)
-          .maybeSingle();
-        setIsFrozen(!!frozen);
-      } else {
-        setIsFrozen(!!isFrozenResult);
-      }
-    } catch (error) {
-      console.error('Error checking freeze status:', error);
-    } finally {
-      setCheckingFreeze(false);
-    }
-  };
 
   const loadWalletBalance = async () => {
     if (!user) return;
     
     try {
-      // Use RPC for ledger-based balance - returns value in CENTS
-      const { data: balanceInCents, error } = await supabase
+      // Use RPC for ledger-based balance
+      const { data: balance, error } = await supabase
         .rpc('get_wallet_balance', { p_user_id: user.id });
 
       if (error) {
@@ -117,8 +58,7 @@ export default function Checkout() {
         return;
       }
 
-      // CRITICAL: Convert from cents to whole currency (SLE)
-      setWalletBalance((balanceInCents || 0) / 100);
+      setWalletBalance(balance || 0);
     } catch (error) {
       console.error("Error loading wallet:", error);
       setWalletBalance(0);
@@ -128,24 +68,6 @@ export default function Checkout() {
   };
 
   const handlePlaceOrder = async () => {
-    // ========================================
-    // CRITICAL: Prevent double-clicks
-    // ========================================
-    if (isProcessing || loading) {
-      console.log('Order already processing, ignoring click');
-      return;
-    }
-
-    // Check if wallet is frozen
-    if (isFrozen) {
-      toast({
-        title: "Wallet Frozen",
-        description: "Your wallet is frozen. Please contact support.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     if (!user) {
       toast({
         title: "Authentication required",
@@ -177,223 +99,184 @@ export default function Checkout() {
       }
     }
 
-    // Lock the button IMMEDIATELY to prevent double-clicks
-    setIsProcessing(true);
+    // Check wallet balance
+    if (walletBalance < totalPrice) {
+      setShowInsufficientModal(true);
+      return;
+    }
+
     setLoading(true);
 
     try {
-      // ========================================
-      // ATOMIC ORDER PLACEMENT via RPC
-      // Single database transaction: orders + wallet deduction
-      // If ANY step fails, EVERYTHING rolls back
-      // ========================================
-      const itemsPayload = items.map(item => ({
-        product_id: item.id,
-        quantity: item.quantity
-      }));
+      // Create orders for each cart item
+      const orderPromises = items.map(async (item) => {
+        // Get product details including seller_id
+        const { data: product } = await supabase
+          .from("products")
+          .select("store_id, images")
+          .eq("id", item.id)
+          .single();
 
-      const { data: result, error: rpcError } = await supabase.rpc('place_order_batch', {
-        p_buyer_id: user.id,
-        p_idempotency_key: idempotencyKey,
-        p_items: itemsPayload,
-        p_delivery_name: deliveryInfo.name,
-        p_delivery_phone: deliveryInfo.phone,
-        p_shipping_address: deliveryInfo.address,
-        p_shipping_city: deliveryInfo.city,
-        p_shipping_region: deliveryInfo.region,
-        p_shipping_country: deliveryInfo.country,
-        p_delivery_notes: deliveryInfo.notes || ''
+        if (!product) throw new Error("Product not found");
+
+        // Get store owner (seller) and store info
+        const { data: store } = await supabase
+          .from("stores")
+          .select("owner_id, store_name")
+          .eq("id", product.store_id)
+          .single();
+
+        if (!store) throw new Error("Store not found");
+
+        // Get buyer and seller profiles for emails
+        const { data: buyerProfile } = await supabase
+          .from("profiles")
+          .select("email, name, phone")
+          .eq("id", user.id)
+          .single();
+
+        const { data: sellerProfile } = await supabase
+          .from("profiles")
+          .select("email, name, phone")
+          .eq("id", store.owner_id)
+          .single();
+
+        // Create order with wallet payment
+        const { data: newOrder, error: orderError } = await supabase
+          .from("orders")
+          .insert({
+            buyer_id: user.id,
+            seller_id: store.owner_id,
+            product_id: item.id,
+            quantity: item.quantity,
+            total_amount: item.price * item.quantity,
+            escrow_status: "holding",
+            escrow_amount: item.price * item.quantity,
+            delivery_name: deliveryInfo.name,
+            delivery_phone: deliveryInfo.phone,
+            shipping_address: deliveryInfo.address,
+            shipping_city: deliveryInfo.city,
+            shipping_region: deliveryInfo.region,
+            shipping_country: deliveryInfo.country,
+            delivery_notes: deliveryInfo.notes,
+            status: "pending"
+          })
+          .select()
+          .single();
+
+        if (orderError) throw orderError;
+
+        const orderNumber = `#360-${newOrder.id.substring(0, 8).toUpperCase()}`;
+        const deliveryFullAddress = `${deliveryInfo.address}, ${deliveryInfo.city}, ${deliveryInfo.region}`;
+        const productImage = product.images?.[0] || '/placeholder.svg';
+
+        // Send notification to seller via edge function (bypasses RLS)
+        try {
+          await supabase.functions.invoke('create-order-notification', {
+            body: {
+              user_id: store.owner_id,
+              type: 'order',
+              title: '🛒 New Order Received!',
+              body: `${buyerProfile?.name || 'A customer'} placed an order for ${item.title}`,
+              link_url: newOrder?.id ? `/seller/order/${newOrder.id}` : '/seller-dashboard',
+              image_url: productImage,
+              icon: '/pwa-192x192.png',
+              requireInteraction: true,
+              metadata: {
+                order_id: newOrder?.id || null,
+                product_title: item.title,
+                buyer_name: buyerProfile?.name,
+                amount: item.price * item.quantity
+              }
+            }
+          });
+        } catch (notifError) {
+          console.error('Failed to send notification:', notifError);
+        }
+
+        // Send SMS notification to seller for new order
+        try {
+          if (sellerProfile?.phone) {
+            await supabase.functions.invoke('send-sms', {
+              body: {
+                to: sellerProfile.phone,
+                message: `🛒 Market360 - New Order Alert!\n\n${buyerProfile?.name || 'A customer'} placed an order for ${item.title}.\n\nOrder: ${orderNumber}\nAmount: Le ${(item.price * item.quantity).toLocaleString()}\n\nLogin to process: market360.app`
+              }
+            });
+          }
+        } catch (smsError) {
+          console.error('Failed to send SMS to seller:', smsError);
+        }
+
+        // Send email notifications
+        try {
+          if (buyerProfile?.email) {
+            await sendOrderConfirmationEmail(buyerProfile.email, {
+              orderNumber,
+              orderId: newOrder.id,
+              productName: item.title,
+              productImage,
+              quantity: item.quantity,
+              totalAmount: item.price * item.quantity,
+              deliveryAddress: deliveryFullAddress,
+              storeName: store.store_name,
+            }, user.id);
+          }
+
+          if (sellerProfile?.email) {
+            await sendNewOrderSellerEmail(sellerProfile.email, {
+              orderNumber,
+              orderId: newOrder.id,
+              productName: item.title,
+              productImage,
+              quantity: item.quantity,
+              totalAmount: item.price * item.quantity,
+              buyerName: buyerProfile?.name || 'Customer',
+              deliveryAddress: deliveryFullAddress,
+            }, store.owner_id);
+          }
+        } catch (emailError) {
+          console.error('Failed to send email notifications:', emailError);
+        }
       });
 
-      if (rpcError) {
-        console.error('RPC error:', rpcError);
-        
-        // Handle specific error messages
-        const errorMsg = rpcError.message || '';
-        if (errorMsg.includes('insufficient balance')) {
-          // Refresh balance and show modal
-          const { data: freshBalanceInCents } = await supabase
-            .rpc('get_wallet_balance', { p_user_id: user.id });
-          if (freshBalanceInCents !== null) {
-            setWalletBalance(freshBalanceInCents / 100);
-          }
-          setShowInsufficientModal(true);
-          toast({
-            title: "Insufficient balance",
-            description: "Please top up your wallet to complete this order.",
-            variant: "destructive",
-          });
-          return;
-        }
-        
-        if (errorMsg.includes('unauthorized')) {
-          toast({
-            title: "Session expired",
-            description: "Please log in again to place your order.",
-            variant: "destructive",
-          });
-          return;
-        }
-        
-        if (errorMsg.includes('product not available') || errorMsg.includes('store not available')) {
-          toast({
-            title: "Product unavailable",
-            description: "One or more items in your cart are no longer available.",
-            variant: "destructive",
-          });
-          return;
-        }
-        
-        throw new Error(errorMsg || "Failed to place order. Please try again.");
-      }
+      await Promise.all(orderPromises);
 
-      // Extract order IDs from the result
-      const orderIds: string[] = result?.[0]?.order_ids || [];
-      const totalAmount: number = result?.[0]?.total_amount || totalPrice;
+      // Deduct from wallet using wallet_ledger
+      const { error: ledgerError } = await supabase
+        .from("wallet_ledger")
+        .insert({
+          user_id: user.id,
+          amount: totalPrice,
+          transaction_type: 'payment',
+          status: 'success',
+          reference: `Order payment - ${items.length} items`,
+          metadata: { payment_method: 'wallet', order_count: items.length }
+        });
 
-      if (orderIds.length === 0) {
-        throw new Error("No orders were created. Please try again.");
-      }
+      if (ledgerError) throw ledgerError;
 
-      // ========================================
-      // SUCCESS: Cart cleared, navigate to orders
-      // ========================================
       clearCart();
       
       toast({
         title: "Order placed successfully!",
-        description: `${orderIds.length} order(s) created. Le ${totalAmount.toLocaleString()} deducted. Payment is in escrow.`,
+        description: "Your payment is in escrow. Track your orders in the Orders page.",
       });
 
-      // Navigate immediately - user sees success
       navigate("/orders");
-
-      // ========================================
-      // Send notifications in background (fire-and-forget)
-      // These run AFTER navigation, won't block or cause errors
-      // ========================================
-      const sendNotifications = async () => {
-        try {
-          // Get buyer profile once
-          const { data: buyerProfile } = await supabase
-            .from("profiles")
-            .select("email, name, phone")
-            .eq("id", user.id)
-            .single();
-
-          // Fetch created orders with product/store info
-          const { data: createdOrders } = await supabase
-            .from("orders")
-            .select(`
-              id, 
-              product_id, 
-              total_amount, 
-              seller_id, 
-              quantity,
-              products(title, images, store_id, stores(store_name, owner_id))
-            `)
-            .in("id", orderIds);
-
-          if (!createdOrders) return;
-
-          for (const order of createdOrders) {
-            const product = order.products as { title: string; images: string[]; store_id: string; stores: { store_name: string; owner_id: string } } | null;
-            if (!product) continue;
-            
-            const orderNumber = `#360-${order.id.substring(0, 8).toUpperCase()}`;
-            const productImage = product.images?.[0] || '/placeholder.svg';
-            const deliveryFullAddress = `${deliveryInfo.address}, ${deliveryInfo.city}, ${deliveryInfo.region}`;
-            const storeName = product.stores?.store_name || 'Store';
-            const sellerId = order.seller_id;
-
-            // Get seller profile
-            const { data: sellerProfile } = await supabase
-              .from("profiles")
-              .select("email, name, phone")
-              .eq("id", sellerId)
-              .single();
-
-            // Fire notifications (non-blocking)
-            supabase.functions.invoke('create-order-notification', {
-              body: {
-                user_id: sellerId,
-                type: 'order',
-                title: '🛒 New Order Received!',
-                body: `${buyerProfile?.name || 'A customer'} placed an order for ${product.title}`,
-                link_url: `/seller/order/${order.id}`,
-                image_url: productImage,
-                metadata: { order_id: order.id, product_title: product.title }
-              }
-            }).catch(e => console.error('Notification error:', e));
-
-            if (sellerProfile?.phone) {
-              supabase.functions.invoke('send-sms', {
-                body: {
-                  to: sellerProfile.phone,
-                  message: `🛒 Market360 - New Order!\n${buyerProfile?.name || 'Customer'} ordered ${product.title}\nOrder: ${orderNumber}\nAmount: Le ${order.total_amount.toLocaleString()}`
-                }
-              }).catch(e => console.error('SMS error:', e));
-            }
-
-            if (buyerProfile?.email) {
-              sendOrderConfirmationEmail(buyerProfile.email, {
-                orderNumber,
-                orderId: order.id,
-                productName: product.title,
-                productImage,
-                quantity: order.quantity,
-                totalAmount: order.total_amount,
-                deliveryAddress: deliveryFullAddress,
-                storeName,
-              }, user.id).catch(e => console.error('Email error:', e));
-            }
-
-            if (sellerProfile?.email) {
-              sendNewOrderSellerEmail(sellerProfile.email, {
-                orderNumber,
-                orderId: order.id,
-                productName: product.title,
-                productImage,
-                quantity: order.quantity,
-                totalAmount: order.total_amount,
-                buyerName: buyerProfile?.name || 'Customer',
-                deliveryAddress: deliveryFullAddress,
-              }, sellerId).catch(e => console.error('Email error:', e));
-            }
-          }
-        } catch (notifError) {
-          console.error('Notification batch error:', notifError);
-        }
-      };
-
-      // Fire and forget - don't await
-      sendNotifications();
-
     } catch (error) {
       console.error("Error placing order:", error);
-      
-      const errorMessage = error instanceof Error ? error.message : "Failed to place order";
       toast({
         title: "Order failed",
-        description: errorMessage,
+        description: "Failed to place order. Please try again.",
         variant: "destructive",
       });
     } finally {
       setLoading(false);
-      setIsProcessing(false);
     }
   };
 
-  // Loading state
-  if (checkingFreeze) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  const isBalanceSufficient = walletBalance >= totalPrice && !isFrozen;
+  const isBalanceSufficient = walletBalance >= totalPrice;
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -413,11 +296,10 @@ export default function Checkout() {
 
       <div className="max-w-4xl mx-auto p-4 space-y-4">
         {/* Wallet Balance Card - Now the payment method */}
-        <Card className={`p-4 border-2 ${isFrozen ? 'border-blue-300 bg-blue-50/50' : 'border-primary bg-primary/5'} relative overflow-hidden`}>
-          {isFrozen && <FrozenWalletOverlay message="Your wallet is frozen. You cannot place orders." />}
+        <Card className="p-4 border-2 border-primary bg-primary/5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className={`w-12 h-12 rounded-full ${isFrozen ? 'bg-blue-500' : 'bg-primary'} flex items-center justify-center`}>
+              <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center">
                 <Wallet className="h-6 w-6 text-primary-foreground" />
               </div>
               <div>
@@ -581,11 +463,11 @@ export default function Checkout() {
         {/* Place Order Button */}
         <Button
           onClick={handlePlaceOrder}
-          disabled={loading || loadingBalance || !isBalanceSufficient || isProcessing}
+          disabled={loading || loadingBalance || !isBalanceSufficient}
           className="w-full h-12 text-base font-semibold"
           size="lg"
         >
-          {loading || isProcessing ? "Processing..." : `Pay Le ${totalPrice.toLocaleString()}`}
+          {loading ? "Processing..." : `Pay Le ${totalPrice.toLocaleString()}`}
         </Button>
 
         {!isBalanceSufficient && !loadingBalance && (
