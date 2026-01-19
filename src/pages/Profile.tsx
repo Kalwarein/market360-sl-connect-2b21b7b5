@@ -277,7 +277,7 @@ const Profile = () => {
 
   if (loading || rolesLoading) {
     return (
-      <div className="min-h-screen bg-white pb-20">
+      <div className="min-h-screen bg-background pb-20">
         <div className="p-6 space-y-4">
           <Skeleton className="h-32 w-full" />
           <Skeleton className="h-64 w-full" />

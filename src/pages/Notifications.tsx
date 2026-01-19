@@ -134,7 +134,7 @@ const Notifications = () => {
   const unreadCount = notifications.filter(n => !n.read_at).length;
 
   return (
-    <div className="min-h-screen bg-surface">
+    <div className="min-h-screen bg-background">
       {/* Modern Header */}
       <div className="bg-background border-b border-border sticky top-0 z-10 backdrop-blur-lg bg-background/95">
         <div className="p-4">
