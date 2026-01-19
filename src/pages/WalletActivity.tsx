@@ -738,7 +738,7 @@ const WalletActivity = () => {
                             ['deposit', 'earning', 'refund'].includes(entry.transaction_type) ? 'text-success' : 'text-foreground'
                           }`}>
                             {entry.status === 'success' && ['deposit', 'earning', 'refund'].includes(entry.transaction_type) ? '+' : 
-                             entry.status === 'success' ? '-' : ''}{formatAmount(entry.amount / 100)}
+                             entry.status === 'success' ? '-' : ''}{formatAmount(entry.amount)}
                           </p>
                           {getStatusBadge(entry.status)}
                         </div>
