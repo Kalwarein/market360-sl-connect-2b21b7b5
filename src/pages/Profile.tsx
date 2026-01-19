@@ -79,24 +79,17 @@ const Profile = () => {
 
   const loadWalletBalance = async () => {
     try {
-      // Get ledger-based balance (same logic as Wallet page)
+      // Get ledger-based balance (Monime wallet system)
       const { data: balanceData, error: balanceError } = await supabase.rpc('get_wallet_balance', { 
         p_user_id: user?.id 
       });
 
       if (balanceError) {
         console.error('Balance fetch error:', balanceError);
-        // Fallback to old wallet table
-        const { data: walletData } = await supabase
-          .from('wallets')
-          .select('balance_leones')
-          .eq('user_id', user?.id)
-          .maybeSingle();
-        
-        setWalletBalance(walletData?.balance_leones || 0);
+        setWalletBalance(0);
       } else {
-        // Balance from ledger is in cents, convert to SLE
-        setWalletBalance((balanceData || 0) / 100);
+        // Balance from ledger is in Leones (not cents)
+        setWalletBalance(balanceData || 0);
       }
     } catch (error) {
       console.error('Error loading wallet balance:', error);

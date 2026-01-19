@@ -66,28 +66,17 @@ const Withdrawal = () => {
     try {
       setLoadingBalance(true);
       
-      // Use the ledger-based balance function (returns balance in cents)
+      // Use the ledger-based balance function (Monime wallet system)
       const { data, error } = await supabase.rpc('get_wallet_balance', { 
         p_user_id: user.id 
       });
 
       if (error) {
         console.error('Balance fetch error:', error);
-        // Fallback to old wallet table for backwards compatibility
-        const { data: walletData } = await supabase
-          .from('wallets')
-          .select('balance_leones')
-          .eq('user_id', user.id)
-          .maybeSingle();
-        
-        // Old table stores balance in SLE directly
-        setCurrentBalance(walletData?.balance_leones || 0);
+        setCurrentBalance(0);
       } else {
-        // RPC returns balance in cents, convert to SLE for display
-        const balanceInCents = data || 0;
-        const balanceInSLE = balanceInCents / 100;
-        console.log('Balance loaded:', { balanceInCents, balanceInSLE });
-        setCurrentBalance(balanceInSLE);
+        // RPC returns balance in Leones directly
+        setCurrentBalance(data || 0);
       }
     } catch (error) {
       console.error('Error loading balance:', error);

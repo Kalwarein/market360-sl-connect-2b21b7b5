@@ -46,27 +46,6 @@ Deno.serve(async (req) => {
 
     if (reqError || !request) throw new Error('Wallet request not found')
 
-    // Ensure wallet exists
-    const { data: existingWallet } = await supabaseClient
-      .from('wallets')
-      .select('id, balance_leones')
-      .eq('user_id', request.user_id)
-      .maybeSingle()
-
-    let wallet = existingWallet as { id: string; balance_leones: number } | null
-    if (!wallet) {
-      const { data: newWallet, error: wErr } = await supabaseClient
-        .from('wallets')
-        .insert({ user_id: request.user_id, balance_leones: 0 })
-        .select()
-        .single()
-      if (wErr || !newWallet) throw new Error('Failed to create wallet')
-      wallet = newWallet as { id: string; balance_leones: number }
-    }
-
-    const walletId = wallet!.id
-    const walletBalance = Number(wallet!.balance_leones)
-
     const nowIso = new Date().toISOString()
 
     const newStatus = action === 'approve' ? 'approved' : 'rejected'
@@ -78,46 +57,50 @@ Deno.serve(async (req) => {
 
     let walletDelta = 0
 
-
     if (action === 'approve') {
       if (request.type === 'deposit') {
         // No fee on deposits - full amount credited
         const depositAmount = Number(request.amount);
         walletDelta = depositAmount;
-        const { error: wUpdErr } = await supabaseClient
-          .from('wallets')
-          .update({ balance_leones: Number(wallet.balance_leones) + depositAmount })
-          .eq('id', wallet.id)
-        if (wUpdErr) throw wUpdErr
-
-        const { error: txErr } = await supabaseClient.from('transactions').insert({
-          wallet_id: wallet.id,
+        
+        // Add deposit to wallet_ledger (new Monime system)
+        const { error: ledgerErr } = await supabaseClient.from('wallet_ledger').insert({
+          user_id: request.user_id,
           amount: depositAmount,
-          type: 'deposit',
-          status: 'completed',
-          reference: `DEP-${request.id}`,
-          metadata: { original_amount: request.amount, fee_percentage: 0, wallet_request_id: request.id, processed_by: user.id }
+          transaction_type: 'deposit',
+          status: 'success',
+          reference: `Manual Deposit - Admin approved`,
+          metadata: { 
+            original_amount: request.amount, 
+            fee_percentage: 0, 
+            wallet_request_id: request.id, 
+            processed_by: user.id 
+          }
         })
-        if (txErr) throw txErr
+        if (ledgerErr) throw ledgerErr
       } else if (request.type === 'withdrawal') {
-        const net = Number(request.amount) * 0.98
-        // Deduct the full requested amount from wallet; user receives net
-        walletDelta = -Number(request.amount)
-        const { error: wUpdErr } = await supabaseClient
-          .from('wallets')
-          .update({ balance_leones: Number(wallet.balance_leones) - Number(request.amount) })
-          .eq('id', wallet.id)
-        if (wUpdErr) throw wUpdErr
-
-        const { error: txErr } = await supabaseClient.from('transactions').insert({
-          wallet_id: wallet.id,
-          amount: -Number(request.amount),
-          type: 'withdrawal',
-          status: 'completed',
-          reference: `WTH-${request.id}`,
-          metadata: { original_amount: request.amount, fee_percentage: 2, net_payout: net, wallet_request_id: request.id, processed_by: user.id }
+        const grossAmount = Number(request.amount);
+        const fee = grossAmount * 0.02;
+        const net = grossAmount - fee;
+        walletDelta = -grossAmount;
+        
+        // Add withdrawal to wallet_ledger (new Monime system)
+        const { error: ledgerErr } = await supabaseClient.from('wallet_ledger').insert({
+          user_id: request.user_id,
+          amount: grossAmount,
+          transaction_type: 'withdrawal',
+          status: 'success',
+          reference: `Manual Withdrawal - Admin approved`,
+          metadata: { 
+            original_amount: request.amount, 
+            fee_percentage: 2, 
+            fee_amount: fee,
+            net_payout: net, 
+            wallet_request_id: request.id, 
+            processed_by: user.id 
+          }
         })
-        if (txErr) throw txErr
+        if (ledgerErr) throw ledgerErr
       }
     }
 

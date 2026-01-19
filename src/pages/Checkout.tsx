@@ -108,7 +108,32 @@ export default function Checkout() {
     setLoading(true);
 
     try {
-      // Create orders for each cart item
+      // FIRST: Deduct from wallet using wallet_ledger BEFORE creating orders
+      // This ensures atomic balance deduction
+      const orderBatchRef = `batch-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      
+      const { error: ledgerError } = await supabase
+        .from("wallet_ledger")
+        .insert({
+          user_id: user.id,
+          amount: totalPrice,
+          transaction_type: 'payment',
+          status: 'success',
+          reference: `Order payment - ${items.length} item(s) - ${orderBatchRef}`,
+          metadata: { 
+            payment_method: 'wallet', 
+            order_count: items.length,
+            batch_ref: orderBatchRef,
+            items: items.map(i => ({ id: i.id, title: i.title, quantity: i.quantity, price: i.price }))
+          }
+        });
+
+      if (ledgerError) {
+        console.error('Payment failed:', ledgerError);
+        throw new Error('Payment failed. Please try again.');
+      }
+
+      // SECOND: Create orders for each cart item (payment already deducted)
       const orderPromises = items.map(async (item) => {
         // Get product details including seller_id
         const { data: product } = await supabase
@@ -159,6 +184,7 @@ export default function Checkout() {
             shipping_region: deliveryInfo.region,
             shipping_country: deliveryInfo.country,
             delivery_notes: deliveryInfo.notes,
+            order_batch_ref: orderBatchRef,
             status: "pending"
           })
           .select()
@@ -242,19 +268,7 @@ export default function Checkout() {
 
       await Promise.all(orderPromises);
 
-      // Deduct from wallet using wallet_ledger
-      const { error: ledgerError } = await supabase
-        .from("wallet_ledger")
-        .insert({
-          user_id: user.id,
-          amount: totalPrice,
-          transaction_type: 'payment',
-          status: 'success',
-          reference: `Order payment - ${items.length} items`,
-          metadata: { payment_method: 'wallet', order_count: items.length }
-        });
-
-      if (ledgerError) throw ledgerError;
+      // Payment already deducted above - just clear cart and navigate
 
       clearCart();
       
