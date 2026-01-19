@@ -277,7 +277,7 @@ Deno.serve(async (req) => {
   <meta property="og:site_name" content="Market360 - Sierra Leone Marketplace">
   <meta property="og:locale" content="en_SL">
   <meta property="product:price:amount" content="${product.price}">
-  <meta property="product:price:currency" content="SLL">
+  <meta property="product:price:currency" content="SLE">
   <meta property="product:brand" content="${product.brand || storeName}">
   <meta property="product:availability" content="in stock">
   <meta property="product:condition" content="${product.condition || 'new'}">
@@ -321,7 +321,7 @@ Deno.serve(async (req) => {
   <!-- Pinterest -->
   <meta name="pinterest-rich-pin" content="true">
   <meta property="og:price:amount" content="${product.price}">
-  <meta property="og:price:currency" content="SLL">
+  <meta property="og:price:currency" content="SLE">
   <meta name="pinterest:description" content="${ogDescription}">
   <meta name="pinterest:media" content="${productImage}">
   
@@ -350,7 +350,7 @@ Deno.serve(async (req) => {
     "offers": {
       "@type": "Offer",
       "url": "${productUrl}",
-      "priceCurrency": "SLL",
+      "priceCurrency": "SLE",
       "price": "${product.price}",
       "availability": "https://schema.org/InStock",
       "seller": {

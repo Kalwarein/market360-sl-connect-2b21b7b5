@@ -210,7 +210,7 @@ const SellerDashboard = () => {
                 <div className="flex items-center justify-between mb-2">
                   <DollarSign className="h-5 w-5 text-primary" />
                 </div>
-                <p className="text-2xl font-bold text-foreground">SLL {totalRevenue.toLocaleString()}</p>
+                <p className="text-2xl font-bold text-foreground">Le {totalRevenue.toLocaleString()}</p>
                 <p className="text-xs text-muted-foreground">Revenue</p>
               </CardContent>
             </Card>
@@ -333,7 +333,7 @@ const SellerDashboard = () => {
                         </div>
                         <div className="text-right">
                           <p className="text-lg font-bold text-primary">
-                            SLL {order.total_amount.toLocaleString()}
+                            Le {order.total_amount.toLocaleString()}
                           </p>
                           <Badge
                             variant={order.status === 'pending' ? 'destructive' : 'default'}

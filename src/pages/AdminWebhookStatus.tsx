@@ -115,16 +115,23 @@ const AdminWebhookStatus = () => {
   };
 
   const getAmountFromPayload = (payload: any): string | null => {
-    // Monime sends amount in cents, but we store in whole Leones
-    // Check stored amount first (already in Leones)
+    // First check if we have stored amount in Leones from ledger
     const storedAmount = payload?.data?.metadata?.amount_leones;
     if (storedAmount) {
       return formatSLE(storedAmount);
     }
     
-    // Fallback: Monime raw amount is in cents, convert to Leones
+    // Check original_amount_leones from withdrawal metadata
+    const originalAmount = payload?.data?.metadata?.original_amount_leones;
+    if (originalAmount) {
+      return formatSLE(Number(originalAmount));
+    }
+    
+    // Fallback: Monime raw API amount is in cents (minor units), convert to Leones
+    // This handles cases where we're viewing the raw webhook payload
     const rawAmount = payload?.data?.amount?.value;
     if (rawAmount) {
+      // Monime sends cents, divide by 100 to get NLE
       return formatSLE(Math.round(rawAmount / 100));
     }
     return null;

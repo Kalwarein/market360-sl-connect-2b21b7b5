@@ -1,25 +1,34 @@
 /**
- * Centralized currency formatting utilities for Sierra Leonean Leones (SLE/Le)
+ * Centralized currency formatting utilities for Sierra Leonean New Leone (NLE)
  * 
- * IMPORTANT: All amounts in the system are stored as WHOLE Leones (integers).
- * No decimals, no cents. If user inputs 10, it means 10 Leones.
+ * CURRENCY DENOMINATION RULES:
+ * - The NEW LEONE (NLE) is the official currency (replaced old SLL on 2022-04-01)
+ * - 1 NLE = 1,000 old Leones (SLL)
+ * - All amounts in the system are stored as WHOLE NLE (integers)
+ * - No decimals, no cents, no ×100 or ÷100 conversions in UI or ledger
+ * - Display prefix: "Le" (e.g., "Le 10,000")
+ * - ISO currency code: "SLE" (used in meta tags and APIs)
+ * 
+ * IMPORTANT: The Monime payment API uses cents (minor units), so we multiply by 100
+ * when sending to Monime and divide by 100 when receiving from Monime webhooks.
+ * This conversion happens ONLY in the edge functions, never in the frontend.
  */
 
 /**
- * Format a number as SLE currency string
- * @param amount - Amount in whole Leones (integer)
+ * Format a number as NLE currency string
+ * @param amount - Amount in whole NLE (integer)
  * @param options - Formatting options
- * @returns Formatted string like "Le 10,000" or "SLE 10,000"
+ * @returns Formatted string like "Le 10,000"
  */
 export function formatSLE(
   amount: number | null | undefined,
   options: {
-    prefix?: 'Le' | 'SLE';
     showSign?: boolean; // Show + or - prefix
     isCredit?: boolean; // Used with showSign to determine + or -
   } = {}
 ): string {
-  const { prefix = 'Le', showSign = false, isCredit = false } = options;
+  const { showSign = false, isCredit = false } = options;
+  const prefix = 'Le'; // Always use "Le" for display consistency
   
   // Handle null/undefined/NaN
   if (amount === null || amount === undefined || isNaN(amount)) {
@@ -124,7 +133,6 @@ export function formatWalletAmount(
   const isNeutral = !isSuccessful && !isCredit;
   
   const text = formatSLE(amount, {
-    prefix: 'Le',
     showSign: !isNeutral,
     isCredit: isCredit && isSuccessful,
   });

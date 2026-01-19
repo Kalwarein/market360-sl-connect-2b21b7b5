@@ -380,7 +380,7 @@ const Profile = () => {
                   <Skeleton className="h-10 w-24 mx-auto rounded-lg" />
                 ) : (
                   <p className="text-3xl font-bold text-primary dark:text-primary group-hover:scale-105 transition-transform">
-                    SLE {walletBalance?.toLocaleString() || 0}
+                    Le {walletBalance?.toLocaleString() || 0}
                   </p>
                 )}
               </CardContent>
