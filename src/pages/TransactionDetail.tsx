@@ -167,7 +167,7 @@ const TransactionDetail = () => {
         if (navigator.share && navigator.canShare({ files: [file] })) {
           await navigator.share({
             title: 'Transaction Receipt',
-            text: `Transaction Receipt - ${transaction?.transaction_type.toUpperCase()} - SLE ${(transaction?.amount || 0) / 100}`,
+            text: `Transaction Receipt - ${transaction?.transaction_type.toUpperCase()} - Le ${(transaction?.amount || 0).toLocaleString()}`,
             files: [file],
           });
           toast.success('Receipt shared successfully');
@@ -205,7 +205,8 @@ const TransactionDetail = () => {
     );
   }
 
-  const amountInSLE = transaction.amount / 100;
+  // Amount is stored in whole Leones - no division needed
+  const amountDisplay = Math.round(transaction.amount);
   const metadata = (typeof transaction.metadata === 'object' && transaction.metadata !== null) 
     ? transaction.metadata as Record<string, unknown> 
     : null;
@@ -238,7 +239,7 @@ const TransactionDetail = () => {
                 {getStatusIcon(transaction.status)}
               </div>
               <CardTitle className="text-2xl">
-                {isCredit(transaction.transaction_type) ? '+' : '-'}SLE {amountInSLE.toLocaleString()}
+                {isCredit(transaction.transaction_type) ? '+' : '-'}Le {amountDisplay.toLocaleString()}
               </CardTitle>
               <p className="text-muted-foreground capitalize mt-1">
                 {transaction.transaction_type}
@@ -261,7 +262,7 @@ const TransactionDetail = () => {
               <div className="flex items-center justify-between py-3 border-b">
                 <span className="text-muted-foreground">Amount</span>
                 <span className={`font-bold text-lg ${isCredit(transaction.transaction_type) ? 'text-success' : 'text-foreground'}`}>
-                  SLE {amountInSLE.toLocaleString()}
+                  Le {amountDisplay.toLocaleString()}
                 </span>
               </div>
 
@@ -383,7 +384,7 @@ const TransactionDetail = () => {
               {metadata?.fee && (
                 <div className="flex items-center justify-between py-3 border-b">
                   <span className="text-muted-foreground">Processing Fee</span>
-                  <span className="font-medium">SLE {((metadata.fee as number) / 100).toLocaleString()}</span>
+                  <span className="font-medium">Le {Math.round(metadata.fee as number).toLocaleString()}</span>
                 </div>
               )}
 
