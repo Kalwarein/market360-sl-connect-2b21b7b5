@@ -147,7 +147,7 @@ Deno.serve(async (req) => {
         JSON.stringify({ 
           success: false, 
           error: 'Insufficient balance',
-          current_balance: Math.round(currentBalanceInCents / 100),
+          current_balance: currentBalanceInCents / 100,
           requested_amount: amount,
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -318,14 +318,14 @@ Deno.serve(async (req) => {
           ledger_id: ledgerEntry.id,
           reference: reference,
           amount: amount,
-          fee: Math.round(feeInCents / 100),
-          amount_to_receive: Math.round(amountToSendInCents / 100),
+          fee: feeInCents / 100,
+          amount_to_receive: amountToSendInCents / 100,
           status: 'pending',
           destination: {
             phone: monimePhoneNumber,
             provider: selectedProvider === 'm17' ? 'Orange Money' : 'Africell Money',
           },
-          message: `Withdrawal initiated. You will receive Le ${Math.round(amountToSendInCents / 100).toLocaleString()} shortly (2% processing fee applied).`,
+          message: `Withdrawal initiated. You will receive SLE ${(amountToSendInCents / 100).toLocaleString()} shortly (2% processing fee applied).`,
         },
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

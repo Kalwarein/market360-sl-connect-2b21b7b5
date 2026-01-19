@@ -161,13 +161,13 @@ async function handleDepositSuccess(supabase: any, eventData: any): Promise<bool
       return false;
     }
 
-    // Create notification for user - amounts are in whole Leones
-    const amountFormatted = Math.round(ledgerEntry.amount).toLocaleString();
+    // Create notification for user
+    const amountFormatted = (ledgerEntry.amount / 100).toLocaleString();
     await supabase.from('notifications').insert({
       user_id: ledgerEntry.user_id,
       type: 'system',
       title: '💰 Deposit Received!',
-      body: `Le ${amountFormatted} has been added to your wallet.`,
+      body: `SLE ${amountFormatted} has been added to your wallet.`,
       link_url: '/wallet/activity',
       metadata: { ledger_id: ledgerEntry.id, type: 'deposit_success' },
     });
@@ -350,14 +350,14 @@ async function handlePayoutFailed(supabase: any, eventData: any): Promise<boolea
       return false;
     }
 
-    // Notify user about the failure - amounts are in whole Leones
-    const amountFormatted = Math.round(ledgerEntry.amount).toLocaleString();
+    // Notify user about the failure
+    const amountFormatted = (ledgerEntry.amount / 100).toLocaleString();
     
     await supabase.from('notifications').insert({
       user_id: ledgerEntry.user_id,
       type: 'system',
       title: '❌ Withdrawal Failed',
-      body: `Your withdrawal of Le ${amountFormatted} could not be completed. The funds remain in your wallet.`,
+      body: `Your withdrawal of SLE ${amountFormatted} could not be completed. The funds remain in your wallet.`,
       link_url: '/wallet/activity',
       metadata: { 
         ledger_id: ledgerEntry.id, 

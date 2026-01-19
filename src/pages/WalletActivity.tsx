@@ -137,33 +137,32 @@ const WalletActivity = () => {
   const stats = useMemo((): WalletStats => {
     const successTransactions = filteredTransactions.filter(t => t.status === 'success');
     
-    // Amounts are stored in whole Leones - no division needed
     const totalDeposits = successTransactions
       .filter(t => t.transaction_type === 'deposit')
-      .reduce((sum, t) => sum + t.amount, 0);
+      .reduce((sum, t) => sum + t.amount, 0) / 100;
     
     const totalWithdrawals = successTransactions
       .filter(t => t.transaction_type === 'withdrawal')
-      .reduce((sum, t) => sum + t.amount, 0);
+      .reduce((sum, t) => sum + t.amount, 0) / 100;
     
     const totalEarnings = successTransactions
       .filter(t => t.transaction_type === 'earning')
-      .reduce((sum, t) => sum + t.amount, 0);
+      .reduce((sum, t) => sum + t.amount, 0) / 100;
     
     const totalRefunds = successTransactions
       .filter(t => t.transaction_type === 'refund')
-      .reduce((sum, t) => sum + t.amount, 0);
+      .reduce((sum, t) => sum + t.amount, 0) / 100;
 
     const pendingAmount = filteredTransactions
       .filter(t => t.status === 'pending')
-      .reduce((sum, t) => sum + t.amount, 0);
+      .reduce((sum, t) => sum + t.amount, 0) / 100;
 
     const successRate = filteredTransactions.length > 0 
       ? (successTransactions.length / filteredTransactions.length) * 100 
       : 0;
 
     const avgTransactionSize = successTransactions.length > 0
-      ? successTransactions.reduce((sum, t) => sum + t.amount, 0) / successTransactions.length
+      ? successTransactions.reduce((sum, t) => sum + t.amount, 0) / successTransactions.length / 100
       : 0;
 
     return {
@@ -184,7 +183,7 @@ const WalletActivity = () => {
     
     return types.map(type => ({
       name: type.charAt(0).toUpperCase() + type.slice(1),
-      value: successTransactions.filter(t => t.transaction_type === type).reduce((sum, t) => sum + t.amount, 0),
+      value: successTransactions.filter(t => t.transaction_type === type).reduce((sum, t) => sum + t.amount, 0) / 100,
       color: CHART_COLORS[type as keyof typeof CHART_COLORS],
     })).filter(item => item.value > 0);
   }, [filteredTransactions]);
@@ -212,9 +211,8 @@ const WalletActivity = () => {
         return tDate >= dayStart && tDate <= dayEnd && t.status === 'success';
       });
       
-      // Amounts are in whole Leones - no division needed
-      const deposits = dayTransactions.filter(t => t.transaction_type === 'deposit').reduce((sum, t) => sum + t.amount, 0);
-      const withdrawals = dayTransactions.filter(t => t.transaction_type === 'withdrawal').reduce((sum, t) => sum + t.amount, 0);
+      const deposits = dayTransactions.filter(t => t.transaction_type === 'deposit').reduce((sum, t) => sum + t.amount, 0) / 100;
+      const withdrawals = dayTransactions.filter(t => t.transaction_type === 'withdrawal').reduce((sum, t) => sum + t.amount, 0) / 100;
       
       data.push({
         date: format(subDays(new Date(), i), 'MMM dd'),
@@ -235,11 +233,10 @@ const WalletActivity = () => {
       if (!months[monthKey]) {
         months[monthKey] = { deposits: 0, withdrawals: 0 };
       }
-      // Amounts are in whole Leones - no division needed
       if (t.transaction_type === 'deposit') {
-        months[monthKey].deposits += t.amount;
+        months[monthKey].deposits += t.amount / 100;
       } else if (t.transaction_type === 'withdrawal') {
-        months[monthKey].withdrawals += t.amount;
+        months[monthKey].withdrawals += t.amount / 100;
       }
     });
     
@@ -292,8 +289,7 @@ const WalletActivity = () => {
   };
 
   const formatAmount = (amount: number) => {
-    // Format as whole number with commas, no decimals
-    return `Le ${Math.round(amount).toLocaleString()}`;
+    return `SLE ${amount.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
   };
 
   if (loading) {

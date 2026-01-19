@@ -186,7 +186,7 @@ const OrderArrival = () => {
                   <p>Quantity: {order.quantity}</p>
                   <p className="font-semibold text-foreground flex items-center gap-1">
                     <DollarSign className="h-4 w-4" />
-                    Le {Math.round(order.total_amount).toLocaleString()}
+                    Le {order.total_amount.toFixed(2)}
                   </p>
                 </div>
               </div>
