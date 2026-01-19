@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -18,6 +18,23 @@ import { SIERRA_LEONE_REGIONS, getAllDistricts } from "@/lib/sierraLeoneData";
 import { sendOrderConfirmationEmail, sendNewOrderSellerEmail } from "@/lib/emailService";
 import FrozenWalletOverlay from "@/components/FrozenWalletOverlay";
 
+// Generate a stable idempotency key based on cart contents
+function generateIdempotencyKey(userId: string, items: Array<{ id: string; quantity: number }>): string {
+  const itemsHash = items
+    .map(i => `${i.id}:${i.quantity}`)
+    .sort()
+    .join('|');
+  // Use a simple hash to create a stable key
+  let hash = 0;
+  const str = `${userId}-${itemsHash}`;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32bit integer
+  }
+  return `${Math.abs(hash).toString(36)}-${Date.now().toString(36)}`;
+}
+
 export default function Checkout() {
   const navigate = useNavigate();
   const { items, totalPrice, clearCart } = useCart();
@@ -27,9 +44,15 @@ export default function Checkout() {
   const [walletBalance, setWalletBalance] = useState<number>(0);
   const [loadingBalance, setLoadingBalance] = useState(true);
   const [showInsufficientModal, setShowInsufficientModal] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false); // Prevent double-clicks
+  const [isProcessing, setIsProcessing] = useState(false);
   const [isFrozen, setIsFrozen] = useState(false);
   const [checkingFreeze, setCheckingFreeze] = useState(true);
+  
+  // CRITICAL: Stable idempotency key generated ONCE per checkout session
+  // This prevents duplicate orders on retries while allowing new checkouts
+  const [idempotencyKey] = useState(() => 
+    user ? generateIdempotencyKey(user.id, items.map(i => ({ id: i.id, quantity: i.quantity }))) : ''
+  );
   
   const [deliveryInfo, setDeliveryInfo] = useState({
     name: "",
@@ -154,203 +177,99 @@ export default function Checkout() {
       }
     }
 
-    // ========================================
-    // CRITICAL: Strict balance validation
-    // Calculate exact total from cart items
-    // ========================================
-    const calculatedTotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    
-    // Verify totalPrice matches calculated total
-    if (calculatedTotal !== totalPrice) {
-      console.error('Price mismatch detected:', { calculatedTotal, totalPrice });
-      toast({
-        title: "Price calculation error",
-        description: "Please refresh the page and try again",
-        variant: "destructive",
-      });
-      return;
-    }
-
     // Lock the button IMMEDIATELY to prevent double-clicks
     setIsProcessing(true);
     setLoading(true);
 
-    // Re-fetch wallet balance to ensure it's current
-    let currentBalance = walletBalance;
-    try {
-      const { data: freshBalanceInCents, error } = await supabase
-        .rpc('get_wallet_balance', { p_user_id: user.id });
-      
-      if (!error && freshBalanceInCents !== null) {
-        // CRITICAL: Convert from cents to whole currency
-        currentBalance = freshBalanceInCents / 100;
-      }
-    } catch (e) {
-      console.error('Error fetching fresh balance:', e);
-      setIsProcessing(false);
-      setLoading(false);
-      toast({
-        title: "Connection error",
-        description: "Please check your connection and try again",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Strict balance check with exact comparison
-    if (currentBalance < totalPrice) {
-      setWalletBalance(currentBalance); // Update displayed balance
-      setShowInsufficientModal(true);
-      setIsProcessing(false);
-      setLoading(false);
-      toast({
-        title: "Insufficient balance",
-        description: `Your wallet has Le ${currentBalance.toLocaleString()} but you need Le ${totalPrice.toLocaleString()}`,
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Generate unique order reference for idempotency
-    const orderBatchRef = `checkout-${user.id}-${Date.now()}`;
-    const paymentReference = `${orderBatchRef}-payment`;
-
     try {
       // ========================================
-      // STEP 1: Check for duplicate payment (idempotency)
+      // ATOMIC ORDER PLACEMENT via RPC
+      // Single database transaction: orders + wallet deduction
+      // If ANY step fails, EVERYTHING rolls back
       // ========================================
-      const { data: existingPayment } = await supabase
-        .from("wallet_ledger")
-        .select("id, status")
-        .eq("reference", paymentReference)
-        .maybeSingle();
-
-      if (existingPayment) {
-        if (existingPayment.status === 'success') {
-          toast({
-            title: "Already processed",
-            description: "This payment was already processed. Please check your orders.",
-          });
-          navigate("/orders");
-          return;
-        }
-        // If previous attempt failed or pending, clean it up and proceed
-        await supabase
-          .from("wallet_ledger")
-          .delete()
-          .eq("id", existingPayment.id);
-      }
-
-      // ========================================
-      // STEP 2: Gather all product and store data FIRST
-      // This validates everything before any mutations
-      // ========================================
-      const orderDataList: Array<{
-        item: typeof items[0];
-        product: { store_id: string; images: string[] };
-        store: { owner_id: string; store_name: string };
-      }> = [];
-
-      for (const item of items) {
-        const { data: product, error: productError } = await supabase
-          .from("products")
-          .select("store_id, images")
-          .eq("id", item.id)
-          .single();
-
-        if (productError || !product) {
-          throw new Error(`Product "${item.title}" is no longer available.`);
-        }
-
-        const { data: store, error: storeError } = await supabase
-          .from("stores")
-          .select("owner_id, store_name")
-          .eq("id", product.store_id)
-          .single();
-
-        if (storeError || !store) {
-          throw new Error(`Store not found for "${item.title}".`);
-        }
-
-        orderDataList.push({ item, product, store });
-      }
-
-      // ========================================
-      // STEP 3: Create ALL orders in a SINGLE batch insert
-      // This is atomic - either all succeed or all fail
-      // ========================================
-      const ordersToInsert = orderDataList.map(({ item, store }) => ({
-        buyer_id: user.id,
-        seller_id: store.owner_id,
+      const itemsPayload = items.map(item => ({
         product_id: item.id,
-        quantity: item.quantity,
-        total_amount: item.price * item.quantity,
-        escrow_status: "holding",
-        escrow_amount: item.price * item.quantity,
-        delivery_name: deliveryInfo.name,
-        delivery_phone: deliveryInfo.phone,
-        shipping_address: deliveryInfo.address,
-        shipping_city: deliveryInfo.city,
-        shipping_region: deliveryInfo.region,
-        shipping_country: deliveryInfo.country,
-        delivery_notes: deliveryInfo.notes,
-        status: "pending" as const
+        quantity: item.quantity
       }));
 
-      const { data: createdOrders, error: ordersError } = await supabase
-        .from("orders")
-        .insert(ordersToInsert)
-        .select("id, product_id, total_amount, seller_id");
+      const { data: result, error: rpcError } = await supabase.rpc('place_order_batch', {
+        p_buyer_id: user.id,
+        p_idempotency_key: idempotencyKey,
+        p_items: itemsPayload,
+        p_delivery_name: deliveryInfo.name,
+        p_delivery_phone: deliveryInfo.phone,
+        p_shipping_address: deliveryInfo.address,
+        p_shipping_city: deliveryInfo.city,
+        p_shipping_region: deliveryInfo.region,
+        p_shipping_country: deliveryInfo.country,
+        p_delivery_notes: deliveryInfo.notes || ''
+      });
 
-      if (ordersError || !createdOrders || createdOrders.length === 0) {
-        console.error('Order creation error:', ordersError);
-        throw new Error("Failed to create orders. No payment was made.");
-      }
-
-      // ========================================
-      // STEP 4: Create payment ledger entry as SUCCESS
-      // Only AFTER orders are confirmed created
-      // ========================================
-      const totalInCents = Math.round(totalPrice * 100);
-      const { error: paymentError } = await supabase
-        .from("wallet_ledger")
-        .insert({
-          user_id: user.id,
-          amount: totalInCents,
-          transaction_type: 'payment',
-          status: 'success', // SUCCESS because orders exist
-          reference: paymentReference,
-          metadata: { 
-            payment_method: 'wallet', 
-            order_count: createdOrders.length,
-            order_batch_ref: orderBatchRef,
-            order_ids: createdOrders.map(o => o.id),
-            items: items.map(i => ({ id: i.id, title: i.title, qty: i.quantity, price: i.price }))
+      if (rpcError) {
+        console.error('RPC error:', rpcError);
+        
+        // Handle specific error messages
+        const errorMsg = rpcError.message || '';
+        if (errorMsg.includes('insufficient balance')) {
+          // Refresh balance and show modal
+          const { data: freshBalanceInCents } = await supabase
+            .rpc('get_wallet_balance', { p_user_id: user.id });
+          if (freshBalanceInCents !== null) {
+            setWalletBalance(freshBalanceInCents / 100);
           }
-        });
+          setShowInsufficientModal(true);
+          toast({
+            title: "Insufficient balance",
+            description: "Please top up your wallet to complete this order.",
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        if (errorMsg.includes('unauthorized')) {
+          toast({
+            title: "Session expired",
+            description: "Please log in again to place your order.",
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        if (errorMsg.includes('product not available') || errorMsg.includes('store not available')) {
+          toast({
+            title: "Product unavailable",
+            description: "One or more items in your cart are no longer available.",
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        throw new Error(errorMsg || "Failed to place order. Please try again.");
+      }
 
-      if (paymentError) {
-        // CRITICAL: Orders were created but payment failed to record
-        // This is a rare edge case - we should still show success because money was deducted
-        console.error('Payment ledger error after orders created:', paymentError);
+      // Extract order IDs from the result
+      const orderIds: string[] = result?.[0]?.order_ids || [];
+      const totalAmount: number = result?.[0]?.total_amount || totalPrice;
+
+      if (orderIds.length === 0) {
+        throw new Error("No orders were created. Please try again.");
       }
 
       // ========================================
-      // STEP 5: Clear cart and show success IMMEDIATELY
-      // Don't wait for notifications
+      // SUCCESS: Cart cleared, navigate to orders
       // ========================================
       clearCart();
       
       toast({
         title: "Order placed successfully!",
-        description: `${createdOrders.length} order(s) created. Your payment is in escrow.`,
+        description: `${orderIds.length} order(s) created. Le ${totalAmount.toLocaleString()} deducted. Payment is in escrow.`,
       });
 
       // Navigate immediately - user sees success
       navigate("/orders");
 
       // ========================================
-      // STEP 6: Send notifications in background (fire-and-forget)
+      // Send notifications in background (fire-and-forget)
       // These run AFTER navigation, won't block or cause errors
       // ========================================
       const sendNotifications = async () => {
@@ -362,34 +281,48 @@ export default function Checkout() {
             .eq("id", user.id)
             .single();
 
-          for (let i = 0; i < createdOrders.length; i++) {
-            const order = createdOrders[i];
-            const orderData = orderDataList[i];
+          // Fetch created orders with product/store info
+          const { data: createdOrders } = await supabase
+            .from("orders")
+            .select(`
+              id, 
+              product_id, 
+              total_amount, 
+              seller_id, 
+              quantity,
+              products(title, images, store_id, stores(store_name, owner_id))
+            `)
+            .in("id", orderIds);
+
+          if (!createdOrders) return;
+
+          for (const order of createdOrders) {
+            const product = order.products as { title: string; images: string[]; store_id: string; stores: { store_name: string; owner_id: string } } | null;
+            if (!product) continue;
             
-            if (!orderData) continue;
-            
-            const { item, product, store } = orderData;
             const orderNumber = `#360-${order.id.substring(0, 8).toUpperCase()}`;
             const productImage = product.images?.[0] || '/placeholder.svg';
             const deliveryFullAddress = `${deliveryInfo.address}, ${deliveryInfo.city}, ${deliveryInfo.region}`;
+            const storeName = product.stores?.store_name || 'Store';
+            const sellerId = order.seller_id;
 
             // Get seller profile
             const { data: sellerProfile } = await supabase
               .from("profiles")
               .select("email, name, phone")
-              .eq("id", store.owner_id)
+              .eq("id", sellerId)
               .single();
 
             // Fire notifications (non-blocking)
             supabase.functions.invoke('create-order-notification', {
               body: {
-                user_id: store.owner_id,
+                user_id: sellerId,
                 type: 'order',
                 title: '🛒 New Order Received!',
-                body: `${buyerProfile?.name || 'A customer'} placed an order for ${item.title}`,
+                body: `${buyerProfile?.name || 'A customer'} placed an order for ${product.title}`,
                 link_url: `/seller/order/${order.id}`,
                 image_url: productImage,
-                metadata: { order_id: order.id, product_title: item.title }
+                metadata: { order_id: order.id, product_title: product.title }
               }
             }).catch(e => console.error('Notification error:', e));
 
@@ -397,7 +330,7 @@ export default function Checkout() {
               supabase.functions.invoke('send-sms', {
                 body: {
                   to: sellerProfile.phone,
-                  message: `🛒 Market360 - New Order!\n${buyerProfile?.name || 'Customer'} ordered ${item.title}\nOrder: ${orderNumber}\nAmount: Le ${order.total_amount.toLocaleString()}`
+                  message: `🛒 Market360 - New Order!\n${buyerProfile?.name || 'Customer'} ordered ${product.title}\nOrder: ${orderNumber}\nAmount: Le ${order.total_amount.toLocaleString()}`
                 }
               }).catch(e => console.error('SMS error:', e));
             }
@@ -406,12 +339,12 @@ export default function Checkout() {
               sendOrderConfirmationEmail(buyerProfile.email, {
                 orderNumber,
                 orderId: order.id,
-                productName: item.title,
+                productName: product.title,
                 productImage,
-                quantity: item.quantity,
+                quantity: order.quantity,
                 totalAmount: order.total_amount,
                 deliveryAddress: deliveryFullAddress,
-                storeName: store.store_name,
+                storeName,
               }, user.id).catch(e => console.error('Email error:', e));
             }
 
@@ -419,13 +352,13 @@ export default function Checkout() {
               sendNewOrderSellerEmail(sellerProfile.email, {
                 orderNumber,
                 orderId: order.id,
-                productName: item.title,
+                productName: product.title,
                 productImage,
-                quantity: item.quantity,
+                quantity: order.quantity,
                 totalAmount: order.total_amount,
                 buyerName: buyerProfile?.name || 'Customer',
                 deliveryAddress: deliveryFullAddress,
-              }, store.owner_id).catch(e => console.error('Email error:', e));
+              }, sellerId).catch(e => console.error('Email error:', e));
             }
           }
         } catch (notifError) {
@@ -438,9 +371,6 @@ export default function Checkout() {
 
     } catch (error) {
       console.error("Error placing order:", error);
-      
-      // No rollback needed - if we reach here, no payment was created
-      // (payment is only created AFTER orders succeed)
       
       const errorMessage = error instanceof Error ? error.message : "Failed to place order";
       toast({
