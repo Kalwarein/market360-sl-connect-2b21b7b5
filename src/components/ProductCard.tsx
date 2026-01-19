@@ -5,6 +5,7 @@ import { ShoppingCart, Store, Shield, Sparkles, Star } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useStorePerks } from '@/hooks/useStorePerks';
 import { cn } from '@/lib/utils';
+import { formatSLE } from '@/lib/currency';
 
 interface ProductCardProps {
   id: string;
@@ -104,7 +105,7 @@ export const ProductCard = ({
                 ? "text-primary" 
                 : "text-accent-foreground"
             )}>
-              Le {price.toLocaleString()}
+              {formatSLE(price)}
             </p>
             <div className="flex items-center gap-1">
               {[1, 2, 3, 4].map((i) => (
@@ -188,7 +189,7 @@ export const ProductCard = ({
         {/* Price & Rating Row */}
         <div className="flex items-center justify-between">
           <p className="text-xl font-black text-foreground">
-            Le {price.toLocaleString()}
+            {formatSLE(price)}
           </p>
           <div className="flex items-center gap-0.5">
             {[1, 2, 3, 4].map((i) => (

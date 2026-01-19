@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Webhook, CheckCircle, XCircle, Clock, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
+import { formatSLE } from '@/lib/currency';
 
 interface WebhookEvent {
   id: string;
@@ -36,14 +37,22 @@ const AdminWebhookStatus = () => {
   const loadEvents = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('webhook_events')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(20);
+      // Use the admin-only edge function to fetch webhook events
+      const { data: sessionData } = await supabase.auth.getSession();
+      
+      const { data, error } = await supabase.functions.invoke('admin-webhook-events', {
+        headers: {
+          Authorization: `Bearer ${sessionData.session?.access_token}`,
+        },
+      });
 
       if (error) throw error;
-      setEvents(data || []);
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to load webhook events');
+      }
+      
+      setEvents(data.data || []);
     } catch (error) {
       console.error('Error loading webhook events:', error);
       toast({
@@ -94,7 +103,6 @@ const AdminWebhookStatus = () => {
   };
 
   const formatEventType = (eventType: string): string => {
-    // Handle cases where event_type is a JSON object stringified
     if (eventType.startsWith('{')) {
       try {
         const parsed = JSON.parse(eventType);
@@ -107,10 +115,17 @@ const AdminWebhookStatus = () => {
   };
 
   const getAmountFromPayload = (payload: any): string | null => {
-    const amount = payload?.data?.amount?.value;
-    if (amount) {
-      // Monime webhook amounts are in cents, convert to whole Leones
-      return `Le ${Math.round(amount / 100).toLocaleString()}`;
+    // Monime sends amount in cents, but we store in whole Leones
+    // Check stored amount first (already in Leones)
+    const storedAmount = payload?.data?.metadata?.amount_leones;
+    if (storedAmount) {
+      return formatSLE(storedAmount);
+    }
+    
+    // Fallback: Monime raw amount is in cents, convert to Leones
+    const rawAmount = payload?.data?.amount?.value;
+    if (rawAmount) {
+      return formatSLE(Math.round(rawAmount / 100));
     }
     return null;
   };

@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
+import { formatSLE, parseSLE } from '@/lib/currency';
 
 type Provider = 'm17' | 'm18';
 
@@ -93,9 +94,9 @@ const Withdrawal = () => {
       return;
     }
 
-    const amountNum = parseFloat(amount);
-    if (isNaN(amountNum) || amountNum <= 0) {
-      toast.error('Please enter a valid amount');
+    const amountNum = parseSLE(amount);
+    if (amountNum === null || amountNum <= 0) {
+      toast.error('Please enter a valid whole number amount');
       return;
     }
 
@@ -169,7 +170,7 @@ const Withdrawal = () => {
               <div>
                 <h2 className="text-2xl font-bold text-foreground mb-2">Withdrawal Processing</h2>
                 <p className="text-muted-foreground">
-                  Your withdrawal of <strong className="text-foreground">SLE {parseFloat(amount).toLocaleString()}</strong> is being processed.
+                  Your withdrawal of <strong className="text-foreground">{formatSLE(parseSLE(amount) || 0, { prefix: 'SLE' })}</strong> is being processed.
                 </p>
               </div>
               <div className="p-4 bg-card rounded-xl border-2 border-success/20">
@@ -233,7 +234,7 @@ const Withdrawal = () => {
                 <div className="flex-1">
                   <p className="text-sm text-white/80 font-medium">Available Balance</p>
                   <p className="text-3xl font-bold text-white mt-1">
-                    {loadingBalance ? '...' : `SLE ${currentBalance.toLocaleString()}`}
+                    {loadingBalance ? '...' : formatSLE(currentBalance, { prefix: 'SLE' })}
                   </p>
                 </div>
               </div>
@@ -311,24 +312,24 @@ const Withdrawal = () => {
                 required
               />
               
-              {amount && parseFloat(amount) > 0 && (
+              {amount && parseSLE(amount) && parseSLE(amount)! > 0 && (
                 <div className="p-3 bg-muted/50 rounded-xl space-y-1">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Amount</span>
-                    <span>SLE {parseFloat(amount).toLocaleString()}</span>
+                    <span>{formatSLE(parseSLE(amount) || 0, { prefix: 'SLE' })}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Processing Fee (2%)</span>
-                    <span className="text-destructive">-SLE {(parseFloat(amount) * 0.02).toLocaleString()}</span>
+                    <span className="text-destructive">-{formatSLE(Math.round((parseSLE(amount) || 0) * 0.02), { prefix: 'SLE' })}</span>
                   </div>
                   <div className="flex justify-between font-bold border-t pt-2 mt-2">
                     <span>You'll Receive</span>
-                    <span className="text-success">SLE {(parseFloat(amount) * 0.98).toLocaleString()}</span>
+                    <span className="text-success">{formatSLE(Math.round((parseSLE(amount) || 0) * 0.98), { prefix: 'SLE' })}</span>
                   </div>
                 </div>
               )}
               
-              {amount && parseFloat(amount) > currentBalance && (
+              {amount && parseSLE(amount) && parseSLE(amount)! > currentBalance && (
                 <p className="text-sm text-destructive font-medium animate-fade-in">
                   ❌ Amount exceeds available balance
                 </p>
@@ -348,7 +349,7 @@ const Withdrawal = () => {
             </Button>
             <Button 
               type="submit"
-              disabled={loading || !amount || !phone || !detectedProvider || parseFloat(amount) > currentBalance || loadingBalance}
+              disabled={loading || !amount || !phone || !detectedProvider || (parseSLE(amount) || 0) > currentBalance || loadingBalance}
               className="flex-1 h-14 rounded-2xl font-bold text-base shadow-xl shadow-primary/40 hover:shadow-2xl hover:shadow-primary/50 transition-all bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90"
             >
               {loading ? (

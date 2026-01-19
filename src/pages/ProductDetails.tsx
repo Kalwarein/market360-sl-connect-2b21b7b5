@@ -23,6 +23,7 @@ import { ReviewList } from '@/components/ReviewList';
 import { ImageZoomModal } from '@/components/ImageZoomModal';
 import { AdminProductPanel } from '@/components/AdminProductPanel';
 import { useUserRoles } from '@/hooks/useUserRoles';
+import { formatSLE } from '@/lib/currency';
 
 interface Product {
   id: string;
@@ -442,7 +443,7 @@ const ProductDetails = () => {
             
             <div className="flex items-baseline gap-3">
               <span className={`font-bold text-primary ${isPremiumProduct ? 'text-4xl' : 'text-3xl'}`}>
-                Le {product.price.toLocaleString()}
+                {formatSLE(product.price)}
               </span>
               <span className={`text-muted-foreground ${isPremiumProduct ? 'text-sm bg-muted/50 px-2 py-0.5 rounded' : 'text-sm'}`}>
                 MOQ: {product.moq} units
