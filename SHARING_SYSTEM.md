@@ -55,7 +55,7 @@ Market360 implements a sophisticated product sharing system that generates rich 
 
 <!-- Product-Specific -->
 <meta property="product:price:amount" content="12500">
-<meta property="product:price:currency" content="SLL">
+<meta property="product:price:currency" content="SLE">
 <meta property="product:brand" content="Brand Name">
 <meta property="product:availability" content="in stock">
 

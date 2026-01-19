@@ -170,7 +170,7 @@ const Withdrawal = () => {
               <div>
                 <h2 className="text-2xl font-bold text-foreground mb-2">Withdrawal Processing</h2>
                 <p className="text-muted-foreground">
-                  Your withdrawal of <strong className="text-foreground">{formatSLE(parseSLE(amount) || 0, { prefix: 'SLE' })}</strong> is being processed.
+                  Your withdrawal of <strong className="text-foreground">{formatSLE(parseSLE(amount) || 0)}</strong> is being processed.
                 </p>
               </div>
               <div className="p-4 bg-card rounded-xl border-2 border-success/20">
@@ -234,7 +234,7 @@ const Withdrawal = () => {
                 <div className="flex-1">
                   <p className="text-sm text-white/80 font-medium">Available Balance</p>
                   <p className="text-3xl font-bold text-white mt-1">
-                    {loadingBalance ? '...' : formatSLE(currentBalance, { prefix: 'SLE' })}
+                    {loadingBalance ? '...' : formatSLE(currentBalance)}
                   </p>
                 </div>
               </div>
@@ -316,15 +316,15 @@ const Withdrawal = () => {
                 <div className="p-3 bg-muted/50 rounded-xl space-y-1">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Amount</span>
-                    <span>{formatSLE(parseSLE(amount) || 0, { prefix: 'SLE' })}</span>
+                    <span>{formatSLE(parseSLE(amount) || 0)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Processing Fee (2%)</span>
-                    <span className="text-destructive">-{formatSLE(Math.round((parseSLE(amount) || 0) * 0.02), { prefix: 'SLE' })}</span>
+                    <span className="text-destructive">-{formatSLE(Math.round((parseSLE(amount) || 0) * 0.02))}</span>
                   </div>
                   <div className="flex justify-between font-bold border-t pt-2 mt-2">
                     <span>You'll Receive</span>
-                    <span className="text-success">{formatSLE(Math.round((parseSLE(amount) || 0) * 0.98), { prefix: 'SLE' })}</span>
+                    <span className="text-success">{formatSLE(Math.round((parseSLE(amount) || 0) * 0.98))}</span>
                   </div>
                 </div>
               )}
