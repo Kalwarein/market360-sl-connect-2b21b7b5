@@ -1763,6 +1763,16 @@ export type Database = {
           total_amount: number
         }[]
       }
+      validate_order_escrow_consistency: {
+        Args: never
+        Returns: {
+          escrow_status: string
+          issue: string
+          ledger_amount: number
+          order_amount: number
+          order_id: string
+        }[]
+      }
     }
     Enums: {
       app_role: "buyer" | "seller" | "admin"
