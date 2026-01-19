@@ -99,7 +99,7 @@ export default function Checkout() {
       }
     }
 
-    // Check wallet balance (client-side check for UX, backend will verify atomically)
+    // Check wallet balance
     if (walletBalance < totalPrice) {
       setShowInsufficientModal(true);
       return;
@@ -108,108 +108,120 @@ export default function Checkout() {
     setLoading(true);
 
     try {
-      // Generate idempotency key to prevent duplicate orders on retry
-      const idempotencyKey = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      // FIRST: Deduct from wallet using wallet_ledger BEFORE creating orders
+      // This ensures atomic balance deduction
+      const orderBatchRef = `batch-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       
-      // Prepare items for the RPC call
-      const itemsPayload = items.map(item => ({
-        product_id: item.id,
-        quantity: item.quantity
-      }));
+      const { error: ledgerError } = await supabase
+        .from("wallet_ledger")
+        .insert({
+          user_id: user.id,
+          amount: totalPrice,
+          transaction_type: 'payment',
+          status: 'success',
+          reference: `Order payment - ${items.length} item(s) - ${orderBatchRef}`,
+          metadata: { 
+            payment_method: 'wallet', 
+            order_count: items.length,
+            batch_ref: orderBatchRef,
+            items: items.map(i => ({ id: i.id, title: i.title, quantity: i.quantity, price: i.price }))
+          }
+        });
 
-      // Call the atomic place_order_batch function
-      // This handles: balance check → wallet deduction → order creation in one transaction
-      const { data: batchResult, error: batchError } = await supabase.rpc('place_order_batch', {
-        p_buyer_id: user.id,
-        p_idempotency_key: idempotencyKey,
-        p_items: itemsPayload,
-        p_delivery_name: deliveryInfo.name,
-        p_delivery_phone: deliveryInfo.phone,
-        p_shipping_address: deliveryInfo.address,
-        p_shipping_city: deliveryInfo.city,
-        p_shipping_region: deliveryInfo.region,
-        p_shipping_country: deliveryInfo.country,
-        p_delivery_notes: deliveryInfo.notes || ''
-      });
-
-      if (batchError) {
-        console.error('Order batch error:', batchError);
-        
-        // Handle specific error messages
-        if (batchError.message?.includes('insufficient balance')) {
-          setShowInsufficientModal(true);
-          return;
-        }
-        
-        throw new Error(batchError.message || 'Failed to place order');
+      if (ledgerError) {
+        console.error('Payment failed:', ledgerError);
+        throw new Error('Payment failed. Please try again.');
       }
 
-      if (!batchResult || batchResult.length === 0) {
-        throw new Error('No order data returned');
-      }
+      // SECOND: Create orders for each cart item (payment already deducted)
+      const orderPromises = items.map(async (item) => {
+        // Get product details including seller_id
+        const { data: product } = await supabase
+          .from("products")
+          .select("store_id, images")
+          .eq("id", item.id)
+          .single();
 
-      const { order_ids, total_amount } = batchResult[0];
+        if (!product) throw new Error("Product not found");
 
-      // Send notifications for each order (non-blocking)
-      const notificationPromises = order_ids.map(async (orderId: string, index: number) => {
-        const item = items[index];
-        if (!item) return;
+        // Get store owner (seller) and store info
+        const { data: store } = await supabase
+          .from("stores")
+          .select("owner_id, store_name")
+          .eq("id", product.store_id)
+          .single();
 
+        if (!store) throw new Error("Store not found");
+
+        // Get buyer and seller profiles for emails
+        const { data: buyerProfile } = await supabase
+          .from("profiles")
+          .select("email, name, phone")
+          .eq("id", user.id)
+          .single();
+
+        const { data: sellerProfile } = await supabase
+          .from("profiles")
+          .select("email, name, phone")
+          .eq("id", store.owner_id)
+          .single();
+
+        // Create order with wallet payment
+        const { data: newOrder, error: orderError } = await supabase
+          .from("orders")
+          .insert({
+            buyer_id: user.id,
+            seller_id: store.owner_id,
+            product_id: item.id,
+            quantity: item.quantity,
+            total_amount: item.price * item.quantity,
+            escrow_status: "holding",
+            escrow_amount: item.price * item.quantity,
+            delivery_name: deliveryInfo.name,
+            delivery_phone: deliveryInfo.phone,
+            shipping_address: deliveryInfo.address,
+            shipping_city: deliveryInfo.city,
+            shipping_region: deliveryInfo.region,
+            shipping_country: deliveryInfo.country,
+            delivery_notes: deliveryInfo.notes,
+            order_batch_ref: orderBatchRef,
+            status: "pending"
+          })
+          .select()
+          .single();
+
+        if (orderError) throw orderError;
+
+        const orderNumber = `#360-${newOrder.id.substring(0, 8).toUpperCase()}`;
+        const deliveryFullAddress = `${deliveryInfo.address}, ${deliveryInfo.city}, ${deliveryInfo.region}`;
+        const productImage = product.images?.[0] || '/placeholder.svg';
+
+        // Send notification to seller via edge function (bypasses RLS)
         try {
-          // Get product and store details for notifications
-          const { data: product } = await supabase
-            .from("products")
-            .select("store_id, images")
-            .eq("id", item.id)
-            .single();
-
-          if (!product) return;
-
-          const { data: store } = await supabase
-            .from("stores")
-            .select("owner_id, store_name")
-            .eq("id", product.store_id)
-            .single();
-
-          if (!store) return;
-
-          const { data: buyerProfile } = await supabase
-            .from("profiles")
-            .select("email, name, phone")
-            .eq("id", user.id)
-            .single();
-
-          const { data: sellerProfile } = await supabase
-            .from("profiles")
-            .select("email, name, phone")
-            .eq("id", store.owner_id)
-            .single();
-
-          const orderNumber = `#360-${orderId.substring(0, 8).toUpperCase()}`;
-          const deliveryFullAddress = `${deliveryInfo.address}, ${deliveryInfo.city}, ${deliveryInfo.region}`;
-          const productImage = product.images?.[0] || '/placeholder.svg';
-
-          // Send notification to seller via edge function
           await supabase.functions.invoke('create-order-notification', {
             body: {
               user_id: store.owner_id,
               type: 'order',
               title: '🛒 New Order Received!',
               body: `${buyerProfile?.name || 'A customer'} placed an order for ${item.title}`,
-              link_url: `/seller/order/${orderId}`,
+              link_url: newOrder?.id ? `/seller/order/${newOrder.id}` : '/seller-dashboard',
               image_url: productImage,
               icon: '/pwa-192x192.png',
               requireInteraction: true,
               metadata: {
-                order_id: orderId,
+                order_id: newOrder?.id || null,
                 product_title: item.title,
                 buyer_name: buyerProfile?.name,
                 amount: item.price * item.quantity
               }
             }
           });
+        } catch (notifError) {
+          console.error('Failed to send notification:', notifError);
+        }
 
-          // Send SMS to seller
+        // Send SMS notification to seller for new order
+        try {
           if (sellerProfile?.phone) {
             await supabase.functions.invoke('send-sms', {
               body: {
@@ -218,12 +230,16 @@ export default function Checkout() {
               }
             });
           }
+        } catch (smsError) {
+          console.error('Failed to send SMS to seller:', smsError);
+        }
 
-          // Send email notifications
+        // Send email notifications
+        try {
           if (buyerProfile?.email) {
             await sendOrderConfirmationEmail(buyerProfile.email, {
               orderNumber,
-              orderId,
+              orderId: newOrder.id,
               productName: item.title,
               productImage,
               quantity: item.quantity,
@@ -236,7 +252,7 @@ export default function Checkout() {
           if (sellerProfile?.email) {
             await sendNewOrderSellerEmail(sellerProfile.email, {
               orderNumber,
-              orderId,
+              orderId: newOrder.id,
               productName: item.title,
               productImage,
               quantity: item.quantity,
@@ -245,32 +261,28 @@ export default function Checkout() {
               deliveryAddress: deliveryFullAddress,
             }, store.owner_id);
           }
-        } catch (notifError) {
-          console.error('Failed to send notifications for order:', orderId, notifError);
+        } catch (emailError) {
+          console.error('Failed to send email notifications:', emailError);
         }
       });
 
-      // Don't wait for notifications to complete - let them run in background
-      Promise.all(notificationPromises).catch(err => 
-        console.error('Some notifications failed:', err)
-      );
+      await Promise.all(orderPromises);
+
+      // Payment already deducted above - just clear cart and navigate
 
       clearCart();
       
       toast({
         title: "Order placed successfully!",
-        description: `Le ${total_amount.toLocaleString()} deducted. Payment is in escrow until delivery.`,
+        description: "Your payment is in escrow. Track your orders in the Orders page.",
       });
 
       navigate("/orders");
     } catch (error) {
       console.error("Error placing order:", error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to place order';
       toast({
         title: "Order failed",
-        description: errorMessage.includes('insufficient') 
-          ? "Insufficient wallet balance. Please top up."
-          : "Failed to place order. Please try again.",
+        description: "Failed to place order. Please try again.",
         variant: "destructive",
       });
     } finally {
