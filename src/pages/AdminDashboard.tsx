@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { 
   Shield, Users, Store, Package, ShoppingBag, 
   FileText, MessageSquare, CheckCircle, XCircle, Clock,
-  Wallet, Radio, AlertCircle, AlertTriangle, Webhook, Database
+  Wallet, Radio, AlertCircle, AlertTriangle, Webhook
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -333,16 +333,6 @@ const AdminDashboard = () => {
             >
               <Webhook className="h-6 w-6" />
               <span className="text-xs font-semibold">Webhooks</span>
-            </Button>
-            
-            <Button
-              variant={window.location.pathname === '/admin/finance-consistency' ? 'default' : 'outline'}
-              size="lg"
-              onClick={() => navigate('/admin/finance-consistency')}
-              className="h-auto flex-col gap-2 py-4"
-            >
-              <Database className="h-6 w-6" />
-              <span className="text-xs font-semibold">Finance Check</span>
             </Button>
           </div>
         </div>

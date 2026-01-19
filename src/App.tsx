@@ -84,7 +84,6 @@ import AdminStoreDetail from "./pages/AdminStoreDetail";
 import AdminUserWallet from "./pages/AdminUserWallet";
 import AdminStoreAppealDetail from "./pages/AdminStoreAppealDetail";
 import AdminWebhookStatus from "./pages/AdminWebhookStatus";
-import AdminFinanceConsistency from "./pages/AdminFinanceConsistency";
 
 // Configure QueryClient with smart caching defaults
 const queryClient = new QueryClient({
@@ -180,7 +179,6 @@ const App = () => (
                 <Route path="/admin/seller-application/:id" element={<AdminSellerApplicationDetail />} />
                 <Route path="/admin/audit-logs" element={<AdminAuditLogs />} />
                 <Route path="/admin/webhook-status" element={<AdminWebhookStatus />} />
-                <Route path="/admin/finance-consistency" element={<AdminFinanceConsistency />} />
                 <Route path="/moderation" element={<ModerationScreen />} />
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/orders" element={<Orders />} />
