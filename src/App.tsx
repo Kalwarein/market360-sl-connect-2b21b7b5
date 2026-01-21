@@ -86,6 +86,8 @@ import AdminStoreAppealDetail from "./pages/AdminStoreAppealDetail";
 import AdminWebhookStatus from "./pages/AdminWebhookStatus";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+import Collaborations from "./pages/Collaborations";
+import CollaborationDetail from "./pages/CollaborationDetail";
 
 // Configure QueryClient with smart caching defaults
 const queryClient = new QueryClient({
@@ -193,6 +195,8 @@ const App = () => (
                 <Route path="/terms" element={<Terms />} />
                 <Route path="/privacy" element={<Privacy />} />
                 <Route path="/security-info" element={<SecurityInfo />} />
+                <Route path="/collaboration" element={<Collaborations />} />
+                <Route path="/collaboration/:slug" element={<CollaborationDetail />} />
                 <Route path="/how-to-top-up" element={<ProtectedRoute><HowToTopUp /></ProtectedRoute>} />
                 <Route path="/product-management/:id" element={<ProtectedRoute><ProductManagement /></ProtectedRoute>} />
                 <Route path="/promote-product" element={<ProtectedRoute><PromoteProduct /></ProtectedRoute>} />
