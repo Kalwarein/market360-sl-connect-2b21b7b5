@@ -9,6 +9,32 @@ const Splash = () => {
   const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState(-1); // Start at -1 for initial landing screen
 
+  // Apply system dark mode preference before user enters app
+  useEffect(() => {
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const root = document.documentElement;
+    
+    // Apply dark mode based on system preference
+    if (prefersDark) {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
+
+    // Listen for changes in system preference
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleChange = (e: MediaQueryListEvent) => {
+      if (e.matches) {
+        root.classList.add('dark');
+      } else {
+        root.classList.remove('dark');
+      }
+    };
+
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, []);
+
   // Redirect authenticated users to home
   useEffect(() => {
     if (user) {
