@@ -119,7 +119,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             }
             
             // Redirect to home after successful OAuth login
-            if (location.pathname === '/auth') {
+            if (location.pathname === '/auth' || location.pathname === '/splash') {
               navigate('/', { replace: true });
             }
           }, 0);
@@ -205,7 +205,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/auth`,
+        redirectTo: `${window.location.origin}/`,
         queryParams: {
           access_type: 'offline',
           prompt: 'consent',
