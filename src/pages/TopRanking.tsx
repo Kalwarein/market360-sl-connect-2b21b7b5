@@ -22,6 +22,9 @@ interface Product {
   view_count?: number;
   category?: string;
   created_at?: string;
+  store_id?: string;
+  avgRating?: number;
+  latestRating?: number;
 }
 
 type SortType = 'all' | 'hot_selling' | 'most_popular' | 'best_reviewed';
@@ -64,54 +67,54 @@ const TopRanking = () => {
 
   const loadTopRanking = async () => {
     try {
-      const sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-
-      const { data: viewData, error: viewError } = await supabase
-        .from('product_views')
-        .select('product_id')
-        .gte('viewed_at', sevenDaysAgo.toISOString());
-
-      if (viewError) throw viewError;
-
-      const viewCounts = viewData.reduce((acc: { [key: string]: number }, view) => {
-        acc[view.product_id] = (acc[view.product_id] || 0) + 1;
-        return acc;
-      }, {});
-
-      const topProductIds = Object.entries(viewCounts)
-        .sort(([, a], [, b]) => (b as number) - (a as number))
-        .slice(0, 100)
-        .map(([id]) => id);
-
-      if (topProductIds.length === 0) {
-        const { data, error } = await supabase
-          .from('products')
-          .select('*')
-          .eq('published', true)
-          .order('created_at', { ascending: false })
-          .limit(100);
-
-        if (error) throw error;
-        setProducts(data || []);
-        return;
-      }
-
-      const { data, error } = await supabase
+      // Get all products
+      const { data: products, error } = await supabase
         .from('products')
         .select('*')
-        .in('id', topProductIds)
         .eq('published', true);
 
       if (error) throw error;
 
-      const productsWithViews = (data || []).map((product) => ({
-        ...product,
-        view_count: viewCounts[product.id] || 0,
-      }));
+      if (!products || products.length === 0) {
+        setProducts([]);
+        setLoading(false);
+        return;
+      }
 
-      productsWithViews.sort((a, b) => (b.view_count || 0) - (a.view_count || 0));
-      setProducts(productsWithViews);
+      const productIds = products.map(p => p.id);
+
+      // Get all reviews for these products
+      const { data: reviews } = await supabase
+        .from('product_reviews')
+        .select('product_id, rating, created_at')
+        .in('product_id', productIds);
+
+      // Calculate average rating and latest rating for each product
+      const productStats: { [key: string]: { total: number; count: number; latest: { rating: number; date: string } | null } } = {};
+      (reviews || []).forEach(review => {
+        if (!productStats[review.product_id]) {
+          productStats[review.product_id] = { total: 0, count: 0, latest: null };
+        }
+        productStats[review.product_id].total += review.rating;
+        productStats[review.product_id].count += 1;
+        
+        // Track latest review
+        if (!productStats[review.product_id].latest || 
+            new Date(review.created_at) > new Date(productStats[review.product_id].latest!.date)) {
+          productStats[review.product_id].latest = { rating: review.rating, date: review.created_at };
+        }
+      });
+
+      // Sort by average rating (top reviews hierarchy)
+      const result = products
+        .map(p => ({
+          ...p,
+          avgRating: productStats[p.id] ? productStats[p.id].total / productStats[p.id].count : 0,
+          latestRating: productStats[p.id]?.latest?.rating || 0
+        }))
+        .sort((a, b) => b.avgRating - a.avgRating);
+
+      setProducts(result);
     } catch (error) {
       console.error('Error loading top ranking:', error);
     } finally {
@@ -128,13 +131,13 @@ const TopRanking = () => {
 
     switch (sortType) {
       case 'hot_selling':
-        filtered = filtered.filter((p) => (p.view_count || 0) > 50);
+        filtered = filtered.filter((p) => (p.avgRating || 0) >= 4);
         break;
       case 'most_popular':
-        filtered.sort((a, b) => (b.view_count || 0) - (a.view_count || 0));
+        filtered.sort((a, b) => (b.avgRating || 0) - (a.avgRating || 0));
         break;
       case 'best_reviewed':
-        filtered.sort((a, b) => (b.view_count || 0) - (a.view_count || 0));
+        filtered.sort((a, b) => (b.avgRating || 0) - (a.avgRating || 0));
         break;
     }
 
@@ -219,6 +222,9 @@ const TopRanking = () => {
                 image={product.images[0]}
                 moq={product.moq || 1}
                 tag={index < 3 ? 'Hot Selling' : undefined}
+                avgRating={product.avgRating}
+                rating={product.latestRating}
+                storeId={product.store_id}
               />
             ))}
           </div>

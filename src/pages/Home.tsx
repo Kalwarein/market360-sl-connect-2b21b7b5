@@ -24,6 +24,10 @@ interface Product {
   images: string[];
   category: string;
   moq?: number;
+  store_id?: string;
+  avgRating?: number;
+  latestRating?: number;
+  completedOrders?: number;
 }
 
 interface Store {
@@ -84,6 +88,13 @@ const Home = () => {
   const [notificationCount, setNotificationCount] = useState(0);
   const [showCustomerCareTooltip, setShowCustomerCareTooltip] = useState(false);
   const isRefreshing = useRef(false);
+  
+  // Random products for infinite scroll
+  const [randomProducts, setRandomProducts] = useState<Product[]>([]);
+  const [randomProductsPage, setRandomProductsPage] = useState(0);
+  const [hasMoreRandomProducts, setHasMoreRandomProducts] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -127,6 +138,31 @@ const Home = () => {
   useEffect(() => {
     loadData();
   }, [activeTab, selectedCategory]);
+
+  // Intersection observer for infinite scroll
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMoreRandomProducts && !loadingMore && !loading) {
+          loadRandomProducts(randomProductsPage + 1);
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (loadMoreRef.current) {
+      observer.observe(loadMoreRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [hasMoreRandomProducts, loadingMore, loading, randomProductsPage]);
+
+  // Load initial random products after main data is loaded
+  useEffect(() => {
+    if (!loading && categorySections.length > 0 && randomProducts.length === 0) {
+      loadRandomProducts(0, true);
+    }
+  }, [loading, categorySections]);
 
   const handleSearch = () => {
     if (searchQuery.trim()) {
@@ -176,15 +212,56 @@ const Home = () => {
 
   const loadTopDeals = async () => {
     try {
-      const { data, error } = await supabase
+      // Get products with completed order counts
+      const { data: products, error } = await supabase
         .from('products')
         .select('*')
-        .eq('published', true)
-        .order('price', { ascending: true })
-        .limit(10);
+        .eq('published', true);
 
       if (error) throw error;
-      const result = data || [];
+
+      if (!products || products.length === 0) {
+        setTopDeals([]);
+        setCache('home_topDeals', []);
+        return;
+      }
+
+      // Get completed orders count for each product
+      const { data: orderCounts } = await supabase
+        .from('orders')
+        .select('product_id')
+        .in('status', ['completed', 'delivered']);
+
+      const productOrderCounts: { [key: string]: number } = {};
+      (orderCounts || []).forEach(order => {
+        productOrderCounts[order.product_id] = (productOrderCounts[order.product_id] || 0) + 1;
+      });
+
+      // Get latest rating for each product
+      const productIds = products.map(p => p.id);
+      const { data: latestReviews } = await supabase
+        .from('product_reviews')
+        .select('product_id, rating, created_at')
+        .in('product_id', productIds)
+        .order('created_at', { ascending: false });
+
+      const latestRatings: { [key: string]: number } = {};
+      (latestReviews || []).forEach(review => {
+        if (!latestRatings[review.product_id]) {
+          latestRatings[review.product_id] = review.rating;
+        }
+      });
+
+      // Sort by completed orders (hierarchy: most transactions first)
+      const result = products
+        .map(p => ({
+          ...p,
+          completedOrders: productOrderCounts[p.id] || 0,
+          latestRating: latestRatings[p.id] || 0
+        }))
+        .sort((a, b) => b.completedOrders - a.completedOrders)
+        .slice(0, 10);
+
       setTopDeals(result);
       setCache('home_topDeals', result);
     } catch (error) {
@@ -194,15 +271,54 @@ const Home = () => {
 
   const loadTopRanking = async () => {
     try {
-      const { data, error } = await supabase
+      // Get products with review ratings
+      const { data: products, error } = await supabase
         .from('products')
         .select('*')
-        .eq('published', true)
-        .order('created_at', { ascending: false })
-        .limit(10);
+        .eq('published', true);
 
       if (error) throw error;
-      const result = data || [];
+
+      if (!products || products.length === 0) {
+        setTopRanking([]);
+        setCache('home_topRanking', []);
+        return;
+      }
+
+      const productIds = products.map(p => p.id);
+
+      // Get all reviews for these products
+      const { data: reviews } = await supabase
+        .from('product_reviews')
+        .select('product_id, rating, created_at')
+        .in('product_id', productIds);
+
+      // Calculate average rating and latest rating for each product
+      const productStats: { [key: string]: { total: number; count: number; latest: { rating: number; date: string } | null } } = {};
+      (reviews || []).forEach(review => {
+        if (!productStats[review.product_id]) {
+          productStats[review.product_id] = { total: 0, count: 0, latest: null };
+        }
+        productStats[review.product_id].total += review.rating;
+        productStats[review.product_id].count += 1;
+        
+        // Track latest review
+        if (!productStats[review.product_id].latest || 
+            new Date(review.created_at) > new Date(productStats[review.product_id].latest!.date)) {
+          productStats[review.product_id].latest = { rating: review.rating, date: review.created_at };
+        }
+      });
+
+      // Sort by average rating (top reviews hierarchy)
+      const result = products
+        .map(p => ({
+          ...p,
+          avgRating: productStats[p.id] ? productStats[p.id].total / productStats[p.id].count : 0,
+          latestRating: productStats[p.id]?.latest?.rating || 0
+        }))
+        .sort((a, b) => b.avgRating - a.avgRating)
+        .slice(0, 10);
+
       setTopRanking(result);
       setCache('home_topRanking', result);
     } catch (error) {
@@ -212,7 +328,7 @@ const Home = () => {
 
   const loadNewArrivals = async () => {
     try {
-      const { data, error } = await supabase
+      const { data: products, error } = await supabase
         .from('products')
         .select('*')
         .eq('published', true)
@@ -220,11 +336,125 @@ const Home = () => {
         .limit(10);
 
       if (error) throw error;
-      const result = data || [];
+
+      if (!products || products.length === 0) {
+        setNewArrivals([]);
+        setCache('home_newArrivals', []);
+        return;
+      }
+
+      // Get latest rating for each product
+      const productIds = products.map(p => p.id);
+      const { data: latestReviews } = await supabase
+        .from('product_reviews')
+        .select('product_id, rating, created_at')
+        .in('product_id', productIds)
+        .order('created_at', { ascending: false });
+
+      const latestRatings: { [key: string]: number } = {};
+      (latestReviews || []).forEach(review => {
+        if (!latestRatings[review.product_id]) {
+          latestRatings[review.product_id] = review.rating;
+        }
+      });
+
+      const result = products.map(p => ({
+        ...p,
+        latestRating: latestRatings[p.id] || 0
+      }));
+
       setNewArrivals(result);
       setCache('home_newArrivals', result);
     } catch (error) {
       console.error('Error loading new arrivals:', error);
+    }
+  };
+
+  const loadRandomProducts = async (page: number = 0, reset: boolean = false) => {
+    if (loadingMore && !reset) return;
+    
+    setLoadingMore(true);
+    try {
+      const pageSize = 20;
+      const offset = page * pageSize;
+      
+      // Get all product IDs that we've already displayed
+      const displayedIds = new Set([
+        ...topDeals.map(p => p.id),
+        ...topRanking.map(p => p.id),
+        ...newArrivals.map(p => p.id),
+        ...categorySections.flatMap(s => s.products.map(p => p.id)),
+        ...(reset ? [] : randomProducts.map(p => p.id))
+      ]);
+
+      // Get random products (using order by random would be too slow, so we fetch all and shuffle)
+      const { data: allProducts, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('published', true);
+
+      if (error) throw error;
+
+      if (!allProducts || allProducts.length === 0) {
+        setHasMoreRandomProducts(false);
+        setLoadingMore(false);
+        return;
+      }
+
+      // Filter out already displayed products
+      const availableProducts = allProducts.filter(p => !displayedIds.has(p.id));
+
+      if (availableProducts.length === 0) {
+        setHasMoreRandomProducts(false);
+        setLoadingMore(false);
+        return;
+      }
+
+      // Shuffle array (Fisher-Yates)
+      const shuffled = [...availableProducts];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+
+      // Get page of random products
+      const newProducts = shuffled.slice(0, pageSize);
+
+      if (newProducts.length === 0 || newProducts.length < pageSize) {
+        setHasMoreRandomProducts(false);
+      }
+
+      // Get ratings for these products
+      const productIds = newProducts.map(p => p.id);
+      const { data: latestReviews } = await supabase
+        .from('product_reviews')
+        .select('product_id, rating, created_at')
+        .in('product_id', productIds)
+        .order('created_at', { ascending: false });
+
+      const latestRatings: { [key: string]: number } = {};
+      (latestReviews || []).forEach(review => {
+        if (!latestRatings[review.product_id]) {
+          latestRatings[review.product_id] = review.rating;
+        }
+      });
+
+      const productsWithRatings = newProducts.map(p => ({
+        ...p,
+        latestRating: latestRatings[p.id] || 0
+      }));
+
+      if (reset) {
+        setRandomProducts(productsWithRatings);
+        setRandomProductsPage(0);
+      } else {
+        setRandomProducts(prev => [...prev, ...productsWithRatings]);
+        setRandomProductsPage(page);
+      }
+    } catch (error) {
+      console.error('Error loading random products:', error);
+    } finally {
+      setLoadingMore(false);
     }
   };
 
@@ -689,6 +919,8 @@ const Home = () => {
                       image={product.images?.[0] || '/placeholder.svg'}
                       moq={product.moq || 1}
                       tag="Top"
+                      rating={product.latestRating}
+                      storeId={product.store_id}
                     />
                   ))}
                 </div>
@@ -718,6 +950,9 @@ const Home = () => {
                       image={product.images?.[0] || '/placeholder.svg'}
                       moq={product.moq || 1}
                       tag="Hot Selling"
+                      avgRating={product.avgRating}
+                      rating={product.latestRating}
+                      storeId={product.store_id}
                     />
                   ))}
                 </div>
@@ -747,6 +982,8 @@ const Home = () => {
                       image={product.images?.[0] || '/placeholder.svg'}
                       moq={product.moq || 1}
                       tag="New"
+                      rating={product.latestRating}
+                      storeId={product.store_id}
                     />
                   ))}
                 </div>
@@ -783,7 +1020,46 @@ const Home = () => {
               </div>
             ))}
 
-            {categorySections.length === 0 && (
+            {/* Random Products Section - Infinite Scroll */}
+            {randomProducts.length > 0 && (
+              <div className="px-4 py-3">
+                <div className="flex justify-between items-center mb-3">
+                  <h2 className="text-lg font-bold text-foreground">🎲 More Products For You</h2>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                  {randomProducts.map((product) => (
+                    <MarketplaceProductCard
+                      key={product.id}
+                      id={product.id}
+                      title={product.title}
+                      price={product.price}
+                      image={product.images?.[0] || '/placeholder.svg'}
+                      moq={product.moq || 1}
+                      rating={product.latestRating}
+                      storeId={product.store_id}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Load More Trigger */}
+            <div ref={loadMoreRef} className="px-4 py-6 text-center">
+              {loadingMore && (
+                <div className="flex items-center justify-center gap-2">
+                  <div className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                  <p className="text-muted-foreground text-sm">Loading more products...</p>
+                </div>
+              )}
+              {!hasMoreRandomProducts && randomProducts.length > 0 && (
+                <div className="py-4">
+                  <p className="text-muted-foreground text-sm">🎉 You've seen all products!</p>
+                  <p className="text-muted-foreground text-xs mt-1">Check back later for new arrivals</p>
+                </div>
+              )}
+            </div>
+
+            {categorySections.length === 0 && randomProducts.length === 0 && (
               <div className="px-4 py-12 text-center">
                 <p className="text-muted-foreground">No products available</p>
               </div>

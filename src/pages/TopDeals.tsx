@@ -20,6 +20,9 @@ interface Product {
   images: string[];
   moq?: number;
   category?: string;
+  store_id?: string;
+  latestRating?: number;
+  completedOrders?: number;
 }
 
 type SortType = 'all' | 'hot_selling' | 'most_popular' | 'best_reviewed';
@@ -62,15 +65,56 @@ const TopDeals = () => {
 
   const loadTopDeals = async () => {
     try {
-      const { data, error } = await supabase
+      // Get products
+      const { data: products, error } = await supabase
         .from('products')
         .select('*')
-        .eq('published', true)
-        .order('price', { ascending: true })
-        .limit(100);
+        .eq('published', true);
 
       if (error) throw error;
-      setProducts(data || []);
+
+      if (!products || products.length === 0) {
+        setProducts([]);
+        setLoading(false);
+        return;
+      }
+
+      // Get completed orders count for each product
+      const { data: orderCounts } = await supabase
+        .from('orders')
+        .select('product_id')
+        .in('status', ['completed', 'delivered']);
+
+      const productOrderCounts: { [key: string]: number } = {};
+      (orderCounts || []).forEach(order => {
+        productOrderCounts[order.product_id] = (productOrderCounts[order.product_id] || 0) + 1;
+      });
+
+      // Get latest rating for each product
+      const productIds = products.map(p => p.id);
+      const { data: latestReviews } = await supabase
+        .from('product_reviews')
+        .select('product_id, rating, created_at')
+        .in('product_id', productIds)
+        .order('created_at', { ascending: false });
+
+      const latestRatings: { [key: string]: number } = {};
+      (latestReviews || []).forEach(review => {
+        if (!latestRatings[review.product_id]) {
+          latestRatings[review.product_id] = review.rating;
+        }
+      });
+
+      // Sort by completed orders (hierarchy: most transactions first)
+      const result = products
+        .map(p => ({
+          ...p,
+          completedOrders: productOrderCounts[p.id] || 0,
+          latestRating: latestRatings[p.id] || 0
+        }))
+        .sort((a, b) => b.completedOrders - a.completedOrders);
+
+      setProducts(result);
     } catch (error) {
       console.error('Error loading top deals:', error);
     } finally {
@@ -178,6 +222,8 @@ const TopDeals = () => {
                 image={product.images[0]}
                 moq={product.moq || 1}
                 tag={index < 5 ? 'Top' : undefined}
+                rating={product.latestRating}
+                storeId={product.store_id}
               />
             ))}
           </div>
