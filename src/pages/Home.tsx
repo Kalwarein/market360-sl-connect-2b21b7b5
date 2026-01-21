@@ -16,6 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { GuidedTour } from '@/components/GuidedTour';
 import OnboardingPrompt from '@/components/OnboardingPrompt';
 import { useScrollRestoration } from '@/hooks/useScrollRestoration';
+import CollaborationBanner from '@/components/CollaborationBanner';
 
 interface Product {
   id: string;
@@ -1070,6 +1071,9 @@ const Home = () => {
       </div>
 
       <BottomNav />
+      
+      {/* Collaboration Announcement Banner */}
+      <CollaborationBanner />
 
       <style>{`
         .scrollbar-hide::-webkit-scrollbar {
