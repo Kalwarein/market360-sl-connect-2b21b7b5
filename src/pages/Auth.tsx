@@ -248,7 +248,7 @@ const Auth = () => {
                 <button 
                   type="button" 
                   onClick={() => navigate('/forgot-password')}
-                  className="text-primary hover:text-primary-hover font-medium"
+                  className="text-primary hover:text-primary-hover font-medium py-2 px-1 cursor-pointer z-10 relative"
                 >
                   Forgot Password?
                 </button>
