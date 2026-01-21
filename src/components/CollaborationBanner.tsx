@@ -5,8 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { getFeaturedCollaborations } from '@/lib/collaborationsData';
 
-const BANNER_DISMISSED_KEY = 'collaboration_banner_dismissed';
-const BANNER_DISMISSED_DATE_KEY = 'collaboration_banner_dismissed_date';
+const BANNER_DISMISSED_KEY = 'market360_collaboration_banner_dismissed';
 const DISMISS_DURATION_DAYS = 7; // Show again after 7 days
 
 interface CollaborationBannerProps {
@@ -15,35 +14,55 @@ interface CollaborationBannerProps {
 
 const CollaborationBanner = ({ variant = 'modal' }: CollaborationBannerProps) => {
   const [isVisible, setIsVisible] = useState(false);
+  const [isReady, setIsReady] = useState(false);
   const navigate = useNavigate();
   const featuredCollaborations = getFeaturedCollaborations();
   const latestCollab = featuredCollaborations[0];
 
   useEffect(() => {
-    if (!latestCollab) return;
+    // Mark as ready after component mounts (client-side only)
+    setIsReady(true);
+  }, []);
 
-    const dismissed = localStorage.getItem(BANNER_DISMISSED_KEY);
-    const dismissedDate = localStorage.getItem(BANNER_DISMISSED_DATE_KEY);
+  useEffect(() => {
+    if (!isReady || !latestCollab) return;
 
-    if (dismissed === 'true' && dismissedDate) {
-      const daysSinceDismissed = (Date.now() - parseInt(dismissedDate)) / (1000 * 60 * 60 * 24);
-      if (daysSinceDismissed < DISMISS_DURATION_DAYS) {
-        return;
+    try {
+      const dismissedData = localStorage.getItem(BANNER_DISMISSED_KEY);
+      
+      if (dismissedData) {
+        const dismissedTimestamp = parseInt(dismissedData, 10);
+        if (!isNaN(dismissedTimestamp)) {
+          const daysSinceDismissed = (Date.now() - dismissedTimestamp) / (1000 * 60 * 60 * 24);
+          if (daysSinceDismissed < DISMISS_DURATION_DAYS) {
+            return; // Don't show - still within dismissed period
+          }
+        }
       }
+
+      // Show banner after a short delay for better UX
+      const timer = setTimeout(() => {
+        setIsVisible(true);
+      }, 1500);
+
+      return () => clearTimeout(timer);
+    } catch (error) {
+      // If localStorage fails, still show the banner
+      console.error('Error reading localStorage:', error);
+      const timer = setTimeout(() => {
+        setIsVisible(true);
+      }, 1500);
+      return () => clearTimeout(timer);
     }
-
-    // Small delay for better UX
-    const timer = setTimeout(() => {
-      setIsVisible(true);
-    }, 1500);
-
-    return () => clearTimeout(timer);
-  }, [latestCollab]);
+  }, [isReady, latestCollab]);
 
   const handleDismiss = () => {
     setIsVisible(false);
-    localStorage.setItem(BANNER_DISMISSED_KEY, 'true');
-    localStorage.setItem(BANNER_DISMISSED_DATE_KEY, Date.now().toString());
+    try {
+      localStorage.setItem(BANNER_DISMISSED_KEY, Date.now().toString());
+    } catch (error) {
+      console.error('Error writing to localStorage:', error);
+    }
   };
 
   const handleViewCollaborations = () => {
