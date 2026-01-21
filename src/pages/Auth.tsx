@@ -245,7 +245,11 @@ const Auth = () => {
 
             {!isSignUp && (
               <div className="flex items-center justify-end text-sm">
-                <button type="button" className="text-primary hover:text-primary-hover font-medium">
+                <button 
+                  type="button" 
+                  onClick={() => navigate('/forgot-password')}
+                  className="text-primary hover:text-primary-hover font-medium"
+                >
                   Forgot Password?
                 </button>
               </div>

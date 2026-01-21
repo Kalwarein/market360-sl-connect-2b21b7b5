@@ -84,6 +84,8 @@ import AdminStoreDetail from "./pages/AdminStoreDetail";
 import AdminUserWallet from "./pages/AdminUserWallet";
 import AdminStoreAppealDetail from "./pages/AdminStoreAppealDetail";
 import AdminWebhookStatus from "./pages/AdminWebhookStatus";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 
 // Configure QueryClient with smart caching defaults
 const queryClient = new QueryClient({
@@ -126,6 +128,8 @@ const App = () => (
                   <Routes>
                 <Route path="/splash" element={<Splash />} />
                 <Route path="/auth" element={<Auth />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
                 <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
                 <Route path="/perks" element={<ProtectedRoute><Perks /></ProtectedRoute>} />
