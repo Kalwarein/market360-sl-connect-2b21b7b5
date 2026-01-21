@@ -21,6 +21,8 @@ interface Product {
   moq?: number;
   category?: string;
   created_at?: string;
+  store_id?: string;
+  latestRating?: number;
 }
 
 type SortType = 'all' | 'hot_selling' | 'most_popular' | 'best_reviewed';
@@ -63,7 +65,7 @@ const NewArrivals = () => {
 
   const loadNewArrivals = async () => {
     try {
-      const { data, error } = await supabase
+      const { data: products, error } = await supabase
         .from('products')
         .select('*')
         .eq('published', true)
@@ -71,7 +73,34 @@ const NewArrivals = () => {
         .limit(100);
 
       if (error) throw error;
-      setProducts(data || []);
+
+      if (!products || products.length === 0) {
+        setProducts([]);
+        setLoading(false);
+        return;
+      }
+
+      // Get latest rating for each product
+      const productIds = products.map(p => p.id);
+      const { data: latestReviews } = await supabase
+        .from('product_reviews')
+        .select('product_id, rating, created_at')
+        .in('product_id', productIds)
+        .order('created_at', { ascending: false });
+
+      const latestRatings: { [key: string]: number } = {};
+      (latestReviews || []).forEach(review => {
+        if (!latestRatings[review.product_id]) {
+          latestRatings[review.product_id] = review.rating;
+        }
+      });
+
+      const result = products.map(p => ({
+        ...p,
+        latestRating: latestRatings[p.id] || 0
+      }));
+
+      setProducts(result);
     } catch (error) {
       console.error('Error loading new arrivals:', error);
     } finally {
@@ -191,6 +220,8 @@ const NewArrivals = () => {
                 image={product.images[0]}
                 moq={product.moq || 1}
                 tag={index < 10 ? 'New' : undefined}
+                rating={product.latestRating}
+                storeId={product.store_id}
               />
             ))}
           </div>

@@ -24,6 +24,8 @@ interface MarketplaceProductCardProps {
   createdAt?: string;
   isPromoted?: boolean;
   promotedUntil?: string | null;
+  rating?: number;
+  avgRating?: number;
 }
 
 const tagStyles = {
@@ -55,6 +57,8 @@ export const MarketplaceProductCard = ({
   createdAt,
   isPromoted = false,
   promotedUntil,
+  rating = 0,
+  avgRating = 0,
 }: MarketplaceProductCardProps) => {
   const navigate = useNavigate();
   const { 
@@ -175,12 +179,26 @@ export const MarketplaceProductCard = ({
             )}
           </div>
 
-          {/* Rating */}
+          {/* Rating - displays actual rating from reviews */}
           <div className="flex items-center gap-0.5">
-            {[1, 2, 3, 4].map((i) => (
-              <Star key={i} className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-            ))}
-            <Star className="h-3 w-3 text-muted-foreground/30" />
+            {[1, 2, 3, 4, 5].map((i) => {
+              const displayRating = rating || avgRating || 0;
+              const isFilled = i <= Math.round(displayRating);
+              return (
+                <Star 
+                  key={i} 
+                  className={cn(
+                    "h-3 w-3",
+                    isFilled ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground/30"
+                  )} 
+                />
+              );
+            })}
+            {(rating > 0 || avgRating > 0) && (
+              <span className="text-[10px] text-muted-foreground ml-1">
+                {(rating || avgRating).toFixed(1)}
+              </span>
+            )}
           </div>
           
           {/* Add to Cart Button */}
@@ -264,10 +282,24 @@ export const MarketplaceProductCard = ({
             Le {price.toLocaleString()}
           </span>
           <div className="flex items-center gap-0.5">
-            {[1, 2, 3, 4].map((i) => (
-              <Star key={i} className="h-2.5 w-2.5 fill-yellow-400 text-yellow-400" />
-            ))}
-            <Star className="h-2.5 w-2.5 text-muted-foreground/30" />
+            {[1, 2, 3, 4, 5].map((i) => {
+              const displayRating = rating || avgRating || 0;
+              const isFilled = i <= Math.round(displayRating);
+              return (
+                <Star 
+                  key={i} 
+                  className={cn(
+                    "h-2.5 w-2.5",
+                    isFilled ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground/30"
+                  )} 
+                />
+              );
+            })}
+            {(rating > 0 || avgRating > 0) && (
+              <span className="text-[9px] text-muted-foreground ml-0.5">
+                {(rating || avgRating).toFixed(1)}
+              </span>
+            )}
           </div>
         </div>
 
