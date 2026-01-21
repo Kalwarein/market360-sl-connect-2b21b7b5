@@ -496,7 +496,14 @@ const Home = () => {
               <div data-tour="sidebar-trigger">
                 <Sidebar />
               </div>
-              <h1 className="text-xl font-bold text-primary">Market360</h1>
+              <div className="flex items-center gap-2">
+                <img 
+                  src="/logo.png" 
+                  alt="Market360" 
+                  className="h-8 w-8 object-contain"
+                />
+                <h1 className="text-xl font-bold text-primary">Market360</h1>
+              </div>
             </div>
 
             <div className="flex items-center gap-3">
