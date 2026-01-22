@@ -812,6 +812,16 @@ export type Database = {
           phone_verification_code: string | null
           phone_verification_expires_at: string | null
           phone_verified: boolean | null
+          pin_attempts: number | null
+          pin_enabled: boolean | null
+          pin_hash: string | null
+          pin_locked_until: string | null
+          recovery_code_generated_at: string | null
+          recovery_code1_hash: string | null
+          recovery_code2_hash: string | null
+          recovery_regeneration_count: number | null
+          recovery_regeneration_month: number | null
+          recovery_setup_completed: boolean | null
           region: string | null
           role: Database["public"]["Enums"]["user_role"]
           school_name: string | null
@@ -844,6 +854,16 @@ export type Database = {
           phone_verification_code?: string | null
           phone_verification_expires_at?: string | null
           phone_verified?: boolean | null
+          pin_attempts?: number | null
+          pin_enabled?: boolean | null
+          pin_hash?: string | null
+          pin_locked_until?: string | null
+          recovery_code_generated_at?: string | null
+          recovery_code1_hash?: string | null
+          recovery_code2_hash?: string | null
+          recovery_regeneration_count?: number | null
+          recovery_regeneration_month?: number | null
+          recovery_setup_completed?: boolean | null
           region?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           school_name?: string | null
@@ -876,6 +896,16 @@ export type Database = {
           phone_verification_code?: string | null
           phone_verification_expires_at?: string | null
           phone_verified?: boolean | null
+          pin_attempts?: number | null
+          pin_enabled?: boolean | null
+          pin_hash?: string | null
+          pin_locked_until?: string | null
+          recovery_code_generated_at?: string | null
+          recovery_code1_hash?: string | null
+          recovery_code2_hash?: string | null
+          recovery_regeneration_count?: number | null
+          recovery_regeneration_month?: number | null
+          recovery_setup_completed?: boolean | null
           region?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           school_name?: string | null
@@ -912,6 +942,36 @@ export type Database = {
           p256dh?: string
           updated_at?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      recovery_attempts: {
+        Row: {
+          attempt_type: string
+          created_at: string
+          email: string
+          id: string
+          ip_address: string | null
+          success: boolean
+          user_agent: string | null
+        }
+        Insert: {
+          attempt_type: string
+          created_at?: string
+          email: string
+          id?: string
+          ip_address?: string | null
+          success?: boolean
+          user_agent?: string | null
+        }
+        Update: {
+          attempt_type?: string
+          created_at?: string
+          email?: string
+          id?: string
+          ip_address?: string | null
+          success?: boolean
+          user_agent?: string | null
         }
         Relationships: []
       }
