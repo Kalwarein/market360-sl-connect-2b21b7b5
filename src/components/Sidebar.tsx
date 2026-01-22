@@ -1,4 +1,4 @@
-import { Menu, Home, HelpCircle, Mail, Shield, Info, FileText, Wallet } from 'lucide-react';
+import { Menu, Home, HelpCircle, Mail, Shield, Info, FileText, Wallet, Handshake } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from './ui/button';
@@ -35,6 +35,7 @@ const Sidebar = () => {
   const menuItems = [
     { icon: Home, label: 'Home', path: '/' },
     { icon: Info, label: 'About Us', path: '/about' },
+    { icon: Handshake, label: 'Collaborations', path: '/collaboration' },
     { icon: Wallet, label: 'How to Top Up', path: '/how-to-top-up' },
     { icon: Shield, label: 'Security Info', path: '/security-info' },
     { icon: HelpCircle, label: 'Support', path: '/support' },
