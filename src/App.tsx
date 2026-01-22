@@ -38,7 +38,13 @@ import AdminDashboard from "./pages/AdminDashboard";
 import Notifications from "./pages/Notifications";
 import NotificationDetail from "./pages/NotificationDetail";
 import Search from "./pages/Search";
-import Settings from "./pages/Settings";
+import SettingsHome from "./pages/settings/SettingsHome";
+import AccountSettings from "./pages/settings/AccountSettings";
+import SecuritySettings from "./pages/settings/SecuritySettings";
+import NotificationSettings from "./pages/settings/NotificationSettings";
+import PrivacySettings from "./pages/settings/PrivacySettings";
+import SupportSettings from "./pages/settings/SupportSettings";
+import AboutSettings from "./pages/settings/AboutSettings";
 import Orders from "./pages/Orders";
 import OrderDetail from "./pages/OrderDetail";
 import SellerOrderDetail from "./pages/SellerOrderDetail";
@@ -161,7 +167,13 @@ const App = () => (
             <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
             <Route path="/notification/:notificationId" element={<ProtectedRoute><NotificationDetail /></ProtectedRoute>} />
             <Route path="/order-arrival/:orderId" element={<ProtectedRoute><OrderArrival /></ProtectedRoute>} />
-                <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+                <Route path="/settings" element={<ProtectedRoute><SettingsHome /></ProtectedRoute>} />
+                <Route path="/settings/account" element={<ProtectedRoute><AccountSettings /></ProtectedRoute>} />
+                <Route path="/settings/security" element={<ProtectedRoute><SecuritySettings /></ProtectedRoute>} />
+                <Route path="/settings/notifications" element={<ProtectedRoute><NotificationSettings /></ProtectedRoute>} />
+                <Route path="/settings/privacy" element={<ProtectedRoute><PrivacySettings /></ProtectedRoute>} />
+                <Route path="/settings/support" element={<ProtectedRoute><SupportSettings /></ProtectedRoute>} />
+                <Route path="/settings/about" element={<ProtectedRoute><AboutSettings /></ProtectedRoute>} />
                 <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
                 <Route path="/store-settings" element={<ProtectedRoute><StoreSettings /></ProtectedRoute>} />
                 <Route path="/admin-auth" element={<AdminAuth />} />
