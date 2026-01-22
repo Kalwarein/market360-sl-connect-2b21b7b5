@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { LogOut, Edit2, Wallet, ShoppingBag, Bell, Store, Shield, Settings, Lock, FileText, Mail, ChevronRight, Camera, Headset } from 'lucide-react';
+import { LogOut, Edit2, Wallet, ShoppingBag, Bell, Store, Shield, Settings, Lock, FileText, Mail, ChevronRight, Camera, Headset, Download, Receipt, ArrowRightLeft } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import BottomNav from '@/components/BottomNav';
@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 import BecomeSellerModal from '@/components/BecomeSellerModal';
 import ImageCropModal from '@/components/ImageCropModal';
 import { LogoutConfirmationModal } from '@/components/LogoutConfirmationModal';
+import { RecoveryCodeDownloadSection } from '@/components/RecoveryCodeDownloadSection';
 
 const Profile = () => {
   const { user, signOut } = useAuth();
@@ -422,44 +423,78 @@ const Profile = () => {
           )}
         </div>
 
-        {/* Menu */}
-        <div className="p-6 space-y-3 flex-1">
+        {/* Quick Access Grid */}
+        <div className="p-6 space-y-4">
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Quick Access</h3>
           
-          {/* Wallet */}
-          <Card onClick={() => navigate('/wallet')} className="cursor-pointer hover:shadow-elevated transition-smooth rounded-2xl border-border/50 hover:border-primary/30">
-            <CardContent className="p-5 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="h-12 w-12 rounded-2xl bg-primary/10 dark:bg-primary/20 flex items-center justify-center">
-                  <Wallet className="h-6 w-6 text-primary dark:text-primary" />
+          <div className="grid grid-cols-2 gap-3">
+            {/* Wallet */}
+            <Card 
+              onClick={() => navigate('/wallet')} 
+              className="cursor-pointer hover:shadow-md transition-all rounded-2xl border-border/50 hover:border-primary/30 active:scale-[0.98]"
+            >
+              <CardContent className="p-4 flex flex-col items-center text-center">
+                <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center mb-3">
+                  <Wallet className="h-6 w-6 text-primary" />
                 </div>
-                <span className="font-semibold text-foreground dark:text-foreground text-lg">My Wallet</span>
-              </div>
-              <ChevronRight className="h-5 w-5 text-muted-foreground" />
-            </CardContent>
-          </Card>
+                <span className="font-medium text-foreground text-sm">My Wallet</span>
+              </CardContent>
+            </Card>
 
-          {/* Orders */}
-          <Card onClick={() => navigate('/orders')} className="cursor-pointer hover:shadow-elevated transition-smooth rounded-2xl border-border/50 hover:border-secondary/30">
-            <CardContent className="p-5 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="h-12 w-12 rounded-2xl bg-secondary/10 dark:bg-secondary/20 flex items-center justify-center">
-                  <ShoppingBag className="h-6 w-6 text-secondary dark:text-secondary" />
+            {/* Orders */}
+            <Card 
+              onClick={() => navigate('/orders')} 
+              className="cursor-pointer hover:shadow-md transition-all rounded-2xl border-border/50 hover:border-secondary/30 active:scale-[0.98]"
+            >
+              <CardContent className="p-4 flex flex-col items-center text-center">
+                <div className="h-12 w-12 rounded-2xl bg-secondary/10 flex items-center justify-center mb-3">
+                  <ShoppingBag className="h-6 w-6 text-secondary" />
                 </div>
-                <span className="font-semibold text-foreground dark:text-foreground text-lg">My Orders</span>
-              </div>
-              <ChevronRight className="h-5 w-5 text-muted-foreground" />
-            </CardContent>
-          </Card>
+                <span className="font-medium text-foreground text-sm">My Orders</span>
+              </CardContent>
+            </Card>
 
+            {/* Transactions */}
+            <Card 
+              onClick={() => navigate('/wallet/activity')} 
+              className="cursor-pointer hover:shadow-md transition-all rounded-2xl border-border/50 hover:border-accent/30 active:scale-[0.98]"
+            >
+              <CardContent className="p-4 flex flex-col items-center text-center">
+                <div className="h-12 w-12 rounded-2xl bg-accent/10 flex items-center justify-center mb-3">
+                  <ArrowRightLeft className="h-6 w-6 text-accent" />
+                </div>
+                <span className="font-medium text-foreground text-sm">Transactions</span>
+              </CardContent>
+            </Card>
+
+            {/* Support */}
+            <Card 
+              onClick={() => navigate('/report-issue')} 
+              className="cursor-pointer hover:shadow-md transition-all rounded-2xl border-border/50 hover:border-orange-500/30 active:scale-[0.98]"
+            >
+              <CardContent className="p-4 flex flex-col items-center text-center">
+                <div className="h-12 w-12 rounded-2xl bg-orange-500/10 flex items-center justify-center mb-3">
+                  <Headset className="h-6 w-6 text-orange-500" />
+                </div>
+                <span className="font-medium text-foreground text-sm">Support</span>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        {/* Account Section */}
+        <div className="px-6 space-y-3">
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Account</h3>
+          
           {/* Administration - Admin Only */}
           {isAdmin && (
-            <Card onClick={() => navigate('/admin-auth')} className="cursor-pointer hover:shadow-elevated transition-smooth rounded-2xl border-border/50 hover:border-warning/30">
-              <CardContent className="p-5 flex items-center justify-between">
+            <Card onClick={() => navigate('/admin-auth')} className="cursor-pointer hover:shadow-md transition-all rounded-2xl border-border/50 hover:border-warning/30">
+              <CardContent className="p-4 flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <div className="h-12 w-12 rounded-2xl bg-warning/10 dark:bg-warning/20 flex items-center justify-center">
-                    <Shield className="h-6 w-6 text-warning dark:text-warning" />
+                  <div className="h-12 w-12 rounded-2xl bg-warning/10 flex items-center justify-center">
+                    <Shield className="h-6 w-6 text-warning" />
                   </div>
-                  <span className="font-semibold text-foreground dark:text-foreground text-lg">Administration Page</span>
+                  <span className="font-semibold text-foreground">Administration</span>
                 </div>
                 <ChevronRight className="h-5 w-5 text-muted-foreground" />
               </CardContent>
@@ -467,13 +502,13 @@ const Profile = () => {
           )}
 
           {/* Settings */}
-          <Card onClick={() => navigate('/settings')} className="cursor-pointer hover:shadow-elevated transition-smooth rounded-2xl border-border/50 hover:border-muted/50">
-            <CardContent className="p-5 flex items-center justify-between">
+          <Card onClick={() => navigate('/settings')} className="cursor-pointer hover:shadow-md transition-all rounded-2xl border-border/50 hover:border-muted/50">
+            <CardContent className="p-4 flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className="h-12 w-12 rounded-2xl bg-muted dark:bg-muted flex items-center justify-center">
-                  <Settings className="h-6 w-6 text-muted-foreground dark:text-muted-foreground" />
+                <div className="h-12 w-12 rounded-2xl bg-muted flex items-center justify-center">
+                  <Settings className="h-6 w-6 text-muted-foreground" />
                 </div>
-                <span className="font-semibold text-foreground dark:text-foreground text-lg">Settings</span>
+                <span className="font-semibold text-foreground">Settings</span>
               </div>
               <ChevronRight className="h-5 w-5 text-muted-foreground" />
             </CardContent>
