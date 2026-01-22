@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.admin-webhook-events]
 verify_jwt = false
+
+[functions.password-recovery]
+verify_jwt = false

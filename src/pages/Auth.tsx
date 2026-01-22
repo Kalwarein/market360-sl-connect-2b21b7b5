@@ -8,6 +8,8 @@ import { toast } from 'sonner';
 import { Mail, Lock, User, Eye, EyeOff, ArrowLeft, Leaf, Loader2 } from 'lucide-react';
 import { FaGoogle } from 'react-icons/fa';
 import { z } from 'zod';
+import { RecoveryCodeSetupModal } from '@/components/RecoveryCodeSetupModal';
+import { supabase } from '@/integrations/supabase/client';
 
 const signUpSchema = z.object({
   email: z.string().email('Invalid email address').max(255),
@@ -34,6 +36,8 @@ const Auth = () => {
   const { signUp, signIn, signInWithGoogle, user, loading: authLoading, isProcessingOAuth } = useAuth();
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [showRecoverySetup, setShowRecoverySetup] = useState(false);
+  const [newUserEmail, setNewUserEmail] = useState('');
 
   // Update isSignUp based on URL mode parameter
   useEffect(() => {
@@ -60,16 +64,30 @@ const Auth = () => {
     }
   }, []);
 
-  // Redirect authenticated users to home (with delay to ensure session is established)
+  // Check if user needs recovery setup after login
   useEffect(() => {
-    if (user && !authLoading && !isProcessingOAuth) {
-      // Small delay to ensure session is fully established
-      const timer = setTimeout(() => {
-        navigate('/', { replace: true });
-      }, 100);
-      return () => clearTimeout(timer);
-    }
+    const checkRecoverySetup = async () => {
+      if (user && !authLoading && !isProcessingOAuth) {
+        const { data } = await supabase.functions.invoke('password-recovery', {
+          body: { action: 'get_user_recovery_info' }
+        });
+        
+        if (data && !data.recoverySetupCompleted) {
+          setNewUserEmail(user.email || '');
+          setShowRecoverySetup(true);
+        } else {
+          navigate('/', { replace: true });
+        }
+      }
+    };
+    
+    checkRecoverySetup();
   }, [user, authLoading, isProcessingOAuth, navigate]);
+
+  const handleRecoveryComplete = () => {
+    setShowRecoverySetup(false);
+    navigate('/', { replace: true });
+  };
 
   // Show loading screen while processing OAuth callback
   if (isProcessingOAuth || (authLoading && !user)) {
@@ -300,6 +318,12 @@ const Auth = () => {
           )}
         </div>
       </div>
+
+      <RecoveryCodeSetupModal 
+        isOpen={showRecoverySetup}
+        onComplete={handleRecoveryComplete}
+        userEmail={newUserEmail}
+      />
     </div>
   );
 };
