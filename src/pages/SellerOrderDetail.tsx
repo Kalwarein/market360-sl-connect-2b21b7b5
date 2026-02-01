@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { sendOrderStatusUpdateEmail } from '@/lib/emailService';
+import DeliveryQRScanner from '@/components/DeliveryQRScanner';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -38,7 +39,9 @@ import {
   MoreVertical,
   FileText,
   Eye,
-  AlertTriangle
+  AlertTriangle,
+  QrCode,
+  Shield
 } from 'lucide-react';
 import BottomNav from '@/components/BottomNav';
 
@@ -153,7 +156,6 @@ const SellerOrderDetail = () => {
         .update({ status: newStatus })
         .eq('id', orderId);
 
-      // Get status message
       const statusMessages = {
         processing: 'Your order has been accepted and is being processed',
         packed: 'Your order has been packed and ready for shipping',
@@ -163,7 +165,6 @@ const SellerOrderDetail = () => {
 
       const orderNumber = `#360-${orderId?.substring(0, 8).toUpperCase()}`;
 
-      // Send rich notifications for all status changes
       const notificationConfig = {
         processing: {
           emoji: '⚙️',
@@ -183,7 +184,7 @@ const SellerOrderDetail = () => {
         delivered: {
           emoji: '✅',
           title: 'Order Delivered!',
-          body: `Your order for "${order?.products.title}" has been delivered. Please confirm receipt to complete the transaction.`
+          body: `Your order for "${order?.products.title}" has been delivered. Please show your QR code to the seller to confirm.`
         }
       };
 
@@ -196,7 +197,7 @@ const SellerOrderDetail = () => {
             type: 'order',
             title: `${config.emoji} ${config.title}`,
             body: config.body,
-            link_url: newStatus === 'delivered' ? `/order-arrival/${orderId}` : `/order/${orderId}`,
+            link_url: `/order/${orderId}`,
             image_url: order?.products.images[0],
             icon: '/pwa-192x192.png',
             requireInteraction: newStatus === 'delivered',
@@ -213,7 +214,6 @@ const SellerOrderDetail = () => {
         console.error('Failed to send notification:', notifError);
       }
 
-      // Send SMS notification to buyer when order is delivered
       if (newStatus === 'delivered') {
         try {
           if (order?.buyer_profile?.phone) {
@@ -221,17 +221,15 @@ const SellerOrderDetail = () => {
             await supabase.functions.invoke('send-sms', {
               body: {
                 to: order.buyer_profile.phone,
-                message: `📦 Market360 - Product Delivered!\n\n${order.products.title} has been delivered to your address.\n\nOrder: ${orderNumber}\n\nPlease confirm receipt to release payment to seller: market360.app/orders/${orderId}`
+                message: `📦 Market360 - Product Delivered!\n\n${order.products.title} has been delivered.\n\nOrder: ${orderNumber}\n\nShow your QR code to the seller to confirm delivery and release payment.`
               }
             });
           }
         } catch (smsError) {
           console.error('Failed to send SMS to buyer:', smsError);
-          // Don't fail the order update if SMS fails
         }
       }
 
-      // Send system message to chat
       const { data: conversation } = await supabase
         .from('conversations')
         .select('id')
@@ -249,7 +247,6 @@ const SellerOrderDetail = () => {
         });
       }
 
-      // Send email notification to buyer for order status updates
       try {
         if (order?.buyer_profile?.email) {
           const statusLabels = {
@@ -269,7 +266,6 @@ const SellerOrderDetail = () => {
         }
       } catch (emailError) {
         console.error('Failed to send status update email:', emailError);
-        // Don't fail the order update if email fails
       }
 
       toast({
@@ -334,7 +330,6 @@ const SellerOrderDetail = () => {
   const handleChatWithBuyer = async () => {
     if (!order) return;
     try {
-      // Find or create conversation
       let { data: existingConv } = await supabase
         .from('conversations')
         .select('id')
@@ -367,10 +362,19 @@ const SellerOrderDetail = () => {
     }
   };
 
+  const handleQRScanSuccess = (data: { amount_released: number; order_id: string; product_title: string }) => {
+    toast({
+      title: '🎉 Payment Received!',
+      description: `Le ${data.amount_released.toLocaleString()} added to your wallet`,
+      duration: 5000
+    });
+    loadOrderDetail();
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending':
-        return 'bg-yellow-500 text-white';
+        return 'bg-amber-500 text-white';
       case 'processing':
       case 'packed':
         return 'bg-blue-500 text-white';
@@ -378,12 +382,12 @@ const SellerOrderDetail = () => {
         return 'bg-purple-500 text-white';
       case 'delivered':
       case 'completed':
-        return 'bg-green-500 text-white';
+        return 'bg-emerald-500 text-white';
       case 'disputed':
       case 'cancelled':
-        return 'bg-red-500 text-white';
+        return 'bg-destructive text-destructive-foreground';
       default:
-        return 'bg-gray-500 text-white';
+        return 'bg-muted-foreground text-muted';
     }
   };
 
@@ -393,7 +397,7 @@ const SellerOrderDetail = () => {
       processing: 'Processing',
       packed: 'Packed & Ready',
       shipped: 'Shipped',
-      delivered: 'Delivered',
+      delivered: 'Awaiting QR Scan',
       completed: 'Completed',
       disputed: 'Disputed',
       cancelled: 'Cancelled'
@@ -431,10 +435,12 @@ const SellerOrderDetail = () => {
     );
   }
 
+  const canScanQR = order.status === 'delivered' && order.escrow_status === 'holding';
+
   return (
     <div className="min-h-screen bg-background pb-20">
       {/* Header */}
-      <div className="bg-white border-b border-border sticky top-0 z-10">
+      <div className="bg-background border-b border-border sticky top-0 z-10">
         <div className="p-4 flex items-center gap-3">
           <Button
             variant="ghost"
@@ -455,6 +461,48 @@ const SellerOrderDetail = () => {
       </div>
 
       <div className="p-4 space-y-4">
+        {/* QR Scanner Section - For delivered orders awaiting confirmation */}
+        {canScanQR && user && (
+          <Card className="border-primary/20 bg-primary/5">
+            <CardContent className="p-6">
+              <div className="text-center mb-4">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <QrCode className="h-6 w-6 text-primary" />
+                  <h3 className="font-semibold text-lg">Confirm Delivery</h3>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Scan the buyer's QR code to receive your payment instantly
+                </p>
+              </div>
+              
+              <DeliveryQRScanner 
+                sellerId={user.id}
+                onSuccess={handleQRScanSuccess}
+              />
+
+              <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-950/20 rounded-lg">
+                <p className="text-xs text-amber-800 dark:text-amber-400 flex items-start gap-2">
+                  <Shield className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                  <span>
+                    <strong>Important:</strong> Only scan the QR code after you have physically delivered the product to the buyer.
+                  </span>
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Completed Order Message */}
+        {order.status === 'completed' && (
+          <Card className="border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20">
+            <CardContent className="p-4 text-center">
+              <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-emerald-600" />
+              <p className="font-semibold text-emerald-800 dark:text-emerald-400">Order Completed</p>
+              <p className="text-sm text-emerald-600 dark:text-emerald-500">Payment has been released to your wallet</p>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Buyer Info */}
         <Card>
           <CardContent className="p-4">
@@ -522,9 +570,9 @@ const SellerOrderDetail = () => {
                 </div>
               </div>
               {order.delivery_notes && (
-                <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                  <p className="text-xs font-medium text-amber-800 mb-1">Buyer Notes:</p>
-                  <p className="text-sm text-amber-900">{order.delivery_notes}</p>
+                <div className="mt-3 p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+                  <p className="text-xs font-medium text-amber-800 dark:text-amber-400 mb-1">Buyer Notes:</p>
+                  <p className="text-sm text-amber-900 dark:text-amber-300">{order.delivery_notes}</p>
                 </div>
               )}
             </div>
@@ -547,14 +595,14 @@ const SellerOrderDetail = () => {
             </div>
             <p className="text-xs text-muted-foreground mt-2">
               {order.escrow_status === 'holding' 
-                ? 'Payment will be released when buyer confirms delivery' 
+                ? 'Payment will be released when you scan the buyer\'s QR code' 
                 : 'Payment has been released to your wallet'}
             </p>
           </CardContent>
         </Card>
 
         {/* Order Actions */}
-        {order.status !== 'completed' && order.status !== 'disputed' && (
+        {order.status !== 'completed' && order.status !== 'disputed' && order.status !== 'cancelled' && (
           <div className="space-y-3">
             <h2 className="font-semibold">Order Actions</h2>
             
@@ -609,7 +657,7 @@ const SellerOrderDetail = () => {
                 disabled={actionLoading}
               >
                 <CheckCircle2 className="h-4 w-4 mr-2" />
-                {actionLoading ? 'Updating...' : 'Mark as Delivered'}
+                {actionLoading ? 'Updating...' : 'Arrived at Buyer Location'}
               </Button>
             )}
 
@@ -699,17 +747,19 @@ const SellerOrderDetail = () => {
               {['delivered', 'completed'].includes(order.status) && (
                 <div className="flex items-start gap-3">
                   <div className="w-8 h-8 rounded-full flex items-center justify-center bg-primary">
-                    <CheckCircle2 className="h-4 w-4 text-white" />
+                    <QrCode className="h-4 w-4 text-white" />
                   </div>
                   <div>
-                    <p className="font-medium text-sm">Order Delivered</p>
-                    <p className="text-xs text-muted-foreground">Awaiting buyer confirmation</p>
+                    <p className="font-medium text-sm">Arrived at Buyer</p>
+                    <p className="text-xs text-muted-foreground">
+                      {order.status === 'delivered' ? 'Awaiting QR scan confirmation' : 'Delivery confirmed'}
+                    </p>
                   </div>
                 </div>
               )}
               {order.status === 'completed' && (
                 <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center bg-green-500">
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center bg-emerald-500">
                     <CheckCircle2 className="h-4 w-4 text-white" />
                   </div>
                   <div>
@@ -733,19 +783,19 @@ const SellerOrderDetail = () => {
               <div className="p-2 rounded-full bg-amber-100 dark:bg-amber-950">
                 <AlertTriangle className="h-6 w-6 text-amber-600" />
               </div>
-              <AlertDialogTitle>Important Reminder</AlertDialogTitle>
+              <AlertDialogTitle>Arrived at Buyer Location?</AlertDialogTitle>
             </div>
             <AlertDialogDescription className="space-y-3 text-base">
               <p>You're about to mark this order as <strong>Delivered</strong>.</p>
-              <div className="bg-amber-50 dark:bg-amber-950/20 p-4 rounded-lg space-y-2 text-sm">
-                <p className="font-semibold text-amber-900 dark:text-amber-400">Payment Release:</p>
-                <ul className="space-y-1 list-disc list-inside text-amber-800 dark:text-amber-500">
-                  <li>The buyer must confirm they received the order</li>
-                  <li>Payment will only be released after buyer confirmation</li>
-                  <li>Funds will appear in your wallet once confirmed</li>
+              <div className="bg-primary/10 p-4 rounded-lg space-y-2 text-sm">
+                <p className="font-semibold text-primary">QR-Based Confirmation:</p>
+                <ul className="space-y-1 list-disc list-inside text-muted-foreground">
+                  <li>Ask the buyer to show their QR code</li>
+                  <li>Scan the QR code to confirm delivery</li>
+                  <li>Payment will be released instantly to your wallet</li>
                 </ul>
               </div>
-              <p className="text-sm">Make sure the product has been successfully delivered to the buyer before proceeding.</p>
+              <p className="text-sm">Make sure you're at the buyer's location before proceeding.</p>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -754,7 +804,7 @@ const SellerOrderDetail = () => {
               onClick={confirmDelivered}
               className="bg-primary hover:bg-primary/90"
             >
-              Yes, Mark as Delivered
+              Yes, I'm at the Location
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
