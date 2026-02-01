@@ -477,6 +477,7 @@ const SellerOrderDetail = () => {
               
               <DeliveryQRScanner 
                 sellerId={user.id}
+                orderId={order.id}
                 onSuccess={handleQRScanSuccess}
               />
 
