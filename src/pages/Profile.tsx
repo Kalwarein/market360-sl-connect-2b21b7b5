@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { LogOut, Edit2, Wallet, ShoppingBag, Bell, Store, Shield, Settings, Lock, FileText, Mail, ChevronRight, Camera, Headset, Download, Receipt, ArrowRightLeft } from 'lucide-react';
+import { LogOut, Edit2, Wallet, ShoppingBag, Bell, Store, Shield, Settings, Lock, FileText, Mail, ChevronRight, Camera, Headset, Download } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import BottomNav from '@/components/BottomNav';
@@ -451,32 +451,6 @@ const Profile = () => {
                   <ShoppingBag className="h-6 w-6 text-secondary" />
                 </div>
                 <span className="font-medium text-foreground text-sm">My Orders</span>
-              </CardContent>
-            </Card>
-
-            {/* Transactions */}
-            <Card 
-              onClick={() => navigate('/wallet/activity')} 
-              className="cursor-pointer hover:shadow-md transition-all rounded-2xl border-border/50 hover:border-accent/30 active:scale-[0.98]"
-            >
-              <CardContent className="p-4 flex flex-col items-center text-center">
-                <div className="h-12 w-12 rounded-2xl bg-accent/10 flex items-center justify-center mb-3">
-                  <ArrowRightLeft className="h-6 w-6 text-accent" />
-                </div>
-                <span className="font-medium text-foreground text-sm">Transactions</span>
-              </CardContent>
-            </Card>
-
-            {/* Support */}
-            <Card 
-              onClick={() => navigate('/report-issue')} 
-              className="cursor-pointer hover:shadow-md transition-all rounded-2xl border-border/50 hover:border-orange-500/30 active:scale-[0.98]"
-            >
-              <CardContent className="p-4 flex flex-col items-center text-center">
-                <div className="h-12 w-12 rounded-2xl bg-orange-500/10 flex items-center justify-center mb-3">
-                  <Headset className="h-6 w-6 text-orange-500" />
-                </div>
-                <span className="font-medium text-foreground text-sm">Support</span>
               </CardContent>
             </Card>
           </div>
