@@ -8,6 +8,9 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 
+// Define which routes should show the bottom nav (main tab pages only)
+const TAB_BAR_ROUTES = ['/', '/categories', '/messages', '/cart', '/profile'];
+
 const BottomNav = () => {
   const { hasPendingOrders } = useSellerNotifications();
   const { isSeller } = useUserRoles();
@@ -15,6 +18,9 @@ const BottomNav = () => {
   const { user } = useAuth();
   const [hasUnreadMessages, setHasUnreadMessages] = useState(false);
   const [shouldShowSellerBadge, setShouldShowSellerBadge] = useState(false);
+  
+  // Check if current route should show tab bar
+  const shouldShowTabBar = TAB_BAR_ROUTES.includes(location.pathname);
   
   // Global unread messages indicator
   useEffect(() => {
@@ -86,6 +92,11 @@ const BottomNav = () => {
     { to: '/cart', icon: ShoppingCart, label: 'Cart' },
     { to: '/profile', icon: User, label: 'Profile', showProfileDot },
   ];
+
+  // Don't render if not on a tab bar route
+  if (!shouldShowTabBar) {
+    return null;
+  }
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border shadow-lg z-50 md:hidden">
