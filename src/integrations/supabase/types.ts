@@ -139,6 +139,50 @@ export type Database = {
           },
         ]
       }
+      delivery_qr_codes: {
+        Row: {
+          buyer_id: string
+          created_at: string
+          encrypted_token: string
+          expires_at: string
+          id: string
+          order_id: string
+          scanned_at: string | null
+          seller_id: string
+          status: string
+        }
+        Insert: {
+          buyer_id: string
+          created_at?: string
+          encrypted_token: string
+          expires_at: string
+          id?: string
+          order_id: string
+          scanned_at?: string | null
+          seller_id: string
+          status?: string
+        }
+        Update: {
+          buyer_id?: string
+          created_at?: string
+          encrypted_token?: string
+          expires_at?: string
+          id?: string
+          order_id?: string
+          scanned_at?: string | null
+          seller_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_qr_codes_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: true
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       favorites: {
         Row: {
           created_at: string | null
@@ -942,6 +986,39 @@ export type Database = {
           p256dh?: string
           updated_at?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      qr_scan_logs: {
+        Row: {
+          error_message: string | null
+          id: string
+          metadata: Json | null
+          order_id: string
+          qr_id: string | null
+          scan_result: string
+          scanned_at: string
+          seller_id: string
+        }
+        Insert: {
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          order_id: string
+          qr_id?: string | null
+          scan_result: string
+          scanned_at?: string
+          seller_id: string
+        }
+        Update: {
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          order_id?: string
+          qr_id?: string | null
+          scan_result?: string
+          scanned_at?: string
+          seller_id?: string
         }
         Relationships: []
       }
@@ -1770,6 +1847,7 @@ export type Database = {
         Args: never
         Returns: undefined
       }
+      cleanup_expired_qr_codes: { Args: never; Returns: undefined }
       delete_expired_products: { Args: never; Returns: undefined }
       detect_fraud_patterns: { Args: never; Returns: undefined }
       get_daily_transaction_volume: {

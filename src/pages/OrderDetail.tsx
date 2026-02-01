@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Package, MapPin, Phone, User, MessageSquare, CheckCircle2, AlertCircle, Clock, Truck, XCircle, Shield, Store } from 'lucide-react';
 import BottomNav from '@/components/BottomNav';
+import DeliveryQRCode from '@/components/DeliveryQRCode';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { format } from 'date-fns';
@@ -40,7 +41,6 @@ const OrderDetail = () => {
   const { toast } = useToast();
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [loading, setLoading] = useState(true);
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [showDisputeDialog, setShowDisputeDialog] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [disputeReason, setDisputeReason] = useState('');
@@ -78,18 +78,6 @@ const OrderDetail = () => {
     }
   };
 
-  const handleConfirmReceived = async () => {
-    try {
-      setShowConfirmDialog(false);
-      const { error } = await supabase.functions.invoke('release-escrow', { body: { order_id: orderId, buyer_id: user?.id } });
-      if (error) throw error;
-      toast({ title: '✅ Order Completed', description: 'Funds released to seller. Thank you!', duration: 5000 });
-      loadOrderDetail();
-    } catch (error) {
-      toast({ title: 'Error', description: 'Failed to confirm order', variant: 'destructive' });
-    }
-  };
-
   const handleReportProblem = async () => {
     if (!disputeReason.trim()) return;
     try {
@@ -107,7 +95,6 @@ const OrderDetail = () => {
   const handleChatWithSeller = async () => {
     if (!order) return;
     try {
-      // Find or create conversation
       let { data: existingConv } = await supabase
         .from('conversations')
         .select('id')
@@ -162,7 +149,7 @@ const OrderDetail = () => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending':
-        return 'bg-yellow-500';
+        return 'bg-amber-500';
       case 'processing':
       case 'packed':
         return 'bg-blue-500';
@@ -170,11 +157,11 @@ const OrderDetail = () => {
         return 'bg-purple-500';
       case 'delivered':
       case 'completed':
-        return 'bg-green-500';
+        return 'bg-emerald-500';
       case 'disputed':
-        return 'bg-red-500';
+        return 'bg-destructive';
       default:
-        return 'bg-gray-500';
+        return 'bg-muted-foreground';
     }
   };
 
@@ -194,7 +181,7 @@ const OrderDetail = () => {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-3 mb-4">
-              <div className={`p-3 rounded-full ${getStatusColor(order.status)}`}>
+              <div className={`p-3 rounded-full text-white ${getStatusColor(order.status)}`}>
                 {getStatusIcon(order.status)}
               </div>
               <div className="flex-1">
@@ -211,6 +198,27 @@ const OrderDetail = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* QR Code Section - Only for shipped/delivered orders with holding escrow */}
+        {['shipped', 'delivered'].includes(order.status) && order.escrow_status === 'holding' && user && (
+          <DeliveryQRCode 
+            orderId={order.id}
+            buyerId={user.id}
+            orderStatus={order.status}
+            escrowStatus={order.escrow_status}
+          />
+        )}
+
+        {/* Completed Order Message */}
+        {order.status === 'completed' && (
+          <Card className="border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20">
+            <CardContent className="p-4 text-center">
+              <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-emerald-600" />
+              <p className="font-semibold text-emerald-800 dark:text-emerald-400">Order Completed</p>
+              <p className="text-sm text-emerald-600 dark:text-emerald-500">Thank you for your purchase!</p>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Product Information */}
         <Card>
@@ -325,7 +333,7 @@ const OrderDetail = () => {
               <div className="flex items-center gap-2 mt-2 p-2 bg-muted/50 rounded-lg">
                 <Shield className="h-4 w-4 text-primary" />
                 <p className="text-xs text-muted-foreground">
-                  {order.escrow_status === 'holding' ? 'Payment secured in escrow until delivery confirmation' : 
+                  {order.escrow_status === 'holding' ? 'Payment secured in escrow. Let the seller scan your QR code upon delivery.' : 
                    order.escrow_status === 'released' ? 'Payment released to seller' : 
                    'Payment processed'}
                 </p>
@@ -336,16 +344,6 @@ const OrderDetail = () => {
 
         {/* Action Buttons */}
         <div className="space-y-2">
-          {order.status === 'delivered' && (
-            <Button 
-              onClick={() => setShowConfirmDialog(true)} 
-              className="w-full" 
-              size="lg"
-            >
-              <CheckCircle2 className="mr-2 h-5 w-5" />
-              Confirm Received
-            </Button>
-          )}
           {order.status === 'pending' && (
             <Button 
               onClick={() => setShowCancelDialog(true)} 
@@ -379,7 +377,6 @@ const OrderDetail = () => {
           </Button>
         </div>
       </div>
-      <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}><DialogContent><DialogHeader><DialogTitle>Confirm Received?</DialogTitle></DialogHeader><p className="text-sm">Payment will be released to seller.</p><DialogFooter><Button variant="outline" onClick={() => setShowConfirmDialog(false)}>Cancel</Button><Button onClick={handleConfirmReceived}>Confirm</Button></DialogFooter></DialogContent></Dialog>
       <Dialog open={showDisputeDialog} onOpenChange={setShowDisputeDialog}><DialogContent><DialogHeader><DialogTitle>Report Problem</DialogTitle></DialogHeader><Textarea placeholder="Describe the issue..." value={disputeReason} onChange={(e) => setDisputeReason(e.target.value)} rows={5} /><DialogFooter><Button variant="outline" onClick={() => setShowDisputeDialog(false)}>Cancel</Button><Button onClick={handleReportProblem} variant="destructive">Submit</Button></DialogFooter></DialogContent></Dialog>
       <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}><DialogContent><DialogHeader><DialogTitle>Cancel Order?</DialogTitle></DialogHeader><p className="text-sm">Payment will be refunded to your wallet.</p><DialogFooter><Button variant="outline" onClick={() => setShowCancelDialog(false)}>Keep</Button><Button onClick={handleCancelOrder} variant="destructive">Cancel Order</Button></DialogFooter></DialogContent></Dialog>
       <BottomNav />

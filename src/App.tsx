@@ -67,7 +67,7 @@ import ProductManagement from "./pages/ProductManagement";
 import Perks from "./pages/Perks";
 import PromoteProduct from "./pages/PromoteProduct";
 import ProfileViewer from "./pages/ProfileViewer";
-import OrderArrival from "./pages/OrderArrival";
+
 import AdminSellerApplications from "./pages/AdminSellerApplications";
 import AdminSellerApplicationDetail from "./pages/AdminSellerApplicationDetail";
 import TopDeals from "./pages/TopDeals";
@@ -166,7 +166,7 @@ const App = () => (
                 <Route path="/contact" element={<ProtectedRoute><Contact /></ProtectedRoute>} />
             <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
             <Route path="/notification/:notificationId" element={<ProtectedRoute><NotificationDetail /></ProtectedRoute>} />
-            <Route path="/order-arrival/:orderId" element={<ProtectedRoute><OrderArrival /></ProtectedRoute>} />
+            <Route path="/order-arrival/:orderId" element={<Navigate to="/orders" replace />} />
                 <Route path="/settings" element={<ProtectedRoute><SettingsHome /></ProtectedRoute>} />
                 <Route path="/settings/account" element={<ProtectedRoute><AccountSettings /></ProtectedRoute>} />
                 <Route path="/settings/security" element={<ProtectedRoute><SecuritySettings /></ProtectedRoute>} />
